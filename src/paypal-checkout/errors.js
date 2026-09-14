@@ -1,4 +1,4 @@
-"use strict";
+import BraintreeError from "../lib/braintree-error";
 
 /**
  * @name BraintreeError.PayPal Checkout - Creation Error Codes
@@ -38,9 +38,15 @@
  * @property {MERCHANT} PAYPAL_MISSING_REQUIRED_OPTION Occurs when a required option is missing.
  * @property {NETWORK} PAYPAL_FLOW_FAILED Occurs when something goes wrong when initializing the flow or communicating with the server.
  */
-var BraintreeError = require("../lib/braintree-error");
 
-module.exports = {
+/**
+ * @name BraintreeError.PayPal Checkout - loadPayPalSDK Error Codes
+ * @description Errors that occur when using the [`loadPayPalSDK` method](./PayPalCheckout.html#loadPayPalSDK).
+ * @property {MERCHANT} PAYPAL_PAGE_TYPE_REQUIRED Occurs when the `pageType` option is missing.
+ * @property {MERCHANT} PAYPAL_PAGE_TYPE_INVALID Occurs when the `pageType` option is not one of the values PayPal's SDK accepts.
+ */
+
+const _default = {
   PAYPAL_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
     code: "PAYPAL_NOT_ENABLED",
@@ -102,4 +108,41 @@ module.exports = {
     code: "PAYPAL_MISSING_REQUIRED_OPTION",
     message: "Missing required option.",
   },
+  PAYPAL_BILLING_AGREEMENT_JWT_FAILED: {
+    type: BraintreeError.types.NETWORK,
+    code: "PAYPAL_BILLING_AGREEMENT_JWT_FAILED",
+    message:
+      "Could not create a billing agreement token from the payment method JWT.",
+  },
+  PAYPAL_PAGE_TYPE_REQUIRED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_PAGE_TYPE_REQUIRED",
+    message: "loadPayPalSDK must be called with a pageType option.",
+  },
+  PAYPAL_PAGE_TYPE_INVALID: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_PAGE_TYPE_INVALID",
+    message:
+      "pageType must be one of the following values: product-listing, search-results, product-details, mini-cart, cart, checkout.",
+  },
 };
+
+export const {
+  PAYPAL_NOT_ENABLED,
+  PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED,
+  PAYPAL_ACCOUNT_TOKENIZATION_FAILED,
+  PAYPAL_FLOW_FAILED,
+  PAYPAL_FLOW_OPTION_REQUIRED,
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_PARAM_REQUIRED,
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED,
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED,
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED,
+  PAYPAL_START_VAULT_INITIATED_CHECKOUT_IN_PROGRESS,
+  PAYPAL_INVALID_PAYMENT_OPTION,
+  PAYPAL_MISSING_REQUIRED_OPTION,
+  PAYPAL_BILLING_AGREEMENT_JWT_FAILED,
+  PAYPAL_PAGE_TYPE_REQUIRED,
+  PAYPAL_PAGE_TYPE_INVALID,
+} = _default;
+
+export default _default;

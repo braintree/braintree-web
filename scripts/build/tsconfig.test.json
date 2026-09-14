@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "jest"]
+  },
+  "include": [
+    "vite/**/*.ts",
+    "configs/**/*.ts",
+    "*.ts",
+    "../../package.json",
+    "../../components.json"
+  ],
+  "exclude": []
+}

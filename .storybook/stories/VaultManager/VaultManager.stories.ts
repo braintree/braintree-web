@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import type { Meta, StoryObj } from "@storybook/html";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
+import { getBraintree } from "../../utils/braintree-globals";
 import { IBraintreeClient } from "../../types/global";
 import "./vaultManager.css";
 
@@ -117,7 +118,7 @@ const createVaultManagerForm = (): HTMLElement => {
 const setupVaultManager = (container: HTMLElement): void => {
   let _customerId: string;
   let _vaultManagerInstance: IVaultManager;
-  let _editId: string;
+  let _editId: string | undefined;
 
   // Helper function to get element by ID with proper typing
   const getElementById = <T extends HTMLElement = HTMLElement>(
@@ -243,11 +244,11 @@ const setupVaultManager = (container: HTMLElement): void => {
     try {
       const clientToken = await getClientToken();
 
-      clientInstance = await window.braintree.client.create({
+      clientInstance = await getBraintree().client.create({
         authorization: clientToken,
       });
 
-      vaultManagerInstance = (await window.braintree.vaultManager.create({
+      vaultManagerInstance = (await getBraintree().vaultManager.create({
         client: clientInstance,
       })) as unknown as IVaultManager;
     } catch (error) {
@@ -293,10 +294,12 @@ const setupVaultManager = (container: HTMLElement): void => {
       }
     } catch (error) {
       console.error(error);
-      showResultDisplay(
-        "vault-create-display",
-        `<p class="shared-error-text">Failed to create Vault Manager: ${error.message || error}</p>`
-      );
+      if (error instanceof Error) {
+        showResultDisplay(
+          "vault-create-display",
+          `<p class="shared-error-text">Failed to create Vault Manager: ${error.message || error}</p>`
+        );
+      }
     } finally {
       initializeButton.disabled = false;
       initializeButton.textContent = "Initialize Vault Manager";

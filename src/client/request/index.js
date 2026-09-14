@@ -1,13 +1,11 @@
-"use strict";
+import once from "../../lib/once";
+import driver from "./fetch";
 
-var once = require("../../lib/once");
-var AJAXDriver = require("./ajax-driver");
-
-module.exports = function (options, cb) {
+export default function (options, cb) {
   cb = once(cb || Function.prototype);
   options.method = (options.method || "GET").toUpperCase();
   options.timeout = options.timeout == null ? 60000 : options.timeout;
   options.data = options.data || {};
 
-  AJAXDriver.request(options, cb);
-};
+  driver.request(options, cb);
+}

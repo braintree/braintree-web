@@ -8,18 +8,12 @@
   "hosted-fields",
   "instant-verification",
   "local-payment",
-  "masterpass",
   "payment-ready",
-  "payment-request",
-  "paypal",
   "paypal-checkout",
   "paypal-checkout-v6",
-  "preferred-payment-methods",
   "sepa",
   "three-d-secure",
-  "unionpay",
   "us-bank-account",
   "vault-manager",
-  "venmo",
-  "visa-checkout"
+  "venmo"
 ]

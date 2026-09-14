@@ -1,23 +1,23 @@
-"use strict";
+import { fake } from "../../helpers";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
 
-const { fake } = require("../../helpers");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const {
+import {
   handleApprovalForFullPageRedirect,
   createMandate,
   openPopup,
   handleApproval,
   POPUP_HEIGHT,
   POPUP_WIDTH,
-} = require("../../../src/sepa/external/mandate");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const sepaErrors = require("../../../src/sepa/shared/errors");
-const frameService = require("../../../src/lib/frame-service/external");
-const { version: VERSION } = require("../../../package.json");
-const analytics = require("../../../src/lib/analytics");
+} from "../../../src/sepa/external/mandate";
 
-jest.mock("../../../src/lib/frame-service/external");
-jest.mock("../../../src/lib/analytics");
+import BraintreeError from "../../../src/lib/braintree-error";
+import sepaErrors from "../../../src/sepa/shared/errors";
+import frameService from "../../../src/lib/frame-service/external";
+import { version as VERSION } from "../../../package.json";
+import analytics from "../../../src/lib/analytics";
+
+vi.mock("../../../src/lib/frame-service/external");
+vi.mock("../../../src/lib/analytics");
 
 describe("mandate.js", () => {
   let testContext;
@@ -71,14 +71,14 @@ describe("mandate.js", () => {
     testContext.client = fake.client({
       configuration: testContext.configuration,
     });
-    jest
-      .spyOn(createDeferredClient, "create")
-      .mockResolvedValue(testContext.client);
+    vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+      testContext.client
+    );
   });
 
   describe("createMandate()", () => {
     it("makes the http request", async () => {
-      testContext.client.request = jest.fn();
+      testContext.client.request = vi.fn();
 
       testContext.client.request.mockResolvedValue(mockMandateResponse);
 
@@ -102,8 +102,8 @@ describe("mandate.js", () => {
         adminArea2: "Chicago",
         postalCode: "60606",
       };
-      testContext.client.request = jest.fn();
-      jest.spyOn(testContext.client, "request");
+      testContext.client.request = vi.fn();
+      vi.spyOn(testContext.client, "request");
 
       testContext.client.request.mockResolvedValue(mockMandateResponse);
       const expectedResult = {
@@ -152,8 +152,8 @@ describe("mandate.js", () => {
     it("includes optional params in http request, locale", async () => {
       input.locale = "fr-XC";
 
-      testContext.client.request = jest.fn();
-      jest.spyOn(testContext.client, "request");
+      testContext.client.request = vi.fn();
+      vi.spyOn(testContext.client, "request");
 
       testContext.client.request.mockResolvedValue(mockMandateResponse);
       const expectedResult = {
@@ -194,7 +194,7 @@ describe("mandate.js", () => {
     });
 
     it("Client API return empty object", async () => {
-      testContext.client.request = jest.fn();
+      testContext.client.request = vi.fn();
 
       testContext.client.request.mockResolvedValue({});
 
@@ -214,7 +214,7 @@ describe("mandate.js", () => {
     });
 
     it("sends Client API error when Client API fails", async () => {
-      testContext.client.request = jest.fn();
+      testContext.client.request = vi.fn();
 
       const fakeErr = new Error("it failed");
 
@@ -253,14 +253,14 @@ describe("mandate.js", () => {
 
     beforeEach(() => {
       mockFrameService = {
-        open: jest.fn().mockImplementation((obj, callback) => {
+        open: vi.fn().mockImplementation((obj, callback) => {
           return Promise.resolve(callback(undefined, mockSuccessParams));
         }),
-        redirect: jest.fn(),
-        close: jest.fn(),
-        focus: jest.fn(),
+        redirect: vi.fn(),
+        close: vi.fn(),
+        focus: vi.fn(),
       };
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
     });
@@ -351,10 +351,10 @@ describe("mandate.js", () => {
 
     it("rejects when cancel redirect is used and closes popup", async () => {
       expect.assertions(6);
-      mockFrameService.open = jest.fn((obj, callback) => {
+      mockFrameService.open = vi.fn((obj, callback) => {
         callback(undefined, mockCancelParams);
       });
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
 
@@ -375,10 +375,10 @@ describe("mandate.js", () => {
         code: "FRAME_SERVICE_FRAME_CLOSED",
       };
 
-      mockFrameService.open = jest.fn((obj, callback) => {
+      mockFrameService.open = vi.fn((obj, callback) => {
         callback(mockFrameServiceErr, emptyParams);
       });
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
 
@@ -396,10 +396,10 @@ describe("mandate.js", () => {
       expect.assertions(6);
       const emptyParams = {};
 
-      mockFrameService.open = jest.fn((obj, callback) => {
+      mockFrameService.open = vi.fn((obj, callback) => {
         callback(undefined, emptyParams);
       });
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
 
@@ -419,10 +419,10 @@ describe("mandate.js", () => {
 
     it("rejects when frameservice returns an error", async () => {
       expect.assertions(6);
-      mockFrameService.open = jest.fn((obj, callback) => {
+      mockFrameService.open = vi.fn((obj, callback) => {
         callback("some error");
       });
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
 
@@ -443,7 +443,7 @@ describe("mandate.js", () => {
 
   describe("handleApproval()", () => {
     it("makes the http request", async () => {
-      testContext.client.request = jest.fn();
+      testContext.client.request = vi.fn();
 
       testContext.client.request.mockResolvedValue(mockSepaSuccessResponse);
 
@@ -460,7 +460,7 @@ describe("mandate.js", () => {
     });
 
     it("Client API return empty object", async () => {
-      testContext.client.request = jest.fn();
+      testContext.client.request = vi.fn();
 
       testContext.client.request.mockResolvedValue({});
 
@@ -476,7 +476,7 @@ describe("mandate.js", () => {
     });
 
     it("sends Client API error when Client API fails", async () => {
-      testContext.client.request = jest.fn();
+      testContext.client.request = vi.fn();
 
       const fakeErr = new Error("it failed");
 
@@ -496,7 +496,7 @@ describe("mandate.js", () => {
 
   describe("handleApprovalForFullPageRedirect()", () => {
     it("sends expected events when successful", async () => {
-      testContext.client.request = jest.fn();
+      testContext.client.request = vi.fn();
       testContext.client.request
         .mockResolvedValueOnce({
           sepaDebitMandateDetail: {

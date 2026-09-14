@@ -1,30 +1,28 @@
-"use strict";
-
-const BaseFramework = require("../../../../../src/three-d-secure/external/frameworks/base");
-const BraintreeError = require("../../../../../src/lib/braintree-error");
-const analytics = require("../../../../../src/lib/analytics");
-const { fake, noop } = require("../../../../helpers");
+import BaseFramework from "../../../../../src/three-d-secure/external/frameworks/base";
+import BraintreeError from "../../../../../src/lib/braintree-error";
+import analytics from "../../../../../src/lib/analytics";
+import { fake } from "../../../../helpers";
 
 describe("BaseFramework", () => {
   let testContext;
 
   beforeEach(() => {
     testContext = {};
-    jest
-      .spyOn(BaseFramework.prototype, "_presentChallenge")
-      .mockImplementation(function () {
+    vi.spyOn(BaseFramework.prototype, "_presentChallenge").mockImplementation(
+      function () {
         this._verifyCardPromisePlus.resolve({
           nonce: "some-fake-nonce",
-          liabilityShifted: true,
-          liabilityShiftPossible: true,
+          threeDSecureInfo: {
+            liabilityShifted: true,
+            liabilityShiftPossible: true,
+          },
         });
-      });
-    jest
-      .spyOn(
-        BaseFramework.prototype,
-        "_checkForFrameworkSpecificVerifyCardErrors"
-      )
-      .mockReturnValue(null);
+      }
+    );
+    vi.spyOn(
+      BaseFramework.prototype,
+      "_checkForFrameworkSpecificVerifyCardErrors"
+    ).mockReturnValue(null);
 
     testContext.configuration = {
       authorization: fake.clientToken,
@@ -34,7 +32,7 @@ describe("BaseFramework", () => {
       },
     };
     testContext.client = {
-      request: jest.fn().mockResolvedValue(null),
+      request: vi.fn().mockResolvedValue(null),
       getConfiguration: () => testContext.configuration,
     };
   });
@@ -51,6 +49,11 @@ describe("BaseFramework", () => {
           nonce: "upgraded-nonce",
           details: {
             cardType: "Visa",
+          },
+          threeDSecureInfo: {
+            liabilityShiftPossible: true,
+            liabilityShifted: true,
+            threeDSecureVersion: "1.0.2",
           },
         },
         lookup: {
@@ -293,41 +296,42 @@ describe("BaseFramework", () => {
     });
 
     describe("multiple calls", () => {
-      it("can be called multiple times if canceled in between", (done) => {
-        const threeDSecureInfo = {
-          liabilityShiftPossible: true,
-          liabilityShifted: true,
-        };
+      it("can be called multiple times if canceled in between", () =>
+        new Promise((resolve) => {
+          const threeDSecureInfo = {
+            liabilityShiftPossible: true,
+            liabilityShifted: true,
+          };
 
-        testContext.lookupResponse.lookup.acsUrl = "https://example.com";
-        testContext.lookupResponse.paymentMethod = {
-          nonce: "upgraded-nonce",
-          threeDSecureInfo: threeDSecureInfo,
-        };
-        testContext.lookupResponse.threeDSecureInfo = threeDSecureInfo;
+          testContext.lookupResponse.lookup.acsUrl = "https://example.com";
+          testContext.lookupResponse.paymentMethod = {
+            nonce: "upgraded-nonce",
+            threeDSecureInfo: threeDSecureInfo,
+          };
+          testContext.lookupResponse.threeDSecureInfo = threeDSecureInfo;
 
-        BaseFramework.prototype._presentChallenge = () => {
-          testContext.instance.cancelVerifyCard().then(() => {
-            delete testContext.lookupResponse.lookup.acsUrl;
+          BaseFramework.prototype._presentChallenge = () => {
+            testContext.instance.cancelVerifyCard().then(() => {
+              delete testContext.lookupResponse.lookup.acsUrl;
 
-            return testContext.instance
-              .verifyCard({
-                nonce: "fake-nonce",
-                amount: 100,
-              })
-              .then((data) => {
-                expect(data.nonce).toBe("upgraded-nonce");
+              return testContext.instance
+                .verifyCard({
+                  nonce: "fake-nonce",
+                  amount: 100,
+                })
+                .then((data) => {
+                  expect(data.nonce).toBe("upgraded-nonce");
 
-                done();
-              });
+                  resolve();
+                });
+            });
+          };
+
+          testContext.instance.verifyCard({
+            nonce: "fake-nonce",
+            amount: 100,
           });
-        };
-
-        testContext.instance.verifyCard({
-          nonce: "fake-nonce",
-          amount: 100,
-        });
-      });
+        }));
 
       it("can be called multiple times if first request failed", () => {
         testContext.client.request.mockRejectedValue(new Error("failure"));
@@ -357,45 +361,44 @@ describe("BaseFramework", () => {
           });
       });
 
-      it("cannot be called twice without cancelling in between", (done) => {
-        const threeDSecureInfo = {
-          liabilityShiftPossible: true,
-          liabilityShifted: true,
-        };
+      it("cannot be called twice without cancelling in between", () =>
+        new Promise((resolve) => {
+          const threeDSecureInfo = {
+            liabilityShiftPossible: true,
+            liabilityShifted: true,
+          };
 
-        testContext.lookupResponse.lookup.acsUrl = "https://example.com";
-        testContext.lookupResponse.paymentMethod = {
-          nonce: "upgraded-nonce",
-          threeDSecureInfo: threeDSecureInfo,
-        };
-        testContext.lookupResponse.threeDSecureInfo = threeDSecureInfo;
-        BaseFramework.prototype._presentChallenge = () => {
-          delete testContext.lookupResponse.lookup.acsUrl;
+          testContext.lookupResponse.lookup.acsUrl = "https://example.com";
+          testContext.lookupResponse.paymentMethod = {
+            nonce: "upgraded-nonce",
+            threeDSecureInfo: threeDSecureInfo,
+          };
+          testContext.lookupResponse.threeDSecureInfo = threeDSecureInfo;
+          BaseFramework.prototype._presentChallenge = () => {
+            delete testContext.lookupResponse.lookup.acsUrl;
 
-          testContext.instance
-            .verifyCard({
-              nonce: "fake-nonce",
-              amount: 100,
-              addFrame: noop,
-              removeFrame: noop,
-            })
-            .catch((err) => {
-              expect(err).toBeInstanceOf(BraintreeError);
-              expect(err.type).toBe("MERCHANT");
-              expect(err.code).toBe("THREEDS_AUTHENTICATION_IN_PROGRESS");
-              expect(err.message).toBe(
-                "Cannot call verifyCard while existing authentication is in progress."
-              );
+            testContext.instance
+              .verifyCard({
+                nonce: "fake-nonce",
+                amount: 100,
+              })
+              .catch((err) => {
+                expect(err).toBeInstanceOf(BraintreeError);
+                expect(err.type).toBe("MERCHANT");
+                expect(err.code).toBe("THREEDS_AUTHENTICATION_IN_PROGRESS");
+                expect(err.message).toBe(
+                  "Cannot call verifyCard while existing authentication is in progress."
+                );
 
-              done();
-            });
-        };
+                resolve();
+              });
+          };
 
-        testContext.instance.verifyCard({
-          nonce: "fake-nonce",
-          amount: 100,
-        });
-      });
+          testContext.instance.verifyCard({
+            nonce: "fake-nonce",
+            amount: 100,
+          });
+        }));
 
       it("can be called multiple times if authentication completes in between", () => {
         const instance = testContext.instance;
@@ -408,8 +411,10 @@ describe("BaseFramework", () => {
         BaseFramework.prototype._presentChallenge = function () {
           this._verifyCardPromisePlus.resolve({
             nonce: "some-fake-nonce",
-            liabilityShifted: true,
-            liabilityShiftPossible: true,
+            threeDSecureInfo: {
+              liabilityShifted: true,
+              liabilityShiftPossible: true,
+            },
           });
         };
         testContext.lookupResponse.lookup = {
@@ -424,15 +429,15 @@ describe("BaseFramework", () => {
           .verifyCard(options)
           .then((data) => {
             expect(data.nonce).toBe("some-fake-nonce");
-            expect(data.liabilityShifted).toBe(true);
-            expect(data.liabilityShiftPossible).toBe(true);
+            expect(data.threeDSecureInfo.liabilityShifted).toBe(true);
+            expect(data.threeDSecureInfo.liabilityShiftPossible).toBe(true);
 
             return instance.verifyCard(options);
           })
           .then((data2) => {
             expect(data2.nonce).toBe("some-fake-nonce");
-            expect(data2.liabilityShifted).toBe(true);
-            expect(data2.liabilityShiftPossible).toBe(true);
+            expect(data2.threeDSecureInfo.liabilityShifted).toBe(true);
+            expect(data2.threeDSecureInfo.liabilityShiftPossible).toBe(true);
           });
       });
     });
@@ -443,8 +448,6 @@ describe("BaseFramework", () => {
           .verifyCard({
             nonce: "abcdef",
             amount: 100,
-            addFrame: noop,
-            removeFrame: noop,
             collectDeviceData: false,
           })
           .then(() => {
@@ -464,8 +467,6 @@ describe("BaseFramework", () => {
           .verifyCard({
             nonce: "abcdef",
             amount: 100,
-            addFrame: noop,
-            removeFrame: noop,
           })
           .then(() => {
             expect(testContext.client.request).toHaveBeenCalledTimes(1);
@@ -484,8 +485,6 @@ describe("BaseFramework", () => {
           .verifyCard({
             nonce: "abcdef",
             amount: 100,
-            addFrame: noop,
-            removeFrame: noop,
             collectDeviceData: true,
           })
           .then(() => {
@@ -514,8 +513,6 @@ describe("BaseFramework", () => {
             nonce: "abcdef",
             amount: 100,
             showLoader: false,
-            addFrame: noop,
-            removeFrame: noop,
           })
           .then(() => {
             expect(analytics.sendEvent).toHaveBeenCalledWith(
@@ -541,8 +538,6 @@ describe("BaseFramework", () => {
             nonce: "abcdef",
             amount: 100,
             showLoader: false,
-            addFrame: noop,
-            removeFrame: noop,
           })
           .catch((err) => {
             expect(err.details.originalError.message).toBe("error");
@@ -574,12 +569,10 @@ describe("BaseFramework", () => {
           .verifyCard({
             nonce: "nonce-that-does-not-require-authentication",
             amount: 100,
-            addFrame: noop,
-            removeFrame: noop,
           })
           .then((data) => {
-            expect(data.liabilityShiftPossible).toBe(true);
-            expect(data.liabilityShifted).toBe(true);
+            expect(data.verificationDetails.liabilityShiftPossible).toBe(true);
+            expect(data.verificationDetails.liabilityShifted).toBe(true);
           });
       });
 
@@ -590,14 +583,67 @@ describe("BaseFramework", () => {
           .verifyCard({
             nonce: "nonce-that-does-not-require-authentication",
             amount: 100,
-            addFrame: noop,
-            removeFrame: noop,
           })
           .then((data) => {
             expect(data.nonce).toBe("upgraded-nonce");
             expect(data.details).toEqual({ cardType: "Visa" });
-            expect(data.liabilityShiftPossible).toBe(true);
-            expect(data.liabilityShifted).toBe(true);
+            expect(data.threeDSecureInfo.liabilityShiftPossible).toBe(true);
+            expect(data.threeDSecureInfo.liabilityShifted).toBe(true);
+          });
+      });
+
+      it("surfaces liability data from the payment method threeDSecureInfo in the payload", () => {
+        delete testContext.lookupResponse.lookup.acsUrl;
+        testContext.lookupResponse.paymentMethod.threeDSecureInfo = {
+          liabilityShiftPossible: true,
+          liabilityShifted: true,
+          threeDSecureVersion: "2.1.0",
+        };
+
+        return testContext.instance
+          .verifyCard({
+            nonce: "nonce-that-does-not-require-authentication",
+            amount: 100,
+          })
+          .then((data) => {
+            expect(data.threeDSecureInfo.liabilityShifted).toBe(true);
+            expect(data.threeDSecureInfo.liabilityShiftPossible).toBe(true);
+            expect(data.threeDSecureInfo.threeDSecureVersion).toBe("2.1.0");
+          });
+      });
+
+      it("defaults liability shift values to false when the gateway omits them", () => {
+        delete testContext.lookupResponse.lookup.acsUrl;
+        testContext.lookupResponse.paymentMethod.threeDSecureInfo = {
+          threeDSecureVersion: "2.1.0",
+        };
+        delete testContext.lookupResponse.threeDSecureInfo;
+
+        return testContext.instance
+          .verifyCard({
+            nonce: "nonce-that-does-not-require-authentication",
+            amount: 100,
+          })
+          .then((data) => {
+            expect(data.threeDSecureInfo.liabilityShifted).toBe(false);
+            expect(data.threeDSecureInfo.liabilityShiftPossible).toBe(false);
+            expect(data.threeDSecureInfo.threeDSecureVersion).toBe("2.1.0");
+          });
+      });
+
+      it("returns a threeDSecureInfo object when the payment method has none", () => {
+        delete testContext.lookupResponse.lookup.acsUrl;
+        delete testContext.lookupResponse.paymentMethod.threeDSecureInfo;
+        delete testContext.lookupResponse.threeDSecureInfo;
+
+        return testContext.instance
+          .verifyCard({
+            nonce: "nonce-that-does-not-require-authentication",
+            amount: 100,
+          })
+          .then((data) => {
+            expect(data.threeDSecureInfo.liabilityShifted).toBe(false);
+            expect(data.threeDSecureInfo.liabilityShiftPossible).toBe(false);
           });
       });
     });
@@ -622,7 +668,7 @@ describe("BaseFramework", () => {
         threeDSecureInfo: threeDSecureInfo,
       };
 
-      jest.spyOn(testContext.instance, "_presentChallenge");
+      vi.spyOn(testContext.instance, "_presentChallenge");
 
       expect.assertions(1);
 
@@ -677,6 +723,41 @@ describe("BaseFramework", () => {
             );
           });
       });
+
+      it("derives liability-shift analytics from the payment method threeDSecureInfo when no challenge is presented", () => {
+        // The gateway returns liability-shift data on
+        // paymentMethod.threeDSecureInfo. Ensure the analytics derive from
+        // the nested payload.threeDSecureInfo rather than emitting
+        // `.undefined`.
+        testContext.lookupResponse = {
+          paymentMethod: {
+            nonce: "upgraded-nonce",
+            threeDSecureInfo: {
+              liabilityShiftPossible: true,
+              liabilityShifted: true,
+              threeDSecureVersion: "2.1.0",
+            },
+          },
+          lookup: {},
+          threeDSecureInfo: {
+            liabilityShiftPossible: true,
+            liabilityShifted: true,
+          },
+        };
+
+        return testContext.instance
+          .initializeChallengeWithLookupResponse(testContext.lookupResponse, {})
+          .then(() => {
+            expect(analytics.sendEvent).toHaveBeenCalledWith(
+              expect.anything(),
+              "three-d-secure.verification-flow.liability-shifted.true"
+            );
+            expect(analytics.sendEvent).toHaveBeenCalledWith(
+              expect.anything(),
+              "three-d-secure.verification-flow.liability-shift-possible.true"
+            );
+          });
+      });
     });
   });
 
@@ -691,6 +772,7 @@ describe("BaseFramework", () => {
         threeDSecureInfo: {
           liabilityShiftPossible: true,
           liabilityShifted: true,
+          threeDSecureVersion: "2.1.0",
         },
       };
     });
@@ -724,6 +806,25 @@ describe("BaseFramework", () => {
         threeDSecureInfo: {
           liabilityShiftPossible: true,
           liabilityShifted: false,
+          threeDSecureVersion: "2.1.0",
+        },
+      };
+
+      expect.assertions(4);
+
+      return testContext.framework.cancelVerifyCard().then((response) => {
+        expect(response.nonce).toBe("fake-nonce");
+        expect(response.threeDSecureInfo.liabilityShiftPossible).toBe(true);
+        expect(response.threeDSecureInfo.liabilityShifted).toBe(false);
+        expect(response.threeDSecureInfo.threeDSecureVersion).toBe("2.1.0");
+      });
+    });
+
+    it("defaults liability shift values to false when the lookup omits them", () => {
+      testContext.framework._lookupPaymentMethod = {
+        nonce: "fake-nonce",
+        threeDSecureInfo: {
+          threeDSecureVersion: "2.1.0",
         },
       };
 
@@ -731,15 +832,15 @@ describe("BaseFramework", () => {
 
       return testContext.framework.cancelVerifyCard().then((response) => {
         expect(response.nonce).toBe("fake-nonce");
-        expect(response.liabilityShiftPossible).toBe(true);
-        expect(response.liabilityShifted).toBe(false);
+        expect(response.threeDSecureInfo.liabilityShiftPossible).toBe(false);
+        expect(response.threeDSecureInfo.liabilityShifted).toBe(false);
       });
     });
   });
 
   describe("teardown", () => {
     beforeEach(() => {
-      jest.spyOn(analytics, "sendEvent");
+      vi.spyOn(analytics, "sendEvent");
       testContext.framework = new BaseFramework({
         client: testContext.client,
         createPromise: Promise.resolve(testContext.client),
@@ -752,39 +853,6 @@ describe("BaseFramework", () => {
           expect.anything(),
           "three-d-secure.teardown-completed"
         );
-      });
-    });
-
-    it("tears down v1Bus if it exists", () => {
-      const bus = {
-        teardown: jest.fn(),
-      };
-
-      testContext.framework._v1Bus = bus;
-
-      return testContext.framework.teardown().then(() => {
-        expect(bus.teardown).toHaveBeenCalledTimes(1);
-      });
-    });
-
-    it("does not teardown bankFrame if is has no parent node", () => {
-      const iframe = {
-        parentNode: { removeChild: jest.fn() },
-      };
-
-      testContext.framework._v1Iframe = iframe;
-
-      return testContext.framework.teardown().then(() => {
-        expect(iframe.parentNode.removeChild).toHaveBeenCalledTimes(1);
-        expect(iframe.parentNode.removeChild).toHaveBeenCalledWith(iframe);
-      });
-    });
-
-    it("does not teardown bankFrame if is has no parent node", () => {
-      testContext.framework._v1Iframe = {};
-
-      return testContext.framework.teardown().catch(() => {
-        throw new Error("Did not expect teardown to error");
       });
     });
   });

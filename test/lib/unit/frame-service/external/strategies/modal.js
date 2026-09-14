@@ -1,14 +1,12 @@
-"use strict";
+vi.mock("../../../../../../src/lib/frame-service/shared/browser-detection");
 
-jest.mock("../../../../../../src/lib/frame-service/shared/browser-detection");
-
-const Modal = require("../../../../../../src/lib/frame-service/external/strategies/modal");
-const browserDetection = require("../../../../../../src/lib/frame-service/shared/browser-detection");
-const { noop } = require("../../../../../helpers");
+import Modal from "../../../../../../src/lib/frame-service/external/strategies/modal";
+import browserDetection from "../../../../../../src/lib/frame-service/shared/browser-detection";
+import { noop } from "../../../../../helpers";
 
 describe("Modal", () => {
   beforeEach(() => {
-    jest.spyOn(window, "scrollTo").mockImplementation();
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   });
 
   it("has a focus function", () => {
@@ -58,7 +56,7 @@ describe("Modal", () => {
       const container = document.createElement("div");
       const modal = new Modal({ container });
 
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
 
       modal.open();
 
@@ -75,7 +73,7 @@ describe("Modal", () => {
       const container = document.createElement("div");
       const modal = new Modal({ container });
 
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
 
       modal.open();
 
@@ -91,8 +89,8 @@ describe("Modal", () => {
       const container = document.createElement("div");
       const modal = new Modal({ container });
 
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
-      jest.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
 
       modal.open();
 
@@ -119,8 +117,8 @@ describe("Modal", () => {
       const container = document.createElement("div");
       const modal = new Modal({ container });
 
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
-      jest.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
 
       modal.open();
 
@@ -132,8 +130,8 @@ describe("Modal", () => {
       const container = document.createElement("div");
       const modal = new Modal({ container });
 
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(false);
-      jest.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(false);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(false);
+      vi.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(false);
 
       modal.open();
 
@@ -145,8 +143,8 @@ describe("Modal", () => {
       const container = document.createElement("div");
       const modal = new Modal({ container });
 
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
-      jest.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(false);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(false);
 
       modal.open();
 
@@ -158,8 +156,8 @@ describe("Modal", () => {
       const container = document.createElement("div");
       const modal = new Modal({ container });
 
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
-      jest.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
 
       modal.open();
 
@@ -169,7 +167,7 @@ describe("Modal", () => {
 
   describe("close", () => {
     it("removes frame and sets frame to null", () => {
-      const container = { appendChild: noop, removeChild: jest.fn() };
+      const container = { appendChild: noop, removeChild: vi.fn() };
       const modal = new Modal({ container });
 
       modal.open();
@@ -187,8 +185,8 @@ describe("Modal", () => {
       document.body.style.overflow = "visible";
       document.body.style.position = "static";
 
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
-      jest.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
 
       modal.open();
       modal.close();
@@ -201,8 +199,8 @@ describe("Modal", () => {
       const container = document.createElement("div");
       const modal = new Modal({ container });
 
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
-      jest.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIosWKWebview").mockReturnValue(true);
 
       modal.open();
 

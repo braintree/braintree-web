@@ -1,11 +1,9 @@
-"use strict";
-
-const Popup = require("../../../../../../../src/lib/frame-service/external/strategies/popup");
-const { mockWindowOpen } = require("../../../../../../helpers");
+import Popup from "../../../../../../../src/lib/frame-service/external/strategies/popup";
+import { mockWindowOpen } from "../../../../../../helpers";
 
 describe("Popup", () => {
   beforeEach(() => {
-    jest.spyOn(window, "open").mockImplementation(mockWindowOpen);
+    vi.spyOn(window, "open").mockImplementation(mockWindowOpen);
   });
 
   describe("Constructor", () => {
@@ -41,7 +39,7 @@ describe("Popup", () => {
       const popup = new Popup();
 
       popup._frame = {
-        focus: jest.fn(),
+        focus: vi.fn(),
       };
 
       popup.focus();
@@ -54,7 +52,7 @@ describe("Popup", () => {
     it("calls the frame close", () => {
       const popup = new Popup();
       const frame = {
-        close: jest.fn(),
+        close: vi.fn(),
       };
 
       popup._frame = frame;
@@ -107,7 +105,7 @@ describe("Popup", () => {
         closed: false,
       };
 
-      jest.spyOn(window, "open").mockReturnValue(fakeWindow);
+      vi.spyOn(window, "open").mockReturnValue(fakeWindow);
 
       popup = new Popup();
       popup.open();

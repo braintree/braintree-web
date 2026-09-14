@@ -1,8 +1,6 @@
-"use strict";
-
-const convertMethodsToError = require("../../../src/lib/convert-methods-to-error");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const { noop } = require("../../helpers");
+import convertMethodsToError from "../../../src/lib/convert-methods-to-error";
+import BraintreeError from "../../../src/lib/braintree-error";
+import { noop } from "../../helpers";
 
 describe("convertMethodsToError", () => {
   it("can convert an array of methods to throw an error", () => {

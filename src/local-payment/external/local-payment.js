@@ -1,24 +1,26 @@
-"use strict";
-
-var frameService = require("../../lib/frame-service/external");
-var BraintreeError = require("../../lib/braintree-error");
-var useMin = require("../../lib/use-min");
-var VERSION = process.env.npm_package_version;
-var INTEGRATION_TIMEOUT_MS =
-  require("../../lib/constants").INTEGRATION_TIMEOUT_MS;
-var analytics = require("../../lib/analytics");
-var methods = require("../../lib/methods");
-var convertMethodsToError = require("../../lib/convert-methods-to-error");
-var convertToBraintreeError = require("../../lib/convert-to-braintree-error");
-var ExtendedPromise = require("@braintree/extended-promise");
-var querystring = require("../../lib/querystring");
-var wrapPromise = require("@braintree/wrap-promise");
-var constants = require("./constants");
-var errors = require("../shared/errors");
-var assign = require("../../lib/assign").assign;
-var inIframe = require("../../lib/in-iframe");
-var isMobileDevice = require("../shared/browser-detection");
-var injectQrCode = require("./inject-qr-code");
+// @ts-nocheck
+import frameService from "../../lib/frame-service/external";
+import BraintreeError from "../../lib/braintree-error";
+import useMin from "../../lib/use-min";
+import { INTEGRATION_TIMEOUT_MS } from "../../lib/constants";
+import { ASSETS_URLS as CONSTANTS_ASSETS_URLS } from "../../lib/constants";
+const VERSION = __SDK_VERSION__;
+var ASSETS_URLS;
+if (process.env.BRAINTREE_JS_ENV === "development") {
+  ASSETS_URLS = CONSTANTS_ASSETS_URLS;
+}
+import analytics from "../../lib/analytics";
+import methods from "../../lib/methods";
+import convertMethodsToError from "../../lib/convert-methods-to-error";
+import convertToBraintreeError from "../../lib/convert-to-braintree-error";
+import ExtendedPromise from "@braintree/extended-promise";
+import querystring from "../../lib/querystring";
+import constants from "./constants";
+import errors from "../shared/errors";
+import { assign } from "../../lib/assign";
+import inIframe from "../../lib/in-iframe";
+import isMobileDevice from "../shared/browser-detection";
+import injectQrCode from "./inject-qr-code";
 
 var DEFAULT_WINDOW_WIDTH = 1282;
 var DEFAULT_WINDOW_HEIGHT = 720;
@@ -34,10 +36,21 @@ ExtendedPromise.suppressUnhandledPromiseMessage = true;
  */
 function LocalPayment(options) {
   this._client = options.client;
-  this._assetsUrl =
-    options.client.getConfiguration().gatewayConfiguration.assetsUrl +
-    "/web/" +
-    VERSION;
+  // removeIf(production)
+  if (
+    process.env.BRAINTREE_JS_ENV === "development" &&
+    ASSETS_URLS.development
+  ) {
+    this._assetsUrl = ASSETS_URLS.development;
+  } else {
+    // endRemoveIf(production)
+    this._assetsUrl =
+      options.client.getConfiguration().gatewayConfiguration.assetsUrl +
+      "/web/" +
+      VERSION;
+    // removeIf(production)
+  }
+  // endRemoveIf(production)
   this._isDebug = options.client.getConfiguration().isDebug;
   this._loadingFrameUrl =
     this._assetsUrl +
@@ -179,7 +192,8 @@ LocalPayment.prototype._initialize = function () {
  * @property {string} lineItems.unitTaxAmount Per-unit tax price of the item. Can include up to 2 decimal places. This value can't be negative.
  * @property {string} locale The BCP 47-formatted locale. PayPal supports a five-character code. For example, `en-DE`, `da-DK`, `he-IL`, `id-ID`, `ja-JP`, `no-NO`, `pt-BR`, `ru-RU`, `sv-SE`, `th-TH`, `zh-CN`, `zh-HK`, or `zh-TW`.
  * @property {string} customerServiceInstructions Instructions for how to contact the merchant's customer service. Maximum 4,000 characters.
- * @property {string} correlationId Used to correlate user sessions with server transactions.
+ * @property {string} correlationId @deprecated Use riskCorrelationId instead.
+ * @property {string} riskCorrelationId Used to correlate user sessions with server transactions.
  * @property {function} onPaymentStart A function that will be called with an object containing the `paymentId`. The `continueCallback` is not provided as it is not needed for this use case.
  */
 
@@ -219,8 +233,7 @@ LocalPayment.prototype._initialize = function () {
  * @public
  * @function
  * @param {LocalPayment~StartPaymentOptions|LocalPayment~StartPaymentPayUponInvoiceOptions|LocalPayment~StartPaymentSwishOptions} options Options for initiating the local payment payment flow.
- * @param {callback} callback The second argument, <code>data</code>, is a {@link LocalPayment~startPaymentPayload|startPaymentPayload}. If no callback is provided, the method will return a Promise that resolves with a {@link LocalPayment~startPaymentPayload|startPaymentPayload}.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise<LocalPayment~startPaymentPayload>} Returns a promise that resolves with a {@link LocalPayment~startPaymentPayload|startPaymentPayload}.
  * @example
  * localPaymentInstance.startPayment({
  *   paymentType: 'ideal',
@@ -279,7 +292,7 @@ LocalPayment.prototype._initialize = function () {
  *   }],
  *   phone: '6912345678',
  *   phoneCountryCode: '49',
- *   correlationId: correlationId,
+ *   riskCorrelationId: riskCorrelationId,
  *   onPaymentStart: function (data) {
  *     // NOTE: It is critical here to store data.paymentId on your server
  *     //       so it can be mapped to a webhook sent by Braintree once the
@@ -534,6 +547,15 @@ LocalPayment.prototype.startPayment = function (options) {
     return Promise.reject(missingError);
   }
 
+  // we are in the process of renaming `correlationId` to `riskCorrelationId`
+  // to align with other public APIs. until `correlationId` is fully unsupported,
+  // we fall back to it if `riskCorrelationId` isn't provided,
+  // ultimately falling back to the client's session id, mirroring the data collector's fraudnet fallback.
+  options.riskCorrelationId =
+    options.riskCorrelationId ||
+    options.correlationId ||
+    self._client.getConfiguration().analyticsMetadata.sessionId;
+
   if (
     options.paymentType &&
     options.paymentType.toLowerCase() === "swish" &&
@@ -572,6 +594,7 @@ LocalPayment.prototype.startPayment = function (options) {
     blikOptions: options.blikOptions,
     city: address.locality,
     correlationId: options.correlationId,
+    riskCorrelationId: options.riskCorrelationId,
     countryCode: address.countryCode,
     currencyIsoCode: options.currencyCode,
     discountAmount: options.discountAmount,
@@ -685,10 +708,24 @@ LocalPayment.prototype.startPayment = function (options) {
       }
     );
 
+    self._popupSawResume = false;
     self._frameService.open(
       {
         width: windowOptions.width || DEFAULT_WINDOW_WIDTH,
         height: windowOptions.height || DEFAULT_WINDOW_HEIGHT,
+        onSuspend: function () {
+          analytics.sendEvent(
+            self._client,
+            self._paymentType + ".local-payment.popup.suspended"
+          );
+        },
+        onResume: function () {
+          self._popupSawResume = true;
+          analytics.sendEvent(
+            self._client,
+            self._paymentType + ".local-payment.popup.resumed"
+          );
+        },
       },
       self._startPaymentCallback
     );
@@ -861,18 +898,19 @@ LocalPayment.prototype._redirectToPaymentResource = function (redirectUrl) {
  * @param {string} params.btLpToken The token representing the local payment. Aliased to `token` if `btLpToken` is not present.
  * @param {string} params.btLpPaymentId The payment id for the local payment. Aliased to `paymentId` if `btLpPaymentId` is not present.
  * @param {string} params.btLpPayerId The payer id for the local payment. Aliased to `PayerID` if `btLpPayerId` is not present.
- * @param {callback} [callback] The second argument, <code>data</code>, is a {@link LocalPayment~startPaymentPayload|startPaymentPayload}. If no callback is provided, the method will return a Promise that resolves with a {@link LocalPayment~startPaymentPayload|startPaymentPayload}.
  * @example
- * localPaymentInstance.tokenize().then(function (payload) {
+ * try {
+ *   var payload = await localPaymentInstance.tokenize();
  *   // send payload.nonce to your server
- * }).catch(function (err) {
+ * } catch (err) {
  *   // handle tokenization error
- * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * };
+ * @returns {(Promise<startPaymentPayload>)} Returns a promise that resolves with a {@link LocalPayment~startPaymentPayload|startPaymentPayload}.
  */
-LocalPayment.prototype.tokenize = function (params) {
+LocalPayment.prototype.tokenize = async function (params) {
   var self = this;
   var client = this._client;
+  var payload, response;
 
   params = params || querystring.parse();
 
@@ -882,73 +920,66 @@ LocalPayment.prototype.tokenize = function (params) {
   }
 
   if (params.c || params.wasCanceled) {
-    return Promise.reject(
-      new BraintreeError({
-        type: errors.LOCAL_PAYMENT_CANCELED.type,
-        code: errors.LOCAL_PAYMENT_CANCELED.code,
-        message: errors.LOCAL_PAYMENT_CANCELED.message,
-        details: {
-          originalError: {
-            errorcode: params.errorcode,
-            token: params.btLpToken,
-          },
+    throw new BraintreeError({
+      type: errors.LOCAL_PAYMENT_CANCELED.type,
+      code: errors.LOCAL_PAYMENT_CANCELED.code,
+      message: errors.LOCAL_PAYMENT_CANCELED.message,
+      details: {
+        originalError: {
+          errorcode: params.errorcode,
+          token: params.btLpToken,
         },
-      })
-    );
+      },
+    });
   }
   if (params.errorcode) {
-    return Promise.reject(
-      new BraintreeError({
-        type: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.type,
-        code: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.code,
-        message: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.message,
-        details: {
-          originalError: {
-            errorcode: params.errorcode,
-            token: params.btLpToken,
-          },
+    throw new BraintreeError({
+      type: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.type,
+      code: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.code,
+      message: errors.LOCAL_PAYMENT_START_PAYMENT_FAILED.message,
+      details: {
+        originalError: {
+          errorcode: params.errorcode,
+          token: params.btLpToken,
         },
-      })
-    );
+      },
+    });
   }
 
-  return client
-    .request({
+  try {
+    response = await client.request({
       endpoint: "payment_methods/paypal_accounts",
       method: "post",
       data: this._formatTokenizeData(params),
-    })
-    .then(function (response) {
-      var payload = self._formatTokenizePayload(response);
+    });
 
-      if (window.popupBridge) {
-        analytics.sendEvent(
-          client,
-          self._paymentType + ".local-payment.tokenization.success-popupbridge"
-        );
-      } else {
-        analytics.sendEvent(
-          client,
-          self._paymentType + ".local-payment.tokenization.success"
-        );
-      }
+    payload = self._formatTokenizePayload(response);
 
-      return payload;
-    })
-    .catch(function (err) {
+    if (window.popupBridge) {
       analytics.sendEvent(
         client,
-        self._paymentType + ".local-payment.tokenization.failed"
+        self._paymentType + ".local-payment.tokenization.success-popupbridge"
       );
+    } else {
+      analytics.sendEvent(
+        client,
+        self._paymentType + ".local-payment.tokenization.success"
+      );
+    }
 
-      return Promise.reject(
-        convertToBraintreeError(err, {
-          type: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.type,
-          code: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.code,
-          message: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.message,
-        })
-      );
+    return payload;
+  } catch (err) {
+    analytics.sendEvent(
+      client,
+      self._paymentType + ".local-payment.tokenization.failed"
+    );
+
+    throw convertToBraintreeError(err, {
+      type: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.type,
+      code: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.code,
+      message: errors.LOCAL_PAYMENT_TOKENIZATION_FAILED.message,
     });
+  }
 };
 
 /**
@@ -986,8 +1017,17 @@ LocalPayment.prototype._createStartPaymentCallback = function (
   var self = this;
   var client = this._client;
 
-  return function (err, params) {
+  return async function (err, params) {
     self._authorizationInProgress = false;
+
+    if (self._popupSawResume && !err && params) {
+      analytics.sendEvent(
+        client,
+        self._paymentType + ".local-payment.popup.recovered"
+      );
+    }
+    self._popupSawResume = false;
+
     if (err) {
       if (err.code === "FRAME_SERVICE_FRAME_CLOSED") {
         if (params && params.errorcode === "processing_error") {
@@ -1031,7 +1071,7 @@ LocalPayment.prototype._createStartPaymentCallback = function (
       if (!window.popupBridge) {
         self._frameService.redirect(self._loadingFrameUrl);
       }
-      self
+      await self
         .tokenize(params)
         .then(resolve)
         .catch(reject)
@@ -1383,14 +1423,11 @@ function hasMissingOption(options) {
 /**
  * Cleanly remove anything set up by {@link module:braintree-web/local-payment.create|create}.
  * @public
- * @param {callback} [callback] Called on completion.
  * @example
- * localPaymentInstance.teardown();
- * @example <caption>With callback</caption>
- * localPaymentInstance.teardown(function () {
- *   // teardown is complete
+ * localPaymentInstance.teardown().then(() => {
+ *   //teardown is complete
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  */
 LocalPayment.prototype.teardown = function () {
   var self = this;
@@ -1406,4 +1443,4 @@ LocalPayment.prototype.teardown = function () {
   return Promise.resolve();
 };
 
-module.exports = wrapPromise.wrapPrototype(LocalPayment);
+export default LocalPayment;

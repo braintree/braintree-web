@@ -1,16 +1,14 @@
-"use strict";
-
-const PaymentReady = require("../../../src/payment-ready/payment-ready");
-const constants = require("../../../src/payment-ready/constants");
-const analytics = require("../../../src/lib/analytics");
-const assign = require("../../../src/lib/assign").assign;
+import PaymentReady from "../../../src/payment-ready/payment-ready";
+import constants from "../../../src/payment-ready/constants";
+import analytics from "../../../src/lib/analytics";
+import { assign } from "../../../src/lib/assign";
 
 // Mock for analytics.js
-jest.mock("../../../src/lib/analytics", () => {
-  return {
-    sendEvent: jest.fn().mockResolvedValue({}),
-    sendEventPlus: jest.fn().mockResolvedValue({}),
-  };
+vi.mock("../../../src/lib/analytics", () => {
+  const sendEvent = vi.fn().mockResolvedValue({});
+  const sendEventPlus = vi.fn().mockResolvedValue({});
+
+  return { default: { sendEvent, sendEventPlus }, sendEvent, sendEventPlus };
 });
 
 describe("PaymentReady.prototype.sendPresentedEvent", () => {
@@ -23,10 +21,10 @@ describe("PaymentReady.prototype.sendPresentedEvent", () => {
   let mockClient, mockPresentedEventOptions, paymentReadyInstance;
 
   beforeEach(() => {
-    consoleLogMock = jest.spyOn(console, "warn").mockImplementation(() => {});
+    consoleLogMock = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     mockClient = {
-      request: jest.fn(),
+      request: vi.fn(),
     };
 
     mockPresentedEventOptions = {
@@ -44,13 +42,13 @@ describe("PaymentReady.prototype.sendPresentedEvent", () => {
       useDeferredClient: false,
     });
 
-    jest.spyOn(console, "log").mockImplementation(() => {}); // Mock console.log
-    jest.clearAllMocks(); // Clear previous mock calls
+    vi.spyOn(console, "log").mockImplementation(() => {}); // Mock console.log
+    vi.clearAllMocks(); // Clear previous mock calls
   });
 
   afterEach(() => {
     consoleLogMock.mockRestore();
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("should log a message and return if paymentReadySessionId is undefined", () => {

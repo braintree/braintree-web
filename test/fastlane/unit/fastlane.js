@@ -1,12 +1,12 @@
-"use strict";
+vi.mock("../../../src/lib/assets");
 
-jest.mock("../../../src/lib/assets");
+import { fake } from "../../helpers";
+import assetFns from "../../../src/lib/assets";
+import _e15 from "../../../src/fastlane/";
 
-const { fake } = require("../../helpers");
-let assetFns = require("../../../src/lib/assets");
-const { create } = require("../../../src/fastlane/");
-const errors = require("../../../src/fastlane/errors");
-const BraintreeError = require("../../../src/lib/braintree-error");
+const { create } = _e15;
+
+import errors from "../../../src/fastlane/errors";
 const VERSION = process.env.npm_package_version;
 
 describe("fastlane", () => {
@@ -22,7 +22,7 @@ describe("fastlane", () => {
       metadata: { localeUrl: "cdn.com/locales/" },
     });
 
-    mockFastlaneCreate = jest.fn();
+    mockFastlaneCreate = vi.fn();
     window.braintree = {
       fastlane: {
         create: mockFastlaneCreate,
@@ -31,30 +31,7 @@ describe("fastlane", () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("works with a callback when provided", (done) => {
-    expect.assertions(1);
-    const inputDeviceData = {
-      someStuff: true,
-    };
-
-    const expectedFastlaneInputs = {
-      client: testContext.client,
-      deviceData: inputDeviceData,
-    };
-
-    create(expectedFastlaneInputs, function () {
-      expect(assetFns.loadFastlane).toBeCalledWith({
-        client: testContext.client,
-        deviceData: inputDeviceData,
-        minified: false,
-        btSdkVersion: VERSION,
-        platform: "BT",
-      });
-      done();
-    });
+    vi.clearAllMocks();
   });
 
   it("loads minified assets in production", async () => {
@@ -180,18 +157,16 @@ describe("fastlane", () => {
 
   it("fails if fastlane create fails", async () => {
     const mockErrorMessage = "omg it broke";
+    const originalError = new Error(mockErrorMessage);
 
-    assetFns.loadFastlane.mockRejectedValue(new Error(mockErrorMessage));
+    assetFns.loadFastlane.mockRejectedValue(originalError);
 
-    const expectedError = new BraintreeError({
+    await expect(create({ client: testContext.client })).rejects.toMatchObject({
       type: errors.FASTLANE_SDK_LOAD_ERROR.type,
       code: errors.FASTLANE_SDK_LOAD_ERROR.code,
-      message: mockErrorMessage,
+      message: errors.FASTLANE_SDK_LOAD_ERROR.message,
+      details: { originalError: originalError },
     });
-
-    await expect(create({ client: testContext.client })).rejects.toEqual(
-      expectedError
-    );
   });
 
   it("uses window.braintree._fastlane.create when available to avoid overwrite issue", async () => {
@@ -201,7 +176,7 @@ describe("fastlane", () => {
 
     const mockFastlaneInstance = { id: "fastlane-instance-123" };
 
-    const mockUnderscoreFastlaneCreate = jest.fn();
+    const mockUnderscoreFastlaneCreate = vi.fn();
     mockUnderscoreFastlaneCreate.mockResolvedValue(mockFastlaneInstance);
     window.braintree._fastlane = {
       create: mockUnderscoreFastlaneCreate,

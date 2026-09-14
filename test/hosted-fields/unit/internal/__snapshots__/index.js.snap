@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`internal initialize calls FieldComponent to generate the input 1`] = `
+exports[`internal > initialize > calls FieldComponent to generate the input 1`] = `
 <body>
   <form
     action="#"

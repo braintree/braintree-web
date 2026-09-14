@@ -1,6 +1,4 @@
-"use strict";
-
-const formatCardRequestData = require("../../../../src/hosted-fields/internal/format-card-request-data");
+import formatCardRequestData from "../../../../src/hosted-fields/internal/format-card-request-data";
 
 describe("formatCardRequestData", () => {
   it("does not include absent values", () => {

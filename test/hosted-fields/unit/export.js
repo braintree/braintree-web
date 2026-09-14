@@ -1,7 +1,5 @@
-"use strict";
-
-const hostedFields = require("../../../src/hosted-fields");
-const { version: packageVersion } = require("../../../package.json");
+import hostedFields from "../../../src/hosted-fields";
+import { version as packageVersion } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

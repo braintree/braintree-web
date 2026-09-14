@@ -1,6 +1,4 @@
-"use strict";
-
-const { _assign, assign } = require("../../../src/lib/assign");
+import { _assign, assign } from "../../../src/lib/assign";
 
 describe("assign", () => {
   describe.each([

@@ -1,7 +1,5 @@
-"use strict";
-
-const client = require("../../../src/client");
-const { version: packageVersion } = require("../../../package.json");
+import client from "../../../src/client";
+import { version as packageVersion } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

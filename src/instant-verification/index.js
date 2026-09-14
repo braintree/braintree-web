@@ -1,15 +1,17 @@
-"use strict";
-
+// @ts-nocheck
 /** @module braintree-web/instant-verification */
 
-var basicComponentVerification = require("../lib/basic-component-verification");
-var BraintreeError = require("../lib/braintree-error");
-var createAssetsUrl = require("../lib/create-assets-url");
-var createDeferredClient = require("../lib/create-deferred-client");
-var errors = require("./errors");
-var InstantVerification = require("./instant-verification");
-var VERSION = process.env.npm_package_version;
-var wrapPromise = require("@braintree/wrap-promise");
+import basicComponentVerification from "../lib/basic-component-verification";
+import BraintreeError from "../lib/braintree-error";
+import createAssetsUrl from "../lib/create-assets-url";
+import createDeferredClient from "../lib/create-deferred-client";
+import errors from "./errors";
+import InstantVerification from "./instant-verification";
+/**
+ * @description The current version of the SDK, i.e. `{@pkg version}`.
+ * @type {string}
+ */
+const VERSION = __SDK_VERSION__;
 
 /**
  * @static
@@ -17,8 +19,7 @@ var wrapPromise = require("@braintree/wrap-promise");
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {callback} [callback] When provided, will be used instead of a promise. First argument is an error object, second is an instance of {@link InstantVerification}.
- * @returns {Promise<InstantVerification|error>} Returns the InstantVerification instance.
+ * @returns {Promise<InstantVerification|error>} Returns a Promise that resolves with the InstantVerification instance.
  * @example
  * braintree.instantVerification.create({
  *   client: clientInstance
@@ -55,20 +56,14 @@ function create(options) {
         options.client.getConfiguration().gatewayConfiguration.openBanking;
 
       if (!instantVerification) {
-        return Promise.reject(
-          new BraintreeError(errors.INSTANT_VERIFICATION_NOT_ENABLED)
-        );
+        throw new BraintreeError(errors.INSTANT_VERIFICATION_NOT_ENABLED);
       }
 
       return new InstantVerification(options);
     });
 }
 
-module.exports = {
-  create: wrapPromise(create),
-  /**
-   * @description The current version of the SDK, i.e. `{@pkg version}`.
-   * @type {string}
-   */
-  VERSION: VERSION,
+export default {
+  create,
+  VERSION,
 };

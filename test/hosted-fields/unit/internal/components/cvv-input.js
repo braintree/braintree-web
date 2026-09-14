@@ -1,9 +1,5 @@
-"use strict";
-
-const {
-  BaseInput,
-} = require("../../../../../src/hosted-fields/internal/components/base-input");
-const { createInput } = require("../../helpers");
+import { BaseInput } from "../../../../../src/hosted-fields/internal/components/base-input";
+import { createInput } from "../../helpers";
 
 describe("CVV Input", () => {
   let testContext;
@@ -38,9 +34,9 @@ describe("CVV Input", () => {
       it("sets the maxLength to 4 if a custom maxlength is provided but is greater than 4", () => {
         let input;
 
-        jest
-          .spyOn(BaseInput.prototype, "getConfiguration")
-          .mockReturnValue({ maxlength: 5 });
+        vi.spyOn(BaseInput.prototype, "getConfiguration").mockReturnValue({
+          maxlength: 5,
+        });
 
         input = createInput("cvv", ["number"]);
 
@@ -50,9 +46,9 @@ describe("CVV Input", () => {
       it("sets the maxLength to custom maxlength if one is provided and is less than 4", () => {
         let input;
 
-        jest
-          .spyOn(BaseInput.prototype, "getConfiguration")
-          .mockReturnValue({ maxlength: 3 });
+        vi.spyOn(BaseInput.prototype, "getConfiguration").mockReturnValue({
+          maxlength: 3,
+        });
 
         input = createInput("cvv", ["number"]);
 
@@ -63,7 +59,7 @@ describe("CVV Input", () => {
 
   describe("setInputState", () => {
     beforeEach(() => {
-      jest.spyOn(testContext.input.formatter, "setPattern");
+      vi.spyOn(testContext.input.formatter, "setPattern");
     });
 
     it("sets the maxlength on possibleCardTypes change", () => {
@@ -85,13 +81,13 @@ describe("CVV Input", () => {
     it("does not set the maxlength on possibleCardTypes change if a custom maxlength is set", () => {
       let input;
 
-      jest
-        .spyOn(BaseInput.prototype, "getConfiguration")
-        .mockReturnValue({ maxlength: 2 });
+      vi.spyOn(BaseInput.prototype, "getConfiguration").mockReturnValue({
+        maxlength: 2,
+      });
 
       input = createInput("cvv", ["number"]);
 
-      jest.spyOn(input.formatter, "setPattern");
+      vi.spyOn(input.formatter, "setPattern");
 
       input.model.set("possibleCardTypes", [{ code: { size: 6 } }]);
 
@@ -107,7 +103,7 @@ describe("CVV Input", () => {
     it("accounts for masked value if masking is being used", () => {
       const input = createInput("cvv", ["number"]);
 
-      jest.spyOn(input.formatter, "setPattern");
+      vi.spyOn(input.formatter, "setPattern");
 
       input.shouldMask = true;
       input.hiddenMaskedValue = "1234";

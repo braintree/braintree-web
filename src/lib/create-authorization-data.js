@@ -1,7 +1,4 @@
-"use strict";
-
-var atob = require("../lib/vendor/polyfill").atob;
-var CLIENT_API_URLS = require("../lib/constants").CLIENT_API_URLS;
+import { CLIENT_API_URLS } from "../lib/constants";
 
 function _isTokenizationKey(str) {
   return /^[a-zA-Z0-9]+_[a-zA-Z0-9]+_[a-zA-Z0-9_]+$/.test(str);
@@ -39,6 +36,7 @@ function createAuthorizationData(authorization) {
     data.environment = parsedClientToken.environment;
     data.attrs.authorizationFingerprint =
       parsedClientToken.authorizationFingerprint;
+    data.paymentMethodIdJwt = parsedClientToken.paymentMethodIdJwt;
     data.configUrl = parsedClientToken.configUrl;
     data.graphQL = parsedClientToken.graphQL;
   }
@@ -46,4 +44,4 @@ function createAuthorizationData(authorization) {
   return data;
 }
 
-module.exports = createAuthorizationData;
+export default createAuthorizationData;

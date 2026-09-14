@@ -77,8 +77,11 @@ declare module "braintree-web" {
 
   interface ThreeDSecureVerifyPayload {
     nonce: string;
-    liabilityShifted: boolean;
-    liabilityShiftPossible: boolean;
+    threeDSecureInfo: {
+      liabilityShifted: boolean;
+      liabilityShiftPossible: boolean;
+      [key: string]: unknown;
+    };
     [key: string]: unknown;
   }
 
@@ -159,7 +162,6 @@ declare module "braintree-web" {
   // Venmo instance interface
   interface VenmoInstance {
     isBrowserSupported(): boolean;
-    hasTokenizationResult(): boolean;
     tokenize(): Promise<VenmoTokenizePayload>;
     cancelTokenization(): Promise<void>;
     teardown(): Promise<void>;
@@ -203,7 +205,7 @@ declare module "braintree-web" {
       allowDesktop?: boolean;
       allowDesktopWebLogin?: boolean;
       mobileWebFallBack?: boolean;
-      paymentMethodUsage?: "single_use" | "multi_use";
+      paymentMethodUsage: "single_use" | "multi_use";
       [key: string]: unknown;
     }): Promise<VenmoInstance>;
   }

@@ -1,6 +1,4 @@
-"use strict";
-
-module.exports = function inIframe(win) {
+export default function inIframe(win) {
   win = win || window;
 
   try {
@@ -9,4 +7,4 @@ module.exports = function inIframe(win) {
   } catch (err) {
     return true;
   }
-};
+}

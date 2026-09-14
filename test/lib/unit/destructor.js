@@ -1,7 +1,5 @@
-"use strict";
-
-const Destructor = require("../../../src/lib/destructor");
-const { noop } = require("../../helpers");
+import Destructor from "../../../src/lib/destructor";
+import { noop } from "../../helpers";
 
 describe("Destructor", () => {
   describe("constructor", () => {
@@ -35,28 +33,30 @@ describe("Destructor", () => {
   });
 
   describe("teardown", () => {
-    it("empties collection of teardown functions", (done) => {
-      const destructor = new Destructor();
+    it("empties collection of teardown functions", () =>
+      new Promise((resolve) => {
+        const destructor = new Destructor();
 
-      destructor.registerFunctionForTeardown(noop);
-      destructor.registerFunctionForTeardown(noop);
+        destructor.registerFunctionForTeardown(noop);
+        destructor.registerFunctionForTeardown(noop);
 
-      destructor.teardown(() => {
-        expect(destructor._teardownRegistry).toEqual([]);
+        destructor.teardown(() => {
+          expect(destructor._teardownRegistry).toEqual([]);
 
-        done();
-      });
-    });
+          resolve();
+        });
+      }));
 
-    it("calls supplied callback", (done) => {
-      const destructor = new Destructor();
+    it("calls supplied callback", () =>
+      new Promise((resolve) => {
+        const destructor = new Destructor();
 
-      destructor.teardown((err) => {
-        expect(err).toBeFalsy();
+        destructor.teardown((err) => {
+          expect(err).toBeFalsy();
 
-        done();
-      });
-    });
+          resolve();
+        });
+      }));
 
     it("calls supplied callback with an error if given a synchronous function", () => {
       const destructor = new Destructor();
@@ -86,30 +86,31 @@ describe("Destructor", () => {
       });
     });
 
-    it("calls supplied callback with an error when calling teardown twice if already in progress", (done) => {
-      const destructor = new Destructor();
-      let firstWasCalled = false;
+    it("calls supplied callback with an error when calling teardown twice if already in progress", () =>
+      new Promise((resolve) => {
+        const destructor = new Destructor();
+        let firstWasCalled = false;
 
-      destructor.registerFunctionForTeardown((cb) => {
-        setTimeout(cb, 10);
-      });
-
-      setTimeout(() => {
-        destructor.teardown((err) => {
-          expect(err).toBeNull();
-          firstWasCalled = true;
+        destructor.registerFunctionForTeardown((cb) => {
+          setTimeout(cb, 10);
         });
-      }, 0);
-      setTimeout(() => {
-        destructor.teardown((err) => {
-          expect(err).toBeInstanceOf(Error);
 
-          setTimeout(() => {
-            expect(firstWasCalled).toBe(true);
-            done();
-          }, 11);
-        });
-      }, 0);
-    });
+        setTimeout(() => {
+          destructor.teardown((err) => {
+            expect(err).toBeNull();
+            firstWasCalled = true;
+          });
+        }, 0);
+        setTimeout(() => {
+          destructor.teardown((err) => {
+            expect(err).toBeInstanceOf(Error);
+
+            setTimeout(() => {
+              expect(firstWasCalled).toBe(true);
+              resolve();
+            }, 11);
+          });
+        }, 0);
+      }));
   });
 });

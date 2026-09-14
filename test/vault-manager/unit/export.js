@@ -1,7 +1,8 @@
-"use strict";
+import _e0 from "../../../src/vault-manager";
 
-const { VERSION, create } = require("../../../src/vault-manager");
-const { version: packageVersion } = require("../../../package.json");
+const { VERSION, create } = _e0;
+
+import { version as packageVersion } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

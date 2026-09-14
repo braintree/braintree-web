@@ -1,11 +1,11 @@
-"use strict";
-
-var isAndroid = require("@braintree/browser-detection/is-android");
-var isChromeOS = require("@braintree/browser-detection/is-chrome-os");
-var isIos = require("@braintree/browser-detection/is-ios");
-var isChrome = require("@braintree/browser-detection/is-chrome");
-var isSafari = require("@braintree/browser-detection/is-safari");
-var isIosSafari = require("@braintree/browser-detection/is-ios-safari");
+import isAndroid from "@braintree/browser-detection/is-android";
+import isChromeOS from "@braintree/browser-detection/is-chrome-os";
+import isIos from "@braintree/browser-detection/is-ios";
+import isChrome from "@braintree/browser-detection/is-chrome";
+import isSafari from "@braintree/browser-detection/is-safari";
+import isIosSafari from "@braintree/browser-detection/is-ios-safari";
+import isFirefox from "@braintree/browser-detection/is-firefox";
+import isIosWebview from "@braintree/browser-detection/is-ios-webview";
 
 function hasSoftwareKeyboard() {
   return isAndroid() || isChromeOS() || isIos();
@@ -15,14 +15,26 @@ function isChromeIos() {
   return isChrome() && isIos();
 }
 
-module.exports = {
-  isAndroid: isAndroid,
-  isChromeOS: isChromeOS,
-  isChromeIos: isChromeIos,
-  isFirefox: require("@braintree/browser-detection/is-firefox"),
-  isIos: isIos,
-  isIosWebview: require("@braintree/browser-detection/is-ios-webview"),
-  isSafari: isSafari,
-  isIosSafari: isIosSafari,
-  hasSoftwareKeyboard: hasSoftwareKeyboard,
+export {
+  isAndroid,
+  isChromeOS,
+  isChromeIos,
+  isFirefox,
+  isIos,
+  isIosWebview,
+  isSafari,
+  isIosSafari,
+  hasSoftwareKeyboard,
+};
+
+export default {
+  isAndroid,
+  isChromeOS,
+  isChromeIos,
+  isFirefox,
+  isIos,
+  isIosWebview,
+  isSafari,
+  isIosSafari,
+  hasSoftwareKeyboard,
 };

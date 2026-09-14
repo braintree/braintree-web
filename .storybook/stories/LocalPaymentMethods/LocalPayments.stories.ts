@@ -3,6 +3,11 @@ import type { Meta, StoryObj } from "@storybook/html";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
 import "./localPayments.css";
+import {
+  ILocalPaymentInstance,
+  ILocalPaymentStartOptions,
+  ILocalPaymentTokenizePayload,
+} from "../../types";
 
 const meta: Meta = {
   title: "Braintree/Local Payment Methods",
@@ -30,6 +35,42 @@ const createLocalPaymentForm = (
   paymentType: string
 ): HTMLElement => {
   const container = document.createElement("div");
+  const isSwishQr = paymentType === "swishQr";
+  const currencyBlock = isSwishQr
+    ? `
+        <div class="shared-form-group">
+          <label class="shared-label">Currency</label>
+          <select id="currency" class="shared-select">
+            <option value="SEK" selected>SEK</option>
+          </select>
+        </div>
+        <div class="shared-form-group">
+          <label class="shared-label">Country Code</label>
+          <select id="country-code" class="shared-select">
+            <option value="SE" selected>Sweden (SE)</option>
+          </select>
+        </div>
+        <div id="swish-qr-container" class="swish-qr-container" style="min-height:128px;margin:12px 0;"></div>
+      `
+    : `
+        <div class="shared-form-group">
+          <label class="shared-label">Currency</label>
+          <select id="currency" class="shared-select">
+            <option value="EUR">EUR</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+
+        <div class="shared-form-group">
+          <label class="shared-label">Country Code</label>
+          <select id="country-code" class="shared-select">
+            <option value="NL">Netherlands (NL)</option>
+            <option value="DE">Germany (DE)</option>
+            <option value="IT">Italy (IT)</option>
+          </select>
+        </div>
+      `;
+
   container.innerHTML = `
     <div class="shared-container">
       <h2 class="local-payment-title">${title}</h2>
@@ -48,23 +89,7 @@ const createLocalPaymentForm = (
           <label class="shared-label">Amount</label>
           <input type="text" id="amount" value="10.00" class="shared-input" />
         </div>
-
-        <div class="shared-form-group">
-          <label class="shared-label">Currency</label>
-          <select id="currency" class="shared-select">
-            <option value="EUR">EUR</option>
-            <option value="USD">USD</option>
-          </select>
-        </div>
-
-        <div class="shared-form-group">
-          <label class="shared-label">Country Code</label>
-          <select id="country-code" class="shared-select">
-            <option value="NL">Netherlands (NL)</option>
-            <option value="DE">Germany (DE)</option>
-            <option value="IT">Italy (IT)</option>
-          </select>
-        </div>
+        ${currencyBlock}
       `
           : ""
       }
@@ -84,7 +109,8 @@ const createLocalPaymentForm = (
 
 const initializeLocalPayments = (
   container: HTMLElement,
-  paymentType: string
+  paymentType: string,
+  useRedirectUrl = false
 ): void => {
   const authorization = getAuthorizationToken();
   const paymentButton = container.querySelector(
@@ -100,23 +126,35 @@ const initializeLocalPayments = (
     "#country-code"
   ) as HTMLSelectElement;
 
-  let localPaymentInstance;
+  let localPaymentInstance: ILocalPaymentInstance;
 
   // SDK scripts are already loaded by createSimpleBraintreeStory
-  window.braintree.client
-    .create({
+  window
+    .braintree!.client.create({
       authorization: authorization,
     })
     .then((clientInstance) => {
-      return window.braintree.localPayment.create({
-        client: clientInstance,
-      });
+      return window.braintree!.localPayment.create(
+        useRedirectUrl
+          ? {
+              client: clientInstance,
+              redirectUrl: window.location.href,
+            }
+          : {
+              client: clientInstance,
+            }
+      );
     })
     .then((localPayment) => {
       localPaymentInstance = localPayment;
+      // Test-only: Playwright api-coverage tests (see .storybook/tests/local-payment/api-coverage.test.ts)
+      window.__btLocalPayment = localPayment;
       loadingDiv.style.display = "none";
       paymentButton.disabled = false;
-      paymentButton.textContent = `Pay with ${paymentType}`;
+      paymentButton.textContent =
+        paymentType === "swishQr"
+          ? "Pay with Swish (QR)"
+          : `Pay with ${paymentType}`;
     })
     .catch((error) => {
       loadingDiv.style.display = "none";
@@ -126,13 +164,16 @@ const initializeLocalPayments = (
       );
     });
 
-  const showError = (resultDiv, message) => {
+  const showError = (resultDiv: HTMLElement, message: string) => {
     resultDiv.className =
       "shared-result shared-result--error shared-result--visible";
     resultDiv.innerHTML = `<strong>Error:</strong> ${message}`;
   };
 
-  const showSuccess = (resultDiv, payload) => {
+  const showSuccess = (
+    resultDiv: HTMLElement,
+    payload: ILocalPaymentTokenizePayload
+  ) => {
     resultDiv.className =
       "shared-result shared-result--success shared-result--visible";
     resultDiv.innerHTML = `
@@ -154,10 +195,34 @@ const initializeLocalPayments = (
       | string
       | Record<string, string>
       | boolean
+      | Record<string, unknown>
       | ((_data: unknown, _start: () => void) => void)
     > = {};
 
-    if (paymentType !== "crypto") {
+    if (paymentType === "swishQr") {
+      paymentOptions.paymentType = "swish";
+      paymentOptions.paymentTypeCountryCode = "SE";
+      paymentOptions.amount = amountInput.value;
+      paymentOptions.currencyCode = currencySelect.value;
+      paymentOptions.address = {
+        countryCode: countrySelect.value,
+      };
+      paymentOptions.givenName = "John";
+      paymentOptions.surname = "Doe";
+      paymentOptions.email = "payer@example.com";
+      paymentOptions.phone = "1234567890";
+      paymentOptions.fallback = {
+        url: "https://your-domain.com/page-to-complete-checkout",
+        buttonText: "Complete Payment",
+      };
+      paymentOptions.swishOptions = {
+        requestQrCode: true,
+        qrContainer: "#swish-qr-container",
+      };
+      paymentOptions.onPaymentStart = function () {
+        // Swish QR path receives { paymentId } only; no start callback.
+      };
+    } else if (paymentType !== "crypto") {
       paymentOptions.paymentType = paymentType.toLowerCase();
       paymentOptions.amount = amountInput.value;
       paymentOptions.currencyCode = currencySelect.value;
@@ -204,21 +269,27 @@ const initializeLocalPayments = (
 
     if (paymentType !== "crypto") {
       localPaymentInstance
-        .startPayment(paymentOptions)
+        .startPayment(paymentOptions as ILocalPaymentStartOptions)
         .then(function (payload) {
-          // Submit payload.nonce to your server
-          console.log("nonce", payload.nonce);
+          if (payload && typeof payload.nonce === "string") {
+            console.log("nonce", payload.nonce);
+            showSuccess(resultDiv, payload);
+          }
           paymentButton.disabled = false;
-          paymentButton.textContent = `Pay with ${paymentType}`;
-          showSuccess(resultDiv, payload);
+          paymentButton.textContent =
+            paymentType === "swishQr"
+              ? "Pay with Swish (QR)"
+              : `Pay with ${paymentType}`;
         })
         .catch((error) => {
           console.error(error);
         });
     } else {
-      localPaymentInstance.startPayment(paymentOptions).catch((error) => {
-        console.error(error);
-      });
+      localPaymentInstance
+        .startPayment(paymentOptions as ILocalPaymentStartOptions)
+        .catch((error) => {
+          console.error(error);
+        });
     }
   });
 };
@@ -257,6 +328,52 @@ export const payWithCrypto: StoryObj = {
   ),
   args: {
     // Example args that could be used to customize the payment flow
+    debugMode: false,
+  },
+};
+
+/**
+ * Same as iDEAL, but `localPayment.create` uses `redirectUrl: window.location.href` so
+ * a return URL with `?token=…` (or `wasCanceled`) can drive `index.js` tokenize-on-create.
+ * Used for integration / Playwright `index.js` coverage; see api-coverage tests.
+ */
+export const iDEALRedirect: StoryObj = {
+  render: createSimpleBraintreeStory(
+    (container) => {
+      const formContainer = createLocalPaymentForm(
+        "iDEAL Local Payment (full-page redirect return)",
+        "iDEAL with create({ redirectUrl }) to support completing local payment on return; query string may include token for tokenization on load.",
+        "ideal"
+      );
+      container.appendChild(formContainer);
+      initializeLocalPayments(formContainer, "iDEAL", true);
+    },
+    ["client.min.js", "local-payment.min.js"]
+  ),
+  args: {
+    debugMode: false,
+  },
+};
+
+/**
+ * Desktop Swish with `requestQrCode` so `startPayment` injects a QR image via
+ * `inject-qr-code.js` when `local_payments/create` returns `qrDetails.qrImage`.
+ * Used for integration tests; requires a mocked create response with valid base64.
+ */
+export const swishQr: StoryObj = {
+  render: createSimpleBraintreeStory(
+    (container) => {
+      const formContainer = createLocalPaymentForm(
+        "Swish QR (desktop)",
+        "Swish with requestQrCode on desktop injects the QR image into the container after create.",
+        "swishQr"
+      );
+      container.appendChild(formContainer);
+      initializeLocalPayments(formContainer, "swishQr");
+    },
+    ["client.min.js", "local-payment.min.js"]
+  ),
+  args: {
     debugMode: false,
   },
 };

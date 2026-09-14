@@ -1,4 +1,4 @@
-"use strict";
+import BraintreeError from "../../lib/braintree-error";
 
 /**
  * @name BraintreeError.Venmo - Creation Error Codes
@@ -7,16 +7,15 @@
  * @property {MERCHANT} VENMO_INVALID_PROFILE_ID Occurs when Venmo is initialized with a profile id, but it is invalid.
  * @property {MERCHANT} VENMO_INVALID_RISK_CORRELATION_ID Occurs when Venmo is initialized with a riskCorrelationId (A.K.A. a clientMetadataId), but it is invalid.
  * @property {MERCHANT} VENMO_INVALID_DEEP_LINK_RETURN_URL Occurs when Venmo is initialized with a deep link return URL, but it is invalid.
- * @property {UNKNOWN} VENMO_MOBILE_POLLING_SETUP_FAILED __Deprecated__ No longer returned. Use `VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED` instead.
- * @property {UNKNOWN} VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED Occurs when the request to set up a Venmo Payment Context object fails.
+ * @property {MERCHANT} VENMO_PAYMENT_METHOD_USAGE_REQUIRED Occurs when Venmo is initialized without a paymentMethodUsage option.
+ * @property {MERCHANT} VENMO_INVALID_PAYMENT_METHOD_USAGE Occurs when Venmo is initialized with a paymentMethodUsage that is not "single_use" or "multi_use".
+ * @property {MERCHANT} VENMO_TOTAL_AMOUNT_REQUIRED Occurs when Venmo is initialized with `paymentMethodUsage` of `single_use` but without a `totalAmount`.
+ * @property {NETWORK} VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED Occurs when the request to set up a Venmo Payment Context object fails.
  */
 
 /**
  * @name BraintreeError.Venmo - tokenize Error Codes
  * @description Errors that occur when using the [`tokenize` method](./Venmo.html#tokenize).
- * @property {CUSTOMER} VENMO_APP_CANCELED Occurs when customer cancels flow from the Venmo app.
- * @property {UNKNOWN} VENMO_APP_FAILED Occurs when tokenization fails.
- * @property {CUSTOMER} VENMO_CANCELED Occurs when customer cancels the flow or Venmo app is not available.
  * @property {CUSTOMER} VENMO_CUSTOMER_CANCELED Occurs when customer cancels the flow.
  * @property {CUSTOMER} VENMO_DESKTOP_CANCELED Occurs when customer cancels the Venmo Desktop flow by closing the modal.
  * @property {UNKNOWN} VENMO_DESKTOP_UNKNOWN_ERROR Occurs when an unknown error causes the Venmo Desktop flow to fail.
@@ -34,9 +33,7 @@
  * @property {MERCHANT} VENMO_ECD_DISABLED Occurs when the merchant tries to access customer details without enabling Enriched Customer Data.
  */
 
-var BraintreeError = require("../../lib/braintree-error");
-
-module.exports = {
+const _default = {
   VENMO_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
     code: "VENMO_NOT_ENABLED",
@@ -51,22 +48,6 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: "VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE",
     message: "No tokenization in progress.",
-  },
-  VENMO_APP_FAILED: {
-    type: BraintreeError.types.UNKNOWN,
-    code: "VENMO_APP_FAILED",
-    message: "Venmo app encountered a problem.",
-  },
-  VENMO_APP_CANCELED: {
-    type: BraintreeError.types.CUSTOMER,
-    code: "VENMO_APP_CANCELED",
-    message: "Venmo app authorization was canceled.",
-  },
-  VENMO_CANCELED: {
-    type: BraintreeError.types.CUSTOMER,
-    code: "VENMO_CANCELED",
-    message:
-      "User canceled Venmo authorization, or Venmo app is not available.",
   },
   VENMO_CUSTOMER_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
@@ -139,6 +120,21 @@ module.exports = {
     code: "VENMO_INVALID_DEEP_LINK_RETURN_URL",
     message: "Venmo deep link return URL is invalid.",
   },
+  VENMO_PAYMENT_METHOD_USAGE_REQUIRED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "VENMO_PAYMENT_METHOD_USAGE_REQUIRED",
+    message: "Payment method usage is required.",
+  },
+  VENMO_INVALID_PAYMENT_METHOD_USAGE: {
+    type: BraintreeError.types.MERCHANT,
+    code: "VENMO_INVALID_PAYMENT_METHOD_USAGE",
+    message: "Payment method usage is invalid.",
+  },
+  VENMO_TOTAL_AMOUNT_REQUIRED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "VENMO_TOTAL_AMOUNT_REQUIRED",
+    message: "Total amount required when payment method usage is single use.",
+  },
   VENMO_INVALID_RISK_CORRELATION_ID: {
     type: BraintreeError.types.MERCHANT,
     code: "VENMO_INVALID_RISK_CORRELATION_ID",
@@ -156,3 +152,31 @@ module.exports = {
       "Cannot collect customer data when ECD is disabled. Enable this feature in the Control Panel to collect this data.",
   },
 };
+
+export const {
+  VENMO_NOT_ENABLED,
+  VENMO_TOKENIZATION_REQUEST_ACTIVE,
+  VENMO_TOKENIZATION_REQUEST_NOT_ACTIVE,
+  VENMO_CUSTOMER_CANCELED,
+  VENMO_NETWORK_ERROR,
+  VENMO_DESKTOP_CANCELED,
+  VENMO_TOKENIZATION_CANCELED_BY_MERCHANT,
+  VENMO_DESKTOP_UNKNOWN_ERROR,
+  VENMO_MOBILE_PAYMENT_CONTEXT_SETUP_FAILED,
+  VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR,
+  VENMO_MOBILE_POLLING_TOKENIZATION_EXPIRED,
+  VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED,
+  VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT,
+  VENMO_MOBILE_POLLING_TOKENIZATION_NO_CONTEXT_ID,
+  VENMO_MOBILE_POLLING_TOKENIZATION_FAILED,
+  VENMO_INVALID_PROFILE_ID,
+  VENMO_INVALID_DEEP_LINK_RETURN_URL,
+  VENMO_PAYMENT_METHOD_USAGE_REQUIRED,
+  VENMO_INVALID_PAYMENT_METHOD_USAGE,
+  VENMO_TOTAL_AMOUNT_REQUIRED,
+  VENMO_INVALID_RISK_CORRELATION_ID,
+  VENMO_TOKENIZATION_FAILED,
+  VENMO_ECD_DISABLED,
+} = _default;
+
+export default _default;

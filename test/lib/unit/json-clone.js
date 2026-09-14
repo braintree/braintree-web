@@ -1,6 +1,4 @@
-"use strict";
-
-const jsonClone = require("../../../src/lib/json-clone");
+import jsonClone from "../../../src/lib/json-clone";
 
 describe("jsonClone", () => {
   it("properly clones an empty object", () => {

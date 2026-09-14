@@ -1,5 +1,3 @@
-"use strict";
-
 function findParentTags(element, tag) {
   var parent = element.parentNode;
   var parents = [];
@@ -15,4 +13,4 @@ function findParentTags(element, tag) {
   return parents;
 }
 
-module.exports = findParentTags;
+export default findParentTags;

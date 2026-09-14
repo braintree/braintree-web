@@ -1,17 +1,9 @@
-"use strict";
-
-const RestrictedInput = require("restricted-input");
-const {
-  CreditCardForm,
-} = require("../../../../../src/hosted-fields/internal/models/credit-card-form");
-const {
-  BaseInput,
-} = require("../../../../../src/hosted-fields/internal/components/base-input");
-const {
-  CardholderNameInput,
-} = require("../../../../../src/hosted-fields/internal/components/cardholder-name-input");
-const { createInput, getModelConfig } = require("../../helpers");
-const browserDetection = require("../../../../../src/hosted-fields/shared/browser-detection");
+import RestrictedInput from "restricted-input";
+import { CreditCardForm } from "../../../../../src/hosted-fields/internal/models/credit-card-form";
+import { BaseInput } from "../../../../../src/hosted-fields/internal/components/base-input";
+import { CardholderNameInput } from "../../../../../src/hosted-fields/internal/components/cardholder-name-input";
+import { createInput, getModelConfig } from "../../helpers";
+import browserDetection from "../../../../../src/hosted-fields/shared/browser-detection";
 
 describe("Cardholder Name Input", () => {
   let testContext;
@@ -59,7 +51,7 @@ describe("Cardholder Name Input", () => {
     });
 
     it("removes the pattern attribute added for iOS keyboards", () => {
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
 
       const input = createInput("cardholderName");
 
@@ -67,7 +59,7 @@ describe("Cardholder Name Input", () => {
     });
 
     it("removes the inputmode attribute added for iOS keyboards", () => {
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
 
       const input = createInput("cardholderName");
 
@@ -77,7 +69,7 @@ describe("Cardholder Name Input", () => {
 
   describe("formatter", () => {
     it("sets the pattern to a 255-character pattern", () => {
-      jest.spyOn(RestrictedInput.prototype, "setPattern");
+      vi.spyOn(RestrictedInput.prototype, "setPattern");
 
       createInput("cardholderName");
 

@@ -1,7 +1,8 @@
-"use strict";
+import _e2 from "../../../src/google-payment";
 
-const { VERSION, create } = require("../../../src/google-payment");
-const { version } = require("../../../package.json");
+const { VERSION, create } = _e2;
+
+import { version } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

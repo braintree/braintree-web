@@ -1,8 +1,4 @@
-"use strict";
-
-const {
-  LabelComponent,
-} = require("../../../../../src/hosted-fields/internal/components/label");
+import { LabelComponent } from "../../../../../src/hosted-fields/internal/components/label";
 
 describe("LabelComponent", () => {
   it("creates a label element", () => {

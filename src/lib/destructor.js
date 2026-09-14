@@ -1,6 +1,4 @@
-"use strict";
-
-var batchExecuteFunctions = require("./batch-execute-functions");
+import batchExecuteFunctions from "./batch-execute-functions";
 
 function Destructor() {
   this._teardownRegistry = [];
@@ -36,4 +34,4 @@ Destructor.prototype.teardown = function (callback) {
   );
 };
 
-module.exports = Destructor;
+export default Destructor;

@@ -1,18 +1,16 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/create-deferred-client");
 
-jest.mock("../../../src/lib/analytics");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/lib/create-deferred-client");
-
-const analytics = require("../../../src/lib/analytics");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const PayPalCheckout = require("../../../src/paypal-checkout/paypal-checkout");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const frameService = require("../../../src/lib/frame-service/external");
-const { fake, yieldsAsync } = require("../../helpers");
-const methods = require("../../../src/lib/methods");
-const errors = require("../../../src/paypal-checkout/errors");
-const constants = require("../../../src/paypal/shared/constants");
+import analytics from "../../../src/lib/analytics";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import PayPalCheckout from "../../../src/paypal-checkout/paypal-checkout";
+import BraintreeError from "../../../src/lib/braintree-error";
+import frameService from "../../../src/lib/frame-service/external";
+import { fake, yieldsAsync } from "../../helpers";
+import methods from "../../../src/lib/methods";
+import errors from "../../../src/paypal-checkout/errors";
+import constants from "../../../src/paypal-checkout/constants";
 
 describe("PayPalCheckout", () => {
   let testContext;
@@ -22,41 +20,40 @@ describe("PayPalCheckout", () => {
     testContext.configuration = fake.configuration();
 
     testContext.configuration.authorizationFingerprint = "auth-fingerprint";
-    testContext.configuration.gatewayConfiguration.paypalEnabled = true;
     testContext.configuration.gatewayConfiguration.paypal.environmentNoNetwork = false;
     testContext.configuration.gatewayConfiguration.paypal.clientId =
       "client-id";
     testContext.client = {
-      request: jest.fn().mockResolvedValue({
+      request: vi.fn().mockResolvedValue({
         paymentResource: {
           paymentToken: "token",
           redirectUrl: "https://example.com?foo=bar&EC-token&foo2=bar2",
         },
         agreementSetup: { tokenId: "id" },
       }),
-      getConfiguration: jest.fn().mockReturnValue(testContext.configuration),
+      getConfiguration: vi.fn().mockReturnValue(testContext.configuration),
     };
     testContext.fakeFrameService = {
-      close: jest.fn(),
-      focus: jest.fn(),
-      open: jest.fn().mockImplementation(
+      close: vi.fn(),
+      focus: vi.fn(),
+      open: vi.fn().mockImplementation(
         yieldsAsync(null, {
           token: "token",
           PayerID: "payer-id",
           paymentId: "payment-id",
         })
       ),
-      teardown: jest.fn().mockResolvedValue(),
-      redirect: jest.fn(),
+      teardown: vi.fn().mockResolvedValue(),
+      redirect: vi.fn(),
       _serviceId: "service-id",
     };
 
-    jest
-      .spyOn(frameService, "create")
-      .mockImplementation(yieldsAsync(testContext.fakeFrameService));
-    jest
-      .spyOn(createDeferredClient, "create")
-      .mockResolvedValue(testContext.client);
+    vi.spyOn(frameService, "create").mockImplementation(
+      yieldsAsync(testContext.fakeFrameService)
+    );
+    vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+      testContext.client
+    );
 
     testContext.paypalCheckout = new PayPalCheckout({});
 
@@ -66,7 +63,40 @@ describe("PayPalCheckout", () => {
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
+  });
+
+  describe("constructor", () => {
+    it("defaults _autoSetDataUserIdToken to true when undefined", () => {
+      const instance = new PayPalCheckout({
+        autoSetDataUserIdToken: undefined,
+      });
+
+      expect(instance._autoSetDataUserIdToken).toBe(true);
+    });
+
+    it.each([[0], [""], [null], ["false"]])(
+      "keeps _autoSetDataUserIdToken true for non-false value %p",
+      (value) => {
+        const instance = new PayPalCheckout({
+          autoSetDataUserIdToken: value,
+        });
+
+        expect(instance._autoSetDataUserIdToken).toBe(true);
+      }
+    );
+
+    it("sets _autoSetDataUserIdToken to false when explicitly passed false", () => {
+      const instance = new PayPalCheckout({ autoSetDataUserIdToken: false });
+
+      expect(instance._autoSetDataUserIdToken).toBe(false);
+    });
+
+    it("keeps _autoSetDataUserIdToken true when explicitly passed true", () => {
+      const instance = new PayPalCheckout({ autoSetDataUserIdToken: true });
+
+      expect(instance._autoSetDataUserIdToken).toBe(true);
+    });
   });
 
   describe("_initialize", () => {
@@ -75,92 +105,93 @@ describe("PayPalCheckout", () => {
         client: testContext.client,
       };
 
-      jest
-        .spyOn(createDeferredClient, "create")
-        .mockResolvedValue(testContext.client);
+      vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+        testContext.client
+      );
     });
 
-    it("sends an analytics event on component creation", () => {
+    it("sends an analytics event on component creation", async () => {
       const instance = new PayPalCheckout({});
 
-      return instance
-        ._initialize({
-          client: testContext.client,
-        })
-        .then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
-            testContext.client,
-            "paypal-checkout.initialized"
-          );
-        });
+      await instance._initialize({
+        client: testContext.client,
+      });
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout.initialized"
+      );
     });
 
-    it("errors out if paypal is not enabled for the merchant", () => {
-      const instance = new PayPalCheckout({});
+    it("errors out if paypal is not enabled for the merchant", () =>
+      new Promise((done) => {
+        const instance = new PayPalCheckout({});
 
-      testContext.configuration.gatewayConfiguration.paypalEnabled = false;
+        delete testContext.configuration.gatewayConfiguration.paypal;
 
-      return instance
-        ._initialize({
-          client: testContext.client,
-        })
-        .catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe("MERCHANT");
-          expect(err.code).toBe("PAYPAL_NOT_ENABLED");
-          expect(err.message).toBe("PayPal is not enabled for this merchant.");
-        });
-    });
+        return instance
+          ._initialize({
+            client: testContext.client,
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe("MERCHANT");
+            expect(err.code).toBe("PAYPAL_NOT_ENABLED");
+            expect(err.message).toBe(
+              "PayPal is not enabled for this merchant."
+            );
+            done();
+          });
+      }));
 
-    it("ignores PayPal enabled check if merchantAccountId is passed in", () => {
+    // Note: the "not enabled" check is skipped whenever merchantAccountId is
+    // passed in, regardless of gatewayConfiguration.paypal presence, so no
+    // special configuration is needed to exercise the bypass here.
+    // _setupFrameService always reads gatewayConfiguration.paypal.assetsUrl
+    // unconditionally (unrelated to this check), so gatewayConfiguration.paypal
+    // must stay intact for this test.
+    it("ignores PayPal enabled check if merchantAccountId is passed in", async () => {
       const instance = new PayPalCheckout({
         merchantAccountId: "id",
       });
 
-      testContext.configuration.gatewayConfiguration.paypalEnabled = false;
-
-      return instance
-        ._initialize({
-          client: testContext.client,
-        })
-        .then((pp) => {
-          expect(pp).toBeInstanceOf(PayPalCheckout);
-        });
+      const pp = await instance._initialize({
+        client: testContext.client,
+      });
+      expect(pp).toBeInstanceOf(PayPalCheckout);
     });
 
-    it("errors out if paypal account is not linked in sandbox", () => {
-      const instance = new PayPalCheckout({});
+    it("errors out if paypal account is not linked in sandbox", () =>
+      new Promise((done) => {
+        const instance = new PayPalCheckout({});
 
-      testContext.configuration.gatewayConfiguration.paypal.environmentNoNetwork = true;
+        testContext.configuration.gatewayConfiguration.paypal.environmentNoNetwork = true;
 
-      return instance
-        ._initialize({
-          client: testContext.client,
-        })
-        .catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe("MERCHANT");
-          expect(err.code).toBe("PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED");
-          expect(err.message).toBe(
-            "A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. See https://developer.paypal.com/braintree/docs/guides/paypal/testing-go-live#linked-paypal-testing for details on linking your PayPal sandbox with Braintree."
-          );
-        });
-    });
+        return instance
+          ._initialize({
+            client: testContext.client,
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe("MERCHANT");
+            expect(err.code).toBe("PAYPAL_SANDBOX_ACCOUNT_NOT_LINKED");
+            expect(err.message).toBe(
+              "A linked PayPal Sandbox account is required to use PayPal Checkout in Sandbox. See https://developer.paypal.com/braintree/docs/guides/paypal/testing-go-live#linked-paypal-testing for details on linking your PayPal sandbox with Braintree."
+            );
+            done();
+          });
+      }));
 
-    it("ignores linked sandbox check if merchantAccountId is passed in", () => {
+    it("ignores linked sandbox check if merchantAccountId is passed in", async () => {
       const instance = new PayPalCheckout({
         merchantAccountId: "id",
       });
 
       testContext.configuration.gatewayConfiguration.paypal.environmentNoNetwork = true;
 
-      return instance
-        ._initialize({
-          client: testContext.client,
-        })
-        .then((pp) => {
-          expect(pp).toBeInstanceOf(PayPalCheckout);
-        });
+      const pp = await instance._initialize({
+        client: testContext.client,
+      });
+      expect(pp).toBeInstanceOf(PayPalCheckout);
     });
 
     it("sets up the frame service", async () => {
@@ -186,11 +217,103 @@ describe("PayPalCheckout", () => {
       );
     });
 
-    it("resolves with paypalCheckoutInstance", () => {
+    it("resolves with paypalCheckoutInstance", async () => {
       const instance = new PayPalCheckout({});
 
-      return instance._initialize({ client: testContext.client }).then((pp) => {
-        expect(pp).toBeInstanceOf(PayPalCheckout);
+      const pp = await instance._initialize({ client: testContext.client });
+      expect(pp).toBeInstanceOf(PayPalCheckout);
+    });
+
+    describe("_createBillingAgreementJwt", () => {
+      it("does not fire a request when paymentMethodIdJwt is absent", async () => {
+        const instance = new PayPalCheckout({});
+
+        testContext.client.request.mockClear();
+        await instance._initialize({ client: testContext.client });
+        await instance._billingAgreementJwtPromise;
+
+        const graphqlCalls = testContext.client.request.mock.calls.filter(
+          (call) => call[0].api === "graphQLApi"
+        );
+
+        expect(graphqlCalls).toHaveLength(0);
+      });
+
+      it("fires a graphQLApi request with the paymentMethodIdJwt when present", async () => {
+        const instance = new PayPalCheckout({});
+
+        testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+        testContext.client.request.mockResolvedValueOnce({
+          data: {
+            createBillingAgreementJwt: {
+              jwt: "fake-baid-jwt",
+            },
+          },
+        });
+        await instance._initialize({ client: testContext.client });
+        await instance._billingAgreementJwtPromise;
+
+        const graphqlCall = testContext.client.request.mock.calls.find(
+          (call) => call[0].api === "graphQLApi"
+        );
+
+        expect(graphqlCall[0]).toMatchObject({
+          api: "graphQLApi",
+          data: {
+            variables: {
+              input: { paymentMethodJwt: "fake-pmt-jwt" },
+            },
+          },
+        });
+      });
+
+      it("sets _billingAgreementJwt on success", async () => {
+        const instance = new PayPalCheckout({});
+
+        testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+        testContext.client.request.mockResolvedValueOnce({
+          data: {
+            createBillingAgreementJwt: {
+              jwt: "fake-baid-jwt",
+            },
+          },
+        });
+        await instance._initialize({ client: testContext.client });
+        await instance._billingAgreementJwtPromise;
+
+        expect(instance._billingAgreementJwt).toBe("fake-baid-jwt");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout.create-billing-agreement-jwt.succeeded"
+        );
+      });
+
+      it("sets _billingAgreementJwtError on failure without rejecting _initialize", async () => {
+        const instance = new PayPalCheckout({});
+        const exchangeError = new Error("exchange failed");
+
+        testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+        testContext.client.request.mockRejectedValueOnce(exchangeError);
+
+        await expect(
+          instance._initialize({ client: testContext.client })
+        ).resolves.toBeInstanceOf(PayPalCheckout);
+
+        await instance._billingAgreementJwtPromise;
+
+        expect(instance._billingAgreementJwtError).toBeInstanceOf(
+          BraintreeError
+        );
+        expect(instance._billingAgreementJwtError.code).toBe(
+          "PAYPAL_BILLING_AGREEMENT_JWT_FAILED"
+        );
+        expect(instance._billingAgreementJwtError.details.originalError).toBe(
+          exchangeError
+        );
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout.create-billing-agreement-jwt.failed"
+        );
       });
     });
   });
@@ -200,74 +323,111 @@ describe("PayPalCheckout", () => {
       ["missing", null],
       ["incomplete", {}],
       ["invalid", { flow: "bar" }],
-    ])("rejects with error if options are %s", (s, options) =>
-      testContext.paypalCheckout.createPayment(options).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("MERCHANT");
-        expect(err.code).toBe("PAYPAL_FLOW_OPTION_REQUIRED");
-        expect(err.message).toBe("PayPal flow property is invalid or missing.");
-      })
+    ])(
+      "rejects with error if options are %s",
+      (s, options) =>
+        new Promise((done) => {
+          return testContext.paypalCheckout
+            .createPayment(options)
+            .catch((err) => {
+              expect(err).toBeInstanceOf(BraintreeError);
+              expect(err.type).toBe("MERCHANT");
+              expect(err.code).toBe("PAYPAL_FLOW_OPTION_REQUIRED");
+              expect(err.message).toBe(
+                "PayPal flow property is invalid or missing."
+              );
+              done();
+            });
+        })
     );
 
-    it("rejects with a network BraintreeError on gateway 422 errors", () => {
-      const gateway422Error = new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        code: "CLIENT_REQUEST_ERROR",
-        message: "There was a problem with your request.",
-        details: { httpStatus: 422 },
-      });
+    it("rejects with a network BraintreeError on gateway 422 errors", () =>
+      new Promise((done) => {
+        const gateway422Error = new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          code: "CLIENT_REQUEST_ERROR",
+          message: "There was a problem with your request.",
+          details: { httpStatus: 422 },
+        });
 
-      testContext.client.request.mockRejectedValue(gateway422Error);
+        testContext.client.request.mockRejectedValue(gateway422Error);
 
-      return testContext.paypalCheckout
-        .createPayment({ flow: "vault" })
-        .catch(({ code, details, message, type }) => {
-          expect(type).toBe(BraintreeError.types.MERCHANT);
-          expect(code).toBe("PAYPAL_INVALID_PAYMENT_OPTION");
-          expect(message).toBe("PayPal payment options are invalid.");
-          expect(details).toEqual({
-            originalError: gateway422Error,
+        return testContext.paypalCheckout
+          .createPayment({ flow: "vault" })
+          .catch((err) => {
+            expect(err).toBe(gateway422Error);
+            expect(err.type).toBe(BraintreeError.types.NETWORK);
+            expect(err.code).toBe("CLIENT_REQUEST_ERROR");
+            expect(err.message).toBe("There was a problem with your request.");
+            done();
           });
-        });
-    });
+      }));
 
-    it("rejects with a network BraintreeError on other gateway errors", () => {
-      const gatewayError = new Error("There was a problem with your request.");
+    it("rejects with a network BraintreeError on gateway 422 errors with cross-realm BraintreeError", () =>
+      new Promise((done) => {
+        const crossRealmError = {
+          name: "BraintreeError",
+          type: BraintreeError.types.NETWORK,
+          code: "CLIENT_REQUEST_ERROR",
+          message: "There was a problem with your request.",
+          details: { httpStatus: 422 },
+        };
 
-      gatewayError.details = { httpStatus: 400 };
+        testContext.client.request.mockRejectedValue(crossRealmError);
 
-      testContext.client.request.mockRejectedValue(gatewayError);
-
-      return testContext.paypalCheckout
-        .createPayment({ flow: "vault" })
-        .catch(({ code, details, message, type }) => {
-          expect(type).toBe(BraintreeError.types.NETWORK);
-          expect(code).toBe("PAYPAL_FLOW_FAILED");
-          expect(message).toBe("Could not initialize PayPal flow.");
-          expect(details).toEqual({
-            originalError: gatewayError,
+        return testContext.paypalCheckout
+          .createPayment({ flow: "vault" })
+          .catch((err) => {
+            expect(err).toBe(crossRealmError);
+            expect(err.code).toBe("CLIENT_REQUEST_ERROR");
+            expect(err.message).toBe("There was a problem with your request.");
+            done();
           });
+      }));
+
+    it("rejects with a network BraintreeError on other gateway errors", () =>
+      new Promise((done) => {
+        const gatewayError = new Error(
+          "There was a problem with your request."
+        );
+
+        gatewayError.details = { httpStatus: 400 };
+
+        testContext.client.request.mockRejectedValue(gatewayError);
+
+        return testContext.paypalCheckout
+          .createPayment({ flow: "vault" })
+          .catch(({ code, details, message, type }) => {
+            expect(type).toBe(BraintreeError.types.NETWORK);
+            expect(code).toBe("PAYPAL_FLOW_FAILED");
+            expect(message).toBe("Could not initialize PayPal flow.");
+            expect(details).toEqual({
+              originalError: gatewayError,
+            });
+            done();
+          });
+      }));
+
+    it("rejects with the Braintree error when client request returns a Braintree error", () =>
+      new Promise((done) => {
+        const gatewayError = new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          code: "CLIENT_REQUEST_ERROR",
+          message: "There was a problem with your request.",
+          details: { httpStatus: 400 },
         });
-    });
 
-    it("rejects with the Braintree error when client request returns a Braintree error", () => {
-      const gatewayError = new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        code: "CLIENT_REQUEST_ERROR",
-        message: "There was a problem with your request.",
-        details: { httpStatus: 400 },
-      });
+        testContext.client.request.mockRejectedValue(gatewayError);
 
-      testContext.client.request.mockRejectedValue(gatewayError);
-
-      return testContext.paypalCheckout
-        .createPayment({ flow: "vault" })
-        .catch(({ code, message, type }) => {
-          expect(type).toBe(BraintreeError.types.NETWORK);
-          expect(code).toBe("CLIENT_REQUEST_ERROR");
-          expect(message).toBe("There was a problem with your request.");
-        });
-    });
+        return testContext.paypalCheckout
+          .createPayment({ flow: "vault" })
+          .catch(({ code, message, type }) => {
+            expect(type).toBe(BraintreeError.types.NETWORK);
+            expect(code).toBe("CLIENT_REQUEST_ERROR");
+            expect(message).toBe("There was a problem with your request.");
+            done();
+          });
+      }));
 
     it("saves intent when passed", () => {
       testContext.client.request.mockResolvedValue({
@@ -292,7 +452,7 @@ describe("PayPalCheckout", () => {
         });
     });
 
-    it("removes intent on additonal createPayment calls", () => {
+    it("removes intent on additional createPayment calls", () => {
       testContext.client.request.mockResolvedValue({
         agreementSetup: {
           tokenId: "stub",
@@ -564,6 +724,65 @@ describe("PayPalCheckout", () => {
             });
         });
 
+        it("includes editBillingAgreementJwt with paymentMethodIdJwt when editBillingAgreement is true", () => {
+          testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+
+          return testContext.paypalCheckout
+            .createPayment({
+              ...testContext.options,
+              editBillingAgreement: true,
+            })
+            .then(() => {
+              expect(testContext.client.request.mock.calls[0][0]).toMatchObject(
+                {
+                  data: {
+                    editBillingAgreementJwt: "fake-pmt-jwt",
+                  },
+                }
+              );
+              expect(
+                testContext.client.request.mock.calls[0][0].data
+              ).not.toHaveProperty("editBillingAgreement");
+            });
+        });
+
+        it("does not include editBillingAgreementJwt when editBillingAgreement flag is not set", () => {
+          testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+
+          return testContext.paypalCheckout
+            .createPayment(testContext.options)
+            .then(() => {
+              expect(
+                testContext.client.request.mock.calls[0][0].data
+              ).not.toHaveProperty("editBillingAgreementJwt");
+            });
+        });
+
+        it("does not include editBillingAgreementJwt when paymentMethodIdJwt is not set", () => {
+          return testContext.paypalCheckout
+            .createPayment({
+              ...testContext.options,
+              editBillingAgreement: true,
+            })
+            .then(() => {
+              expect(
+                testContext.client.request.mock.calls[0][0].data
+              ).not.toHaveProperty("editBillingAgreementJwt");
+            });
+        });
+
+        it("does not include editBillingAgreementJwt for vault flow even when editBillingAgreement is true", () => {
+          testContext.configuration.paymentMethodIdJwt = "fake-pmt-jwt";
+
+          return testContext.paypalCheckout
+            .createPayment({ flow: "vault", editBillingAgreement: true })
+            .then(() => {
+              expect(
+                testContext.client.request.mock.calls[0][0].data
+              ).not.toHaveProperty("editBillingAgreementJwt");
+            });
+        });
+
         it("contains other options when specified", () => {
           testContext.options.intent = "sale";
           testContext.options.contactPreference = "RETAIN_CONTACT_INFO";
@@ -778,9 +997,9 @@ describe("PayPalCheckout", () => {
             },
           };
 
-          jest
-            .spyOn(testContext.client, "request")
-            .mockResolvedValue(requestPayload);
+          vi.spyOn(testContext.client, "request").mockResolvedValue(
+            requestPayload
+          );
 
           return testContext.paypalCheckout
             .createPayment({ flow: "checkout" })
@@ -815,9 +1034,9 @@ describe("PayPalCheckout", () => {
           expected = "EC-token";
         }
 
-        jest
-          .spyOn(testContext.client, "request")
-          .mockResolvedValue(requestPayload);
+        vi.spyOn(testContext.client, "request").mockResolvedValue(
+          requestPayload
+        );
 
         return testContext.paypalCheckout
           .createPayment({ flow })
@@ -1355,14 +1574,16 @@ describe("PayPalCheckout", () => {
           });
         }));
 
-    it("does not assign intent for one-time checkout if not provided", () =>
+    it("defaults intent to capture (sent as sale) for one-time checkout if not provided", () =>
       testContext.paypalCheckout
         .createPayment({ flow: "checkout" })
         .then(() => {
           expect(testContext.client.request).toHaveBeenCalledTimes(1);
-          expect(
-            testContext.client.request.mock.calls[0][0].data
-          ).not.toHaveProperty("intent");
+          expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+            data: {
+              intent: "sale",
+            },
+          });
         }));
 
     it("sets addressOverride to true if shippingAddressEditable is false", () =>
@@ -1477,12 +1698,12 @@ describe("PayPalCheckout", () => {
         currency: "USD",
         paymentId: "pay-token-123-abc",
       };
-      analytics.sendEventPlus = jest.fn();
+      analytics.sendEventPlus = vi.fn();
       testContext.paypalCheckout._flow = "checkout";
       testContext.paypalCheckout._contextId = "pay-token-123-abc";
     });
 
-    it("sends analytics event when udpatePayment is called", async () => {
+    it("sends analytics event when updatePayment is called", async () => {
       analytics.sendEventPlus.mockClear();
 
       await testContext.paypalCheckout.updatePayment(testContext.options);
@@ -1497,59 +1718,76 @@ describe("PayPalCheckout", () => {
       );
     });
 
-    it("handles gateway error (HTTP status 422)", () => {
-      const unprocessableError = new BraintreeError({
-        type: BraintreeError.types.NETWORK,
-        code: "CLIENT_REQUEST_ERROR",
-        message: "There was a problem with your request.",
-        details: { httpStatus: 422 },
-      });
+    it("handles gateway error (HTTP status 422)", () =>
+      new Promise((done) => {
+        const unprocessableError = new BraintreeError({
+          type: BraintreeError.types.NETWORK,
+          code: "CLIENT_REQUEST_ERROR",
+          message: "There was a problem with your request.",
+          details: { httpStatus: 422 },
+        });
 
-      analytics.sendEventPlus.mockClear();
+        analytics.sendEventPlus.mockClear();
 
-      testContext.client.request.mockRejectedValue(unprocessableError);
+        testContext.client.request.mockRejectedValue(unprocessableError);
 
-      return testContext.paypalCheckout
-        .updatePayment(testContext.options)
-        .catch(({ code, details, message, type }) => {
-          expect(type).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.type);
-          expect(code).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.code);
-          expect(message).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.message);
-          expect(details).toEqual({
-            originalError: unprocessableError,
+        return testContext.paypalCheckout
+          .updatePayment(testContext.options)
+          .catch((err) => {
+            expect(err).toBe(unprocessableError);
+            expect(err.type).toBe(BraintreeError.types.NETWORK);
+            expect(err.code).toBe("CLIENT_REQUEST_ERROR");
+            expect(err.message).toBe("There was a problem with your request.");
+            done();
           });
-          expect(analytics.sendEventPlus).toHaveBeenCalledTimes(2);
-          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
-            testContext.paypalCheckout._clientPromise,
-            "paypal-checkout.updatePayment.invalid",
-            {
-              flow: testContext.paypalCheckout._flow,
-              context_id: testContext.paypalCheckout._contextId,
-            }
-          );
-        });
-    });
+      }));
 
-    it("handles network error (HTTP status 404)", () => {
-      analytics.sendEventPlus.mockClear();
+    it("handles gateway error (HTTP status 422) with cross-realm BraintreeError", () =>
+      new Promise((done) => {
+        const crossRealmError = {
+          name: "BraintreeError",
+          type: BraintreeError.types.NETWORK,
+          code: "CLIENT_REQUEST_ERROR",
+          message: "There was a problem with your request.",
+          details: { httpStatus: 422 },
+        };
 
-      const originalError = new Error("Something bad happened");
+        analytics.sendEventPlus.mockClear();
 
-      originalError.details = { httpStatus: 404 };
+        testContext.client.request.mockRejectedValue(crossRealmError);
 
-      testContext.client.request.mockRejectedValue(originalError);
+        return testContext.paypalCheckout
+          .updatePayment(testContext.options)
+          .catch((err) => {
+            expect(err).toBe(crossRealmError);
+            expect(err.code).toBe("CLIENT_REQUEST_ERROR");
+            expect(err.message).toBe("There was a problem with your request.");
+            done();
+          });
+      }));
 
-      return testContext.paypalCheckout
-        .updatePayment(testContext.options)
-        .catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe(errors.PAYPAL_FLOW_FAILED.type);
-          expect(err.code).toBe(errors.PAYPAL_FLOW_FAILED.code);
-          expect(err.message).toBe(errors.PAYPAL_FLOW_FAILED.message);
-          expect(err.details).toHaveProperty("originalError");
-          expect(err.details.originalError).toBe(originalError);
-        });
-    });
+    it("handles network error (HTTP status 404)", () =>
+      new Promise((done) => {
+        analytics.sendEventPlus.mockClear();
+
+        const originalError = new Error("Something bad happened");
+
+        originalError.details = { httpStatus: 404 };
+
+        testContext.client.request.mockRejectedValue(originalError);
+
+        return testContext.paypalCheckout
+          .updatePayment(testContext.options)
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe(errors.PAYPAL_FLOW_FAILED.type);
+            expect(err.code).toBe(errors.PAYPAL_FLOW_FAILED.code);
+            expect(err.message).toBe(errors.PAYPAL_FLOW_FAILED.message);
+            expect(err.details).toHaveProperty("originalError");
+            expect(err.details.originalError).toBe(originalError);
+            done();
+          });
+      }));
 
     it("uses the correct endpoint", () => {
       testContext.paypalCheckout.updatePayment(testContext.options).then(() => {
@@ -1582,17 +1820,24 @@ describe("PayPalCheckout", () => {
 
     it("fails if `amount` and `lineItems` are missing", async () => {
       testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
+      delete testContext.options.amount;
+      delete testContext.options.lineItems;
 
       const pp = await testContext.paypalCheckout._initialize({
         client: testContext.client,
       });
 
-      return pp.updatePayment(testContext.options).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe(errors.PAYPAL_MISSING_REQUIRED_OPTION.type);
-        expect(err.message).toBe(errors.PAYPAL_MISSING_REQUIRED_OPTION.message);
-        expect(err.code).toBe(errors.PAYPAL_MISSING_REQUIRED_OPTION.code);
-      });
+      return new Promise((done) =>
+        pp.updatePayment(testContext.options).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe(errors.PAYPAL_MISSING_REQUIRED_OPTION.type);
+          expect(err.message).toBe(
+            errors.PAYPAL_MISSING_REQUIRED_OPTION.message
+          );
+          expect(err.code).toBe(errors.PAYPAL_MISSING_REQUIRED_OPTION.code);
+          done();
+        })
+      );
     });
 
     it("fails if `currency` and single `shippingOption` currency are not the same", async () => {
@@ -1603,49 +1848,50 @@ describe("PayPalCheckout", () => {
         "One or more shipping option currencies differ from checkout currency."
       );
 
-      expect.assertions(5);
-
-      return pp
-        .updatePayment({
-          merchantAccountId: "abcdefg123456",
-          paymentId: "pay-token-123-abc",
-          currency: "USD",
-          lineItems: [
-            {
-              quantity: "1",
-              unitAmount: "16",
-              unitTaxAmount: "1.5",
-              name: "tutu",
-              description: "nylon",
-              kind: "debit",
-              productCode: "4m5n6o",
-              url: "example.com",
-            },
-          ],
-          shippingOptions: [
-            {
-              id: "shipping-eventually",
-              type: "SHIPPING",
-              label: "Eventual Shipping",
-              selected: true,
-              amount: {
-                value: "7.00",
-                currency: "XYZ",
+      return new Promise((done) => {
+        return pp
+          .updatePayment({
+            merchantAccountId: "abcdefg123456",
+            paymentId: "pay-token-123-abc",
+            currency: "USD",
+            lineItems: [
+              {
+                quantity: "1",
+                unitAmount: "16",
+                unitTaxAmount: "1.5",
+                name: "tutu",
+                description: "nylon",
+                kind: "debit",
+                productCode: "4m5n6o",
+                url: "example.com",
               },
-            },
-          ],
-        })
-        .catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.type);
-          expect(err.message).toBe(
-            errors.PAYPAL_INVALID_PAYMENT_OPTION.message
-          );
-          expect(err.code).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.code);
-          expect(err.details.originalError.message).toBe(
-            expectedOriginalErr.message
-          );
-        });
+            ],
+            shippingOptions: [
+              {
+                id: "shipping-eventually",
+                type: "SHIPPING",
+                label: "Eventual Shipping",
+                selected: true,
+                amount: {
+                  value: "7.00",
+                  currency: "XYZ",
+                },
+              },
+            ],
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.type);
+            expect(err.message).toBe(
+              errors.PAYPAL_INVALID_PAYMENT_OPTION.message
+            );
+            expect(err.code).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.code);
+            expect(err.details.originalError.message).toBe(
+              expectedOriginalErr.message
+            );
+            done();
+          });
+      });
     });
 
     it("fails if `currency` and any `shippingOption` currency are not the same", async () => {
@@ -1656,59 +1902,60 @@ describe("PayPalCheckout", () => {
         "One or more shipping option currencies differ from checkout currency."
       );
 
-      expect.assertions(5);
-
-      return pp
-        .updatePayment({
-          merchantAccountId: "abcdefg123456",
-          paymentId: "pay-token-123-abc",
-          currency: "USD",
-          lineItems: [
-            {
-              quantity: "1",
-              unitAmount: "16",
-              unitTaxAmount: "1.5",
-              name: "tutu",
-              description: "nylon",
-              kind: "debit",
-              productCode: "4m5n6o",
-              url: "example.com",
-            },
-          ],
-          shippingOptions: [
-            {
-              id: "shipping-speed-fast",
-              type: "SHIPPING",
-              label: "Fast Shipping",
-              selected: false,
-              amount: {
-                value: "11.00",
-                currency: "USD",
+      return new Promise((done) => {
+        return pp
+          .updatePayment({
+            merchantAccountId: "abcdefg123456",
+            paymentId: "pay-token-123-abc",
+            currency: "USD",
+            lineItems: [
+              {
+                quantity: "1",
+                unitAmount: "16",
+                unitTaxAmount: "1.5",
+                name: "tutu",
+                description: "nylon",
+                kind: "debit",
+                productCode: "4m5n6o",
+                url: "example.com",
               },
-            },
-            {
-              id: "shipping-eventually",
-              type: "SHIPPING",
-              label: "Eventual Shipping",
-              selected: true,
-              amount: {
-                value: "7.00",
-                currency: "XYZ",
+            ],
+            shippingOptions: [
+              {
+                id: "shipping-speed-fast",
+                type: "SHIPPING",
+                label: "Fast Shipping",
+                selected: false,
+                amount: {
+                  value: "11.00",
+                  currency: "USD",
+                },
               },
-            },
-          ],
-        })
-        .catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.type);
-          expect(err.message).toBe(
-            errors.PAYPAL_INVALID_PAYMENT_OPTION.message
-          );
-          expect(err.code).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.code);
-          expect(err.details.originalError.message).toBe(
-            expectedOriginalErr.message
-          );
-        });
+              {
+                id: "shipping-eventually",
+                type: "SHIPPING",
+                label: "Eventual Shipping",
+                selected: true,
+                amount: {
+                  value: "7.00",
+                  currency: "XYZ",
+                },
+              },
+            ],
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.type);
+            expect(err.message).toBe(
+              errors.PAYPAL_INVALID_PAYMENT_OPTION.message
+            );
+            expect(err.code).toBe(errors.PAYPAL_INVALID_PAYMENT_OPTION.code);
+            expect(err.details.originalError.message).toBe(
+              expectedOriginalErr.message
+            );
+            done();
+          });
+      });
     });
 
     const inputs = [["paymentId"], ["currency"]];
@@ -1724,11 +1971,14 @@ describe("PayPalCheckout", () => {
           client: testContext.client,
         });
 
-        return pp.updatePayment(testContext.options).catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe(BraintreeError.types.MERCHANT);
-          expect(err.message).toBe("Missing required option.");
-          expect(err.code).toBe("PAYPAL_MISSING_REQUIRED_OPTION");
+        return new Promise((done) => {
+          return pp.updatePayment(testContext.options).catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe(BraintreeError.types.MERCHANT);
+            expect(err.message).toBe("Missing required option.");
+            expect(err.code).toBe("PAYPAL_MISSING_REQUIRED_OPTION");
+            done();
+          });
         });
       }
     );
@@ -1806,10 +2056,9 @@ describe("PayPalCheckout", () => {
         };
 
         testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
-        testContext.paypalCheckout._clientPromise = jest.fn();
+        testContext.paypalCheckout._clientPromise = vi.fn();
         testContext.paypalCheckout._clientPromise.mockResolvedValue({});
-        testContext.paypalCheckout._formatPaymentResourceCheckoutData =
-          jest.fn();
+        testContext.paypalCheckout._formatPaymentResourceCheckoutData = vi.fn();
         testContext.paypalCheckout._formatPaymentResourceCheckoutData.mockReturnValue(
           {}
         );
@@ -1852,7 +2101,7 @@ describe("PayPalCheckout", () => {
         };
 
         testContext.paypalCheckout._merchantAccountId = "abcdefg123456";
-        testContext.paypalCheckout._clientPromise = jest.fn();
+        testContext.paypalCheckout._clientPromise = vi.fn();
         testContext.paypalCheckout._clientPromise.mockResolvedValue({});
 
         const expectedRequestBody = {
@@ -1944,7 +2193,7 @@ describe("PayPalCheckout", () => {
           recipientName: "jane h. private",
         };
 
-        testContext.paypalCheckout._clientPromise = jest.fn();
+        testContext.paypalCheckout._clientPromise = vi.fn();
         testContext.paypalCheckout._clientPromise.mockResolvedValue({});
 
         testContext.paypalCheckout._formatUpdatePaymentData(
@@ -2047,14 +2296,14 @@ describe("PayPalCheckout", () => {
       testContext.paypalCheckout._contextId = "context-id";
       testContext.paypalCheckout._flow = "checkout";
 
-      jest
-        .spyOn(testContext.paypalCheckout, "tokenizePayment")
-        .mockResolvedValue({
+      vi.spyOn(testContext.paypalCheckout, "tokenizePayment").mockResolvedValue(
+        {
           nonce: "new-fake-nonce",
           type: "PayPalAccount",
-        });
+        }
+      );
 
-      analytics.sendEventPlus = jest.fn();
+      analytics.sendEventPlus = vi.fn();
     });
 
     it("rejects if auth is already in progress", async () => {
@@ -2108,7 +2357,7 @@ describe("PayPalCheckout", () => {
     it("rejects if there is a client setup error", async () => {
       const paypalCheckout = new PayPalCheckout({});
 
-      testContext.configuration.gatewayConfiguration.paypalEnabled = false;
+      delete testContext.configuration.gatewayConfiguration.paypal;
 
       await paypalCheckout._initialize({
         authorization: "sandbox_fake_tokenization_key",
@@ -2127,7 +2376,7 @@ describe("PayPalCheckout", () => {
       frameService.create.mockImplementation(function () {
         // never set up
       });
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       await paypalCheckout._initialize({
         authorization: "sandbox_fake_tokenization_key",
@@ -2137,7 +2386,7 @@ describe("PayPalCheckout", () => {
         testContext.options
       );
 
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
 
       await expect(promise).rejects.toMatchObject({
         code: "PAYPAL_START_VAULT_INITIATED_CHECKOUT_SETUP_FAILED",
@@ -2178,7 +2427,10 @@ describe("PayPalCheckout", () => {
 
       expect(testContext.fakeFrameService.open).toBeCalledTimes(1);
       expect(testContext.fakeFrameService.open).toBeCalledWith(
-        {},
+        {
+          onSuspend: expect.any(Function),
+          onResume: expect.any(Function),
+        },
         expect.any(Function)
       );
       expect(testContext.fakeFrameService.redirect).toBeCalledTimes(2);
@@ -2187,6 +2439,88 @@ describe("PayPalCheckout", () => {
       );
       expect(testContext.fakeFrameService.redirect).toBeCalledWith(
         expect.stringContaining("/paypal-landing-frame.min.html")
+      );
+    });
+
+    it("emits a suspended event when the popup is backgrounded", async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      const openOptions = testContext.fakeFrameService.open.mock.calls[0][0];
+
+      openOptions.onSuspend();
+
+      expect(analytics.sendEventPlus).toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.suspended",
+        { flow: "checkout", context_id: "context-id" }
+      );
+    });
+
+    it("emits a resumed event when the app returns", async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      const openOptions = testContext.fakeFrameService.open.mock.calls[0][0];
+
+      openOptions.onResume();
+
+      expect(analytics.sendEventPlus).toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.resumed",
+        { flow: "checkout", context_id: "context-id" }
+      );
+    });
+
+    it("emits a recovered event when the flow completes after a resume", async () => {
+      testContext.fakeFrameService.open.mockImplementation((options, cb) => {
+        options.onResume();
+        cb(null, {
+          token: "token",
+          PayerID: "payer-id",
+          paymentId: "payment-id",
+        });
+      });
+
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(analytics.sendEventPlus).toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.recovered",
+        { flow: "checkout", context_id: "context-id" }
+      );
+    });
+
+    it("does not emit a recovered event when the flow completes without a resume", async () => {
+      await testContext.paypalCheckout.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(analytics.sendEventPlus).not.toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.recovered",
+        expect.anything()
+      );
+    });
+
+    it("does not emit a recovered event when the popup is canceled after a resume", async () => {
+      testContext.fakeFrameService.open.mockImplementation((options, cb) => {
+        options.onResume();
+        cb({ code: "FRAME_SERVICE_FRAME_CLOSED" });
+      });
+
+      await testContext.paypalCheckout
+        .startVaultInitiatedCheckout(testContext.options)
+        .catch(() => {});
+
+      expect(analytics.sendEventPlus).not.toBeCalledWith(
+        expect.anything(),
+        "paypal-checkout.popup.recovered",
+        expect.anything()
       );
     });
 
@@ -2330,9 +2664,10 @@ describe("PayPalCheckout", () => {
     });
 
     it("clicking on the modal focuses the PayPal window", async () => {
-      jest
-        .spyOn(testContext.paypalCheckout, "focusVaultInitiatedCheckoutWindow")
-        .mockImplementation();
+      vi.spyOn(
+        testContext.paypalCheckout,
+        "focusVaultInitiatedCheckoutWindow"
+      ).mockImplementation();
       const promise = testContext.paypalCheckout.startVaultInitiatedCheckout(
         testContext.options
       );
@@ -2351,7 +2686,7 @@ describe("PayPalCheckout", () => {
     });
 
     it("only creates the modal once", async () => {
-      jest.spyOn(document, "createElement");
+      vi.spyOn(document, "createElement");
 
       await testContext.paypalCheckout.startVaultInitiatedCheckout(
         testContext.options
@@ -2464,7 +2799,7 @@ describe("PayPalCheckout", () => {
       testContext.paypalCheckout._contextId = "context-id";
       testContext.paypalCheckout._flow = "checkout";
 
-      analytics.sendEventPlus = jest.fn();
+      analytics.sendEventPlus = vi.fn();
     });
 
     it("calls close on the frame service", async () => {
@@ -2510,36 +2845,39 @@ describe("PayPalCheckout", () => {
       testContext.paypalCheckout._contextId = "context-id";
       testContext.paypalCheckout._flow = "checkout";
 
-      analytics.sendEventPlus = jest.fn();
+      analytics.sendEventPlus = vi.fn();
     });
 
-    it("rejects with a BraintreeError if a non-Braintree error comes back from the client", () => {
-      const error = new Error("Error");
+    it("rejects with a BraintreeError if a non-Braintree error comes back from the client", () =>
+      new Promise((done) => {
+        const error = new Error("Error");
 
-      testContext.client.request.mockRejectedValue(error);
+        testContext.client.request.mockRejectedValue(error);
 
-      return testContext.paypalCheckout.tokenizePayment({}).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("NETWORK");
-        expect(err.code).toBe("PAYPAL_ACCOUNT_TOKENIZATION_FAILED");
-        expect(err.message).toBe("Could not tokenize user's PayPal account.");
-        expect(err.details.originalError).toBe(error);
-      });
-    });
+        return testContext.paypalCheckout.tokenizePayment({}).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("NETWORK");
+          expect(err.code).toBe("PAYPAL_ACCOUNT_TOKENIZATION_FAILED");
+          expect(err.message).toBe("Could not tokenize user's PayPal account.");
+          expect(err.details.originalError).toBe(error);
+          done();
+        });
+      }));
 
-    it("rejects with the error if the client error is a BraintreeError", () => {
-      const btError = new BraintreeError({
-        type: "MERCHANT",
-        code: "BT_CODE",
-        message: "message.",
-      });
+    it("rejects with the error if the client error is a BraintreeError", () =>
+      new Promise((done) => {
+        const btError = new BraintreeError({
+          type: "MERCHANT",
+          code: "BT_CODE",
+          message: "message.",
+        });
+        testContext.client.request.mockRejectedValue(btError);
 
-      testContext.client.request.mockRejectedValue(btError);
-
-      return testContext.paypalCheckout.tokenizePayment({}).catch((err) => {
-        expect(err).toBe(btError);
-      });
-    });
+        return testContext.paypalCheckout.tokenizePayment({}).catch((err) => {
+          expect(err).toBe(btError);
+          done();
+        });
+      }));
 
     it("includes intent from createPayment", () => {
       testContext.client.request.mockResolvedValue({
@@ -3033,7 +3371,7 @@ describe("PayPalCheckout", () => {
         });
     });
 
-    it("passes along orderId as payemntToken when orderId and billingToken are present and flow is checkout", () => {
+    it("passes along orderId as paymentToken when orderId and billingToken are present and flow is checkout", () => {
       testContext.paypalCheckout._flow = "checkout";
       testContext.paypalCheckout
         .tokenizePayment({
@@ -3074,7 +3412,7 @@ describe("PayPalCheckout", () => {
         });
     });
 
-    it("passes along orderId as payemntToken when orderId is present and paymentID is not present", () =>
+    it("passes along orderId as paymentToken when orderId is present and paymentID is not present", () =>
       testContext.paypalCheckout
         .tokenizePayment({
           payerID: "payer id",
@@ -3155,22 +3493,24 @@ describe("PayPalCheckout", () => {
           );
         }));
 
-    it("sends a tokenization failure event when request fails", () => {
-      const client = testContext.client;
+    it("sends a tokenization failure event when request fails", () =>
+      new Promise((done) => {
+        const client = testContext.client;
 
-      client.request.mockRejectedValue(new Error("Error"));
+        client.request.mockRejectedValue(new Error("Error"));
 
-      return testContext.paypalCheckout.tokenizePayment({}).catch(() => {
-        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
-          testContext.paypalCheckout._clientPromise,
-          "paypal-checkout.tokenization.failed",
-          {
-            flow: testContext.paypalCheckout._flow,
-            context_id: testContext.paypalCheckout._contextId,
-          }
-        );
-      });
-    });
+        return testContext.paypalCheckout.tokenizePayment({}).catch(() => {
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+            testContext.paypalCheckout._clientPromise,
+            "paypal-checkout.tokenization.failed",
+            {
+              flow: testContext.paypalCheckout._flow,
+              context_id: testContext.paypalCheckout._contextId,
+            }
+          );
+          done();
+        });
+      }));
 
     it("passes the billingToken as the billingAgreementToken when both flow and paymentId are null", () => {
       testContext.paypalCheckout._flow = null;
@@ -3207,10 +3547,10 @@ describe("PayPalCheckout", () => {
       fakeScript = document.createElement("script");
       firstHeadElement = document.createElement("meta");
       document.head.appendChild(firstHeadElement);
-      jest.spyOn(document.head, "insertBefore").mockImplementation();
-      jest.spyOn(document, "createElement").mockReturnValueOnce(fakeScript);
-      jest.spyOn(XMLHttpRequest.prototype, "open").mockImplementation();
-      jest.spyOn(XMLHttpRequest.prototype, "send").mockImplementation();
+      vi.spyOn(document.head, "insertBefore").mockImplementation();
+      vi.spyOn(document, "createElement").mockReturnValueOnce(fakeScript);
+      vi.spyOn(XMLHttpRequest.prototype, "open").mockImplementation();
+      vi.spyOn(XMLHttpRequest.prototype, "send").mockImplementation();
     });
 
     afterEach(() => {
@@ -3222,7 +3562,7 @@ describe("PayPalCheckout", () => {
     it("loads the PayPal script onto the top of the head", () => {
       const instance = testContext.paypalCheckout;
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3239,7 +3579,10 @@ describe("PayPalCheckout", () => {
     it("loads the staging PayPal script when specified", () => {
       const instance = testContext.paypalCheckout;
 
-      const promise = instance.loadPayPalSDK({ env: "stage" });
+      const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
+        env: "stage",
+      });
 
       fakeScript.onload();
 
@@ -3258,7 +3601,10 @@ describe("PayPalCheckout", () => {
     it("loads the teBraintree PayPal script when specified", () => {
       const instance = testContext.paypalCheckout;
 
-      const promise = instance.loadPayPalSDK({ env: "teBraintree" });
+      const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
+        env: "teBraintree",
+      });
 
       fakeScript.onload();
 
@@ -3277,7 +3623,7 @@ describe("PayPalCheckout", () => {
     it("resolves with the PayPal Checkout instance", () => {
       const instance = testContext.paypalCheckout;
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3289,9 +3635,9 @@ describe("PayPalCheckout", () => {
     it("uses the client id from getClientId by default", () => {
       const instance = testContext.paypalCheckout;
 
-      jest.spyOn(instance, "getClientId").mockResolvedValue("fake-id");
+      vi.spyOn(instance, "getClientId").mockResolvedValue("fake-id");
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3304,9 +3650,10 @@ describe("PayPalCheckout", () => {
     it("can use a custom client id", () => {
       const instance = testContext.paypalCheckout;
 
-      jest.spyOn(instance, "getClientId").mockResolvedValue("wrong-id");
+      vi.spyOn(instance, "getClientId").mockResolvedValue("wrong-id");
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         "client-id": "custom-id",
       });
 
@@ -3321,7 +3668,7 @@ describe("PayPalCheckout", () => {
     it("uses components=buttons by default", () => {
       const instance = testContext.paypalCheckout;
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3334,6 +3681,7 @@ describe("PayPalCheckout", () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         components: "messages,buttons,mark",
       });
 
@@ -3344,15 +3692,15 @@ describe("PayPalCheckout", () => {
       });
     });
 
-    it("uses intent=authorize by default for checkout flow", () => {
+    it("uses intent=capture by default for checkout flow", () => {
       const instance = testContext.paypalCheckout;
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
       return promise.then(() => {
-        expect(fakeScript.src).toMatch("intent=authorize");
+        expect(fakeScript.src).toMatch("intent=capture");
       });
     });
 
@@ -3360,6 +3708,7 @@ describe("PayPalCheckout", () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         vault: true,
       });
 
@@ -3374,6 +3723,7 @@ describe("PayPalCheckout", () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         intent: "capture",
       });
 
@@ -3387,7 +3737,7 @@ describe("PayPalCheckout", () => {
     it("uses currency=USD by default", () => {
       const instance = testContext.paypalCheckout;
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3400,6 +3750,7 @@ describe("PayPalCheckout", () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         vault: true,
       });
 
@@ -3414,6 +3765,7 @@ describe("PayPalCheckout", () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         currency: "XYZ",
       });
 
@@ -3428,6 +3780,7 @@ describe("PayPalCheckout", () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         foo: "foo",
         bar: "bar",
         baz: "baz",
@@ -3444,7 +3797,7 @@ describe("PayPalCheckout", () => {
 
     it("always uses analytics session ID as the client-metadata-id data attribute when client-metadata-id not passed", () => {
       const instance = testContext.paypalCheckout;
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
       const expectedId = testContext.configuration.analyticsMetadata.sessionId;
 
       fakeScript.onload();
@@ -3460,6 +3813,7 @@ describe("PayPalCheckout", () => {
       const instance = testContext.paypalCheckout;
       const someCmid = "some-cmid";
       const inputOptions = {
+        pageType: "checkout",
         dataAttributes: {
           "client-metadata-id": someCmid,
         },
@@ -3479,6 +3833,7 @@ describe("PayPalCheckout", () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         dataAttributes: {
           foo: "bar",
           "client-token": "value",
@@ -3503,6 +3858,7 @@ describe("PayPalCheckout", () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         dataAttributes: {
           "data-foo": "bar",
           "data-client-token": "value",
@@ -3522,10 +3878,11 @@ describe("PayPalCheckout", () => {
       });
     });
 
-    it('does not omit "data-" when used elsewhere in the properites', () => {
+    it('does not omit "data-" when used elsewhere in the properties', () => {
       const instance = testContext.paypalCheckout;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         dataAttributes: {
           "foo-data-bar": "baz",
           "dataclient-token": "value",
@@ -3542,18 +3899,16 @@ describe("PayPalCheckout", () => {
       });
     });
 
-    it("always sets data-sdk-integration-source data attribute", (done) => {
+    it("always sets data-sdk-integration-source data attribute", () => {
       const instance = testContext.paypalCheckout;
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
-      promise.then(() => {
+      return promise.then(() => {
         expect(fakeScript.getAttribute("data-sdk-integration-source")).toBe(
           "BRAINTREE_WEB_SDK"
         );
-
-        done();
       });
     });
 
@@ -3562,7 +3917,7 @@ describe("PayPalCheckout", () => {
 
       instance._autoSetDataUserIdToken = true;
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3588,13 +3943,13 @@ describe("PayPalCheckout", () => {
       });
     });
 
-    it("uses production domain for preload pixel when environemnt is production", () => {
+    it("uses production domain for preload pixel when environment is production", () => {
       const instance = testContext.paypalCheckout;
 
       instance._autoSetDataUserIdToken = true;
       instance._authorizationInformation.environment = "production";
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3614,6 +3969,7 @@ describe("PayPalCheckout", () => {
       instance._autoSetDataUserIdToken = true;
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         currency: "USD",
         "merchant-id": "merchantid",
         dataAttributes: {
@@ -3646,7 +4002,7 @@ describe("PayPalCheckout", () => {
       instance._authorizationInformation.fingerprint =
         "auth-fingerprint?customer=";
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3672,7 +4028,7 @@ describe("PayPalCheckout", () => {
       instance._autoSetDataUserIdToken = true;
       delete instance._authorizationInformation.fingerprint;
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3689,7 +4045,7 @@ describe("PayPalCheckout", () => {
 
       instance._autoSetDataUserIdToken = false;
 
-      const promise = instance.loadPayPalSDK();
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
 
       fakeScript.onload();
 
@@ -3709,6 +4065,7 @@ describe("PayPalCheckout", () => {
         "unused-auth-fingerprint";
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         dataAttributes: {
           "user-id-token": "custom-auth-fingerprint",
         },
@@ -3735,6 +4092,7 @@ describe("PayPalCheckout", () => {
         "unused-auth-fingerprint";
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         dataAttributes: {
           "data-user-id-token": "custom-auth-fingerprint",
         },
@@ -3761,6 +4119,7 @@ describe("PayPalCheckout", () => {
         "unused-auth-fingerprint";
 
       const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
         dataAttributes: {
           "user-id-token": "custom-auth-fingerprint",
           "data-user-id-token": "custom-auth-fingerprint-with-data-prefix",
@@ -3779,34 +4138,273 @@ describe("PayPalCheckout", () => {
         );
       });
     });
+
+    it("sets data-user-id-token to the BAID JWT when _billingAgreementJwt is set", () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._billingAgreementJwt = "fake-baid-jwt";
+
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBe(
+          "fake-baid-jwt"
+        );
+      });
+    });
+
+    it("waits for _billingAgreementJwtPromise before injecting BAID JWT", () => {
+      const instance = testContext.paypalCheckout;
+      let resolveExchange;
+
+      instance._billingAgreementJwtPromise = new Promise((resolve) => {
+        resolveExchange = resolve;
+      }).then(() => {
+        instance._billingAgreementJwt = "fake-baid-jwt";
+      });
+
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
+
+      resolveExchange();
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBe(
+          "fake-baid-jwt"
+        );
+      });
+    });
+
+    it("falls back to auto-derived user-id-token when BAID JWT exchange failed", () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._billingAgreementJwtPromise = Promise.resolve();
+      instance._billingAgreementJwtError = new BraintreeError(
+        errors.PAYPAL_BILLING_AGREEMENT_JWT_FAILED
+      );
+
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        // autoSetDataUserIdToken defaults to true, so the SDK still loads
+        // with a usable user-id-token via the fingerprint fallback rather
+        // than leaving the attribute unset
+        expect(fakeScript.getAttribute("data-user-id-token")).toBe(
+          "auth-fingerprint"
+        );
+        expect(document.head.insertBefore).toBeCalledTimes(1);
+      });
+    });
+
+    it("falls back to auto-derived user-id-token when _billingAgreementJwt is not set", () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBe(
+          "auth-fingerprint"
+        );
+      });
+    });
+
+    it("does not overwrite merchant-supplied user-id-token with _billingAgreementJwt", () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._billingAgreementJwt = "fake-baid-jwt";
+
+      const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
+        dataAttributes: {
+          "user-id-token": "merchant-supplied-token",
+        },
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBe(
+          "merchant-supplied-token"
+        );
+      });
+    });
+
+    it("uses the BAID JWT over autoSetDataUserIdToken regardless of its default", () => {
+      const instance = testContext.paypalCheckout;
+
+      instance._billingAgreementJwt = "fake-baid-jwt";
+      // autoSetDataUserIdToken defaults to true and would otherwise use
+      // the auto-derived fingerprint below; Edit FI's BAID JWT must win
+      expect(instance._autoSetDataUserIdToken).toBe(true);
+
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-user-id-token")).toBe(
+          "fake-baid-jwt"
+        );
+      });
+    });
+
+    it("fires the preload pixel by default for a merchant-supplied user-id-token", () => {
+      const instance = testContext.paypalCheckout;
+
+      expect(instance._autoSetDataUserIdToken).toBe(true);
+
+      const promise = instance.loadPayPalSDK({
+        pageType: "checkout",
+        dataAttributes: {
+          "user-id-token": "merchant-supplied-token",
+        },
+      });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(XMLHttpRequest.prototype.open).toBeCalledWith(
+          "GET",
+          expect.stringContaining("user-id-token=merchant-supplied-token")
+        );
+      });
+    });
+
+    it.each([
+      ["missing", undefined],
+      ["missing pageType", {}],
+    ])(
+      "rejects with error if options are %s",
+      (s, options) =>
+        new Promise((done) => {
+          return testContext.paypalCheckout
+            .loadPayPalSDK(options)
+            .catch((err) => {
+              expect(err).toBeInstanceOf(BraintreeError);
+              expect(err.type).toBe(errors.PAYPAL_PAGE_TYPE_REQUIRED.type);
+              expect(err.code).toBe(errors.PAYPAL_PAGE_TYPE_REQUIRED.code);
+              expect(err.message).toBe(
+                errors.PAYPAL_PAGE_TYPE_REQUIRED.message
+              );
+              done();
+            });
+        })
+    );
+
+    it.each([["home"], ["not-a-real-page-type"], ["Checkout"]])(
+      "rejects with error if pageType is %s",
+      (pageType) =>
+        new Promise((done) => {
+          return testContext.paypalCheckout
+            .loadPayPalSDK({ pageType })
+            .catch((err) => {
+              expect(err).toBeInstanceOf(BraintreeError);
+              expect(err.type).toBe(errors.PAYPAL_PAGE_TYPE_INVALID.type);
+              expect(err.code).toBe(errors.PAYPAL_PAGE_TYPE_INVALID.code);
+              expect(err.message).toBe(errors.PAYPAL_PAGE_TYPE_INVALID.message);
+              done();
+            });
+        })
+    );
+
+    it.each([
+      ["product-listing"],
+      ["search-results"],
+      ["product-details"],
+      ["mini-cart"],
+      ["cart"],
+      ["checkout"],
+    ])("accepts %s as a valid pageType", (pageType) => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({ pageType });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-page-type")).toBe(pageType);
+      });
+    });
+
+    it("sets data-page-type from the pageType option", () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({ pageType: "cart" });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.getAttribute("data-page-type")).toBe("cart");
+      });
+    });
+
+    it.each([["page-type"], ["data-page-type"]])(
+      "pageType option takes precedence over dataAttributes.%s",
+      (dataAttributeKey) => {
+        const instance = testContext.paypalCheckout;
+
+        const promise = instance.loadPayPalSDK({
+          pageType: "checkout",
+          dataAttributes: {
+            [dataAttributeKey]: "cart",
+          },
+        });
+
+        fakeScript.onload();
+
+        return promise.then(() => {
+          expect(fakeScript.getAttribute("data-page-type")).toBe("checkout");
+        });
+      }
+    );
+
+    it("does not include pageType as a query param on the script src", () => {
+      const instance = testContext.paypalCheckout;
+
+      const promise = instance.loadPayPalSDK({ pageType: "checkout" });
+
+      fakeScript.onload();
+
+      return promise.then(() => {
+        expect(fakeScript.src).not.toMatch("pageType");
+      });
+    });
   });
 
   describe("teardown", () => {
-    it("replaces all methods so error is thrown when methods are invoked", () => {
-      const instance = testContext.paypalCheckout;
+    it("replaces all methods so error is thrown when methods are invoked", () =>
+      new Promise((done) => {
+        const instance = testContext.paypalCheckout;
 
-      return instance.teardown().then(() => {
-        methods(PayPalCheckout.prototype).forEach((method) => {
-          try {
-            instance[method]();
-          } catch (err) {
-            expect(err).toBeInstanceOf(BraintreeError);
-            expect(err.type).toBe(BraintreeError.types.MERCHANT);
-            expect(err.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
-            expect(err.message).toBe(
-              `${method} cannot be called after teardown.`
-            );
-          }
+        return instance.teardown().then(() => {
+          methods(PayPalCheckout.prototype).forEach((method) => {
+            try {
+              instance[method]();
+            } catch (err) {
+              expect(err).toBeInstanceOf(BraintreeError);
+              expect(err.type).toBe(BraintreeError.types.MERCHANT);
+              expect(err.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
+              expect(err.message).toBe(
+                `${method} cannot be called after teardown.`
+              );
+              done();
+            }
+          });
         });
-      });
-    });
+      }));
 
     it("removes PayPal script from the page if it exists", () => {
       const instance = testContext.paypalCheckout;
 
       instance._paypalScript = document.createElement("script");
 
-      jest.spyOn(document.body, "removeChild");
+      vi.spyOn(document.body, "removeChild");
       document.body.appendChild(instance._paypalScript);
 
       return instance.teardown().then(() => {
@@ -3822,7 +4420,7 @@ describe("PayPalCheckout", () => {
 
       instance._paypalScript = document.createElement("script");
 
-      jest.spyOn(document.body, "removeChild");
+      vi.spyOn(document.body, "removeChild");
 
       return instance.teardown().then(() => {
         expect(document.body.removeChild).toBeCalledTimes(0);
@@ -3840,7 +4438,7 @@ describe("PayPalCheckout", () => {
     it("ignores frame service if frame service errored in creation", async () => {
       // fake having the frame service time out during set up
       frameService.create.mockImplementation();
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       const ppInstanceWithoutFrameservice = new PayPalCheckout({});
 
@@ -3848,7 +4446,7 @@ describe("PayPalCheckout", () => {
         client: testContext.client,
       });
 
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
 
       await ppInstanceWithoutFrameservice.teardown();
 
@@ -3879,8 +4477,8 @@ describe("PayPalCheckout", () => {
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
         {
           _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
+          _formatPaymentResourceCheckoutData: vi.fn(),
+          _formatPaymentResourceVaultData: vi.fn(),
         },
         options,
         testContext.config
@@ -3898,8 +4496,8 @@ describe("PayPalCheckout", () => {
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
         {
           _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
+          _formatPaymentResourceCheckoutData: vi.fn(),
+          _formatPaymentResourceVaultData: vi.fn(),
         },
         options,
         testContext.config
@@ -3916,8 +4514,8 @@ describe("PayPalCheckout", () => {
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
         {
           _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
+          _formatPaymentResourceCheckoutData: vi.fn(),
+          _formatPaymentResourceVaultData: vi.fn(),
         },
         options,
         testContext.config
@@ -3934,8 +4532,8 @@ describe("PayPalCheckout", () => {
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
         {
           _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
+          _formatPaymentResourceCheckoutData: vi.fn(),
+          _formatPaymentResourceVaultData: vi.fn(),
         },
         options,
         testContext.config
@@ -3952,8 +4550,8 @@ describe("PayPalCheckout", () => {
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
         {
           _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
+          _formatPaymentResourceCheckoutData: vi.fn(),
+          _formatPaymentResourceVaultData: vi.fn(),
         },
         options,
         testContext.config
@@ -3972,8 +4570,8 @@ describe("PayPalCheckout", () => {
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
         {
           _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
+          _formatPaymentResourceCheckoutData: vi.fn(),
+          _formatPaymentResourceVaultData: vi.fn(),
         },
         options,
         testContext.config
@@ -3990,8 +4588,8 @@ describe("PayPalCheckout", () => {
       const actual = PayPalCheckout.prototype._formatPaymentResourceData.call(
         {
           _configuration: testContext.configuration,
-          _formatPaymentResourceCheckoutData: jest.fn(),
-          _formatPaymentResourceVaultData: jest.fn(),
+          _formatPaymentResourceCheckoutData: vi.fn(),
+          _formatPaymentResourceVaultData: vi.fn(),
         },
         options,
         testContext.config

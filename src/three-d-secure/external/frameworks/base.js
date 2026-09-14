@@ -1,24 +1,12 @@
-"use strict";
+// @ts-nocheck
+import { assign } from "../../../lib/assign";
+import analytics from "../../../lib/analytics";
+import BraintreeError from "../../../lib/braintree-error";
+import ExtendedPromise from "@braintree/extended-promise";
+import EventEmitter from "@braintree/event-emitter";
+import errors from "../../shared/errors";
 
-var assign = require("../../../lib/assign").assign;
-var analytics = require("../../../lib/analytics");
-var BraintreeError = require("../../../lib/braintree-error");
-var isVerifiedDomain = require("../../../lib/is-verified-domain");
-var ExtendedPromise = require("@braintree/extended-promise");
-var EventEmitter = require("@braintree/event-emitter");
-var errors = require("../../shared/errors");
-var iFramer = require("@braintree/iframer");
-var Bus = require("framebus");
-var constants = require("../../shared/constants");
-var uuid = require("@braintree/uuid");
-var events = require("../../shared/events");
-var useMin = require("../../../lib/use-min");
-var BUS_CONFIGURATION_REQUEST_EVENT =
-  require("../../../lib/constants").BUS_CONFIGURATION_REQUEST_EVENT;
-
-var VERSION = process.env.npm_package_version;
-var IFRAME_HEIGHT = 400;
-var IFRAME_WIDTH = 400;
+const VERSION = __SDK_VERSION__;
 
 ExtendedPromise.suppressUnhandledPromiseMessage = true;
 
@@ -40,7 +28,9 @@ function BaseFramework(options) {
   this._assetsUrl = this._assetsUrl + "/web/" + VERSION;
 }
 
-EventEmitter.createChild(BaseFramework);
+BaseFramework.prototype = Object.create(EventEmitter.prototype, {
+  constructor: { value: BaseFramework },
+});
 
 BaseFramework.prototype._waitForClient = function () {
   if (this._client) {
@@ -116,7 +106,7 @@ BaseFramework.prototype.verifyCard = function (options, privateOptions) {
         "three-d-secure.verification-flow.failed"
       );
 
-      return Promise.reject(err);
+      throw err;
     });
 };
 
@@ -170,16 +160,14 @@ BaseFramework.prototype._performLookup = function (nonce, data) {
 
         analytics.sendEvent(self._createPromise, analyticsMessage);
 
-        return Promise.reject(
-          new BraintreeError({
-            type: lookupError.type,
-            code: lookupError.code,
-            message: lookupError.message,
-            details: {
-              originalError: err,
-            },
-          })
-        );
+        throw new BraintreeError({
+          type: lookupError.type,
+          code: lookupError.code,
+          message: lookupError.message,
+          details: {
+            originalError: err,
+          },
+        });
       });
   });
 };
@@ -255,15 +243,17 @@ BaseFramework.prototype.initializeChallengeWithLookupResponse = function (
   self._handleLookupResponse(lookupResponse, options);
 
   return self._verifyCardPromisePlus.then(function (payload) {
+    var threeDSecureInfo = payload.threeDSecureInfo || {};
+
     analytics.sendEvent(
       self._createPromise,
       "three-d-secure.verification-flow.liability-shifted." +
-        String(payload.liabilityShifted)
+        String(threeDSecureInfo.liabilityShifted)
     );
     analytics.sendEvent(
       self._createPromise,
       "three-d-secure.verification-flow.liability-shift-possible." +
-        String(payload.liabilityShiftPossible)
+        String(threeDSecureInfo.liabilityShiftPossible)
     );
 
     return payload;
@@ -288,10 +278,7 @@ BaseFramework.prototype._handleLookupResponse = function (
   if (challengeShouldBePresented) {
     this._presentChallenge(lookupResponse, options);
   } else {
-    details = this._formatAuthResponse(
-      lookupResponse.paymentMethod,
-      lookupResponse.threeDSecureInfo
-    );
+    details = this._formatAuthResponse(lookupResponse.paymentMethod);
     details.verificationDetails = lookupResponse.threeDSecureInfo;
 
     this._verifyCardPromisePlus.resolve(details);
@@ -305,10 +292,7 @@ BaseFramework.prototype._onLookupComplete = function (response) {
   return Promise.resolve(response);
 };
 
-BaseFramework.prototype._formatAuthResponse = function (
-  paymentMethod,
-  threeDSecureInfo
-) {
+BaseFramework.prototype._formatAuthResponse = function (paymentMethod) {
   return {
     nonce: paymentMethod.nonce,
     type: paymentMethod.type,
@@ -317,10 +301,9 @@ BaseFramework.prototype._formatAuthResponse = function (
     description:
       paymentMethod.description &&
       paymentMethod.description.replace(/\+/g, " "),
-    liabilityShifted: threeDSecureInfo && threeDSecureInfo.liabilityShifted,
-    liabilityShiftPossible:
-      threeDSecureInfo && threeDSecureInfo.liabilityShiftPossible,
-    threeDSecureInfo: paymentMethod.threeDSecureInfo,
+    threeDSecureInfo: this._formatThreeDSecureInfo(
+      paymentMethod.threeDSecureInfo
+    ),
   };
 };
 
@@ -347,39 +330,17 @@ BaseFramework.prototype._formatLookupData = function (options) {
   return Promise.resolve(data);
 };
 
-BaseFramework.prototype._handleV1AuthResponse = function (data) {
-  var authResponse = JSON.parse(data.auth_response);
+BaseFramework.prototype._formatThreeDSecureInfo = function (threeDSecureInfo) {
+  var info = threeDSecureInfo || {};
 
-  if (authResponse.success) {
-    this._verifyCardPromisePlus.resolve(
-      this._formatAuthResponse(
-        authResponse.paymentMethod,
-        authResponse.threeDSecureInfo
-      )
-    );
-  } else if (
-    authResponse.threeDSecureInfo &&
-    authResponse.threeDSecureInfo.liabilityShiftPossible
-  ) {
-    this._verifyCardPromisePlus.resolve(
-      this._formatAuthResponse(
-        this._lookupPaymentMethod,
-        authResponse.threeDSecureInfo
-      )
-    );
-  } else {
-    this._verifyCardPromisePlus.reject(
-      new BraintreeError({
-        type: BraintreeError.types.UNKNOWN,
-        code: "UNKNOWN_AUTH_RESPONSE",
-        message: authResponse.error.message,
-      })
-    );
-  }
+  return assign({}, info, {
+    liabilityShifted: Boolean(info.liabilityShifted),
+    liabilityShiftPossible: Boolean(info.liabilityShiftPossible),
+  });
 };
 
 BaseFramework.prototype.cancelVerifyCard = function () {
-  var response, threeDSecureInfo;
+  var response, paymentMethodThreeDSecureInfo;
 
   this._verifyCardInProgress = false;
 
@@ -389,102 +350,24 @@ BaseFramework.prototype.cancelVerifyCard = function () {
     );
   }
 
-  threeDSecureInfo = this._lookupPaymentMethod.threeDSecureInfo;
+  paymentMethodThreeDSecureInfo = this._lookupPaymentMethod.threeDSecureInfo;
 
   response = assign({}, this._lookupPaymentMethod, {
-    liabilityShiftPossible:
-      threeDSecureInfo && threeDSecureInfo.liabilityShiftPossible,
-    liabilityShifted: threeDSecureInfo && threeDSecureInfo.liabilityShifted,
+    threeDSecureInfo: this._formatThreeDSecureInfo(
+      paymentMethodThreeDSecureInfo
+    ),
     verificationDetails:
-      threeDSecureInfo && threeDSecureInfo.verificationDetails,
+      paymentMethodThreeDSecureInfo &&
+      paymentMethodThreeDSecureInfo.verificationDetails,
   });
 
   return Promise.resolve(response);
 };
 
-BaseFramework.prototype._setupV1Bus = function (options) {
-  var clientConfiguration = this._client.getConfiguration();
-  var parentURL = window.location.href.split("#")[0];
-  var lookupResponse = options.lookupResponse;
-  var channel = uuid();
-  var bus = new Bus({
-    channel: channel,
-    verifyDomain: isVerifiedDomain,
-  });
-  var authenticationCompleteBaseUrl =
-    this._assetsUrl +
-    "/html/three-d-secure-authentication-complete-frame.html?channel=" +
-    encodeURIComponent(channel) +
-    "&";
-
-  bus.on(BUS_CONFIGURATION_REQUEST_EVENT, function (reply) {
-    reply({
-      clientConfiguration: clientConfiguration,
-      nonce: options.nonce,
-      acsUrl: lookupResponse.acsUrl,
-      pareq: lookupResponse.pareq,
-      termUrl:
-        lookupResponse.termUrl +
-        "&three_d_secure_version=" +
-        VERSION +
-        "&authentication_complete_base_url=" +
-        encodeURIComponent(authenticationCompleteBaseUrl),
-      md: lookupResponse.md,
-      parentUrl: parentURL,
-    });
-  });
-
-  bus.on(events.AUTHENTICATION_COMPLETE, options.handleAuthResponse);
-
-  return bus;
-};
-
-BaseFramework.prototype._setupV1Iframe = function (options) {
-  var url =
-    this._assetsUrl +
-    "/html/three-d-secure-bank-frame" +
-    useMin(this._isDebug) +
-    ".html?showLoader=" +
-    options.showLoader;
-  var bankIframe = iFramer({
-    src: url,
-    height: IFRAME_HEIGHT,
-    width: IFRAME_WIDTH,
-    name: constants.LANDING_FRAME_NAME + "_" + this._v1Bus.channel,
-    title: "3D Secure Authorization Frame",
-  });
-
-  return bankIframe;
-};
-
-BaseFramework.prototype._setupV1Elements = function (options) {
-  this._v1Bus = this._setupV1Bus(options);
-  this._v1Iframe = this._setupV1Iframe(options);
-};
-
-BaseFramework.prototype._teardownV1Elements = function () {
-  if (this._v1Bus) {
-    this._v1Bus.teardown();
-    this._v1Bus = null;
-  }
-
-  if (this._v1Iframe && this._v1Iframe.parentNode) {
-    this._v1Iframe.parentNode.removeChild(this._v1Iframe);
-    this._v1Iframe = null;
-  }
-
-  if (this._onV1Keyup) {
-    document.removeEventListener("keyup", this._onV1Keyup);
-    this._onV1Keyup = null;
-  }
-};
-
 BaseFramework.prototype.teardown = function () {
   analytics.sendEvent(this._createPromise, "three-d-secure.teardown-completed");
-
-  this._teardownV1Elements();
 
   return Promise.resolve();
 };
 
-module.exports = BaseFramework;
+export default BaseFramework;

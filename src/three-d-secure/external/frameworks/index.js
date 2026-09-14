@@ -1,11 +1,7 @@
-"use strict";
+import CardinalModalFramework from "./cardinal-modal";
+import InlineIframeFramework from "./inline-iframe";
 
-var CardinalModalFramework = require("./cardinal-modal");
-var Bootstrap3ModalFramework = require("./bootstrap3-modal");
-var InlineIframeFramework = require("./inline-iframe");
-
-module.exports = {
+export default {
   "cardinal-modal": CardinalModalFramework,
-  "bootstrap3-modal": Bootstrap3ModalFramework,
   "inline-iframe": InlineIframeFramework,
 };

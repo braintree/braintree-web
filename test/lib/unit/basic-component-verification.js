@@ -1,15 +1,13 @@
-"use strict";
-
-const { verify } = require("../../../src/lib/basic-component-verification");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const sharedErrors = require("../../../src/lib/errors");
+import { verify } from "../../../src/lib/basic-component-verification";
+import BraintreeError from "../../../src/lib/braintree-error";
+import sharedErrors from "../../../src/lib/errors";
 
 describe("basicComponentVerification", () => {
   it("resolves when client checks pass", () =>
     verify({
       name: "Component",
       client: {
-        getVersion: jest.fn().mockReturnValue(process.env.npm_package_version),
+        getVersion: vi.fn().mockReturnValue(process.env.npm_package_version),
       },
     }).catch(({ message }) => {
       expect(message).toBeFalsy();
@@ -48,7 +46,7 @@ describe("basicComponentVerification", () => {
   it("rejects with a braintree error if no authorization is provided and client version does not match provided version", () =>
     verify({
       name: "Component",
-      client: { getVersion: jest.fn().mockReturnValue("3.1.0") },
+      client: { getVersion: vi.fn().mockReturnValue("3.1.0") },
     }).catch((err) => {
       expect(err).toBeInstanceOf(BraintreeError);
       expect(err.type).toBe("MERCHANT");

@@ -1,7 +1,5 @@
-"use strict";
-
-var browserDetection = require("./browser-detection");
-var constants = require("./constants");
+import browserDetection from "./browser-detection";
+import constants from "./constants";
 var allowedFields = Object.keys(constants.allowedFields);
 var directions = constants.navigationDirections;
 
@@ -104,4 +102,6 @@ var focusIntercept = {
   },
 };
 
-module.exports = focusIntercept;
+export const { destroy } = focusIntercept;
+
+export default focusIntercept;

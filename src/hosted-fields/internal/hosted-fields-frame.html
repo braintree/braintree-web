@@ -3,7 +3,6 @@
 
 <head>
   <meta charset="UTF-8" />
-  @CSP_META_TAG
 
   <style>
     * {
@@ -57,7 +56,7 @@
        to have weird issues where we couldn't prevent
        the focus intercepts from being interacted with
        by the customer and sometimes when tabbing backward
-       the previous arrow would dissapear even when it
+       the previous arrow would disappear even when it
        was working before*/
       padding: 1px !important;
     }
@@ -74,13 +73,7 @@
 </head>
 
 <body>
-  <!--[if IE 9
-      ]><script src="../js/hosted-fields-internal-polyfills-ie9.min.js"></script
-    ><![endif]-->
-
-  <script>
-    @BUILT_FILE
-  </script>
+  <script type="module" src="./index.js"></script>
   <script>
     braintree.hostedFields.create();
   </script>

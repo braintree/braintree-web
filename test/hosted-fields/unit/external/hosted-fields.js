@@ -1,31 +1,31 @@
-"use strict";
+vi.mock("../../../../src/hosted-fields/shared/browser-detection");
+vi.mock("../../../../src/hosted-fields/external/get-styles-from-class");
+vi.mock("framebus");
 
-jest.mock("../../../../src/hosted-fields/shared/browser-detection");
-jest.mock("../../../../src/hosted-fields/external/get-styles-from-class");
-jest.mock("framebus");
+import analytics from "../../../../src/lib/analytics";
+import Bus from "framebus";
+import createDeferredClient from "../../../../src/lib/create-deferred-client";
+import Client from "../../../../src/client/client";
+import HostedFields from "../../../../src/hosted-fields/external/hosted-fields";
+import getStylesFromClass from "../../../../src/hosted-fields/external/get-styles-from-class";
+import { events } from "../../../../src/hosted-fields/shared/constants";
+import Destructor from "../../../../src/lib/destructor";
+import shadow from "../../../../src/lib/shadow";
+import EventEmitter from "@braintree/event-emitter";
+import BraintreeError from "../../../../src/lib/braintree-error";
 
-const analytics = require("../../../../src/lib/analytics");
-const Bus = require("framebus");
-const createDeferredClient = require("../../../../src/lib/create-deferred-client");
-const Client = require("../../../../src/client/client");
-const HostedFields = require("../../../../src/hosted-fields/external/hosted-fields");
-const getStylesFromClass = require("../../../../src/hosted-fields/external/get-styles-from-class");
-const { events } = require("../../../../src/hosted-fields/shared/constants");
-const Destructor = require("../../../../src/lib/destructor");
-const shadow = require("../../../../src/lib/shadow");
-const EventEmitter = require("@braintree/event-emitter");
-const BraintreeError = require("../../../../src/lib/braintree-error");
-const {
+import {
   fake,
   noop,
   rejectIfResolves,
   findFirstEventCallback,
   yieldsAsync,
   yieldsByEvent,
-} = require("../../../helpers");
-const methods = require("../../../../src/lib/methods");
-const getCardTypes = require("../../../../src/hosted-fields/shared/get-card-types");
-const browserDetection = require("../../../../src/hosted-fields/shared/browser-detection");
+} from "../../../helpers";
+
+import methods from "../../../../src/lib/methods";
+import getCardTypes from "credit-card-type";
+import browserDetection from "../../../../src/hosted-fields/shared/browser-detection";
 
 describe("HostedFields", () => {
   let testContext;
@@ -51,9 +51,9 @@ describe("HostedFields", () => {
 
     document.body.appendChild(testContext.numberDiv);
 
-    jest
-      .spyOn(createDeferredClient, "create")
-      .mockResolvedValue(testContext.fakeClient);
+    vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+      testContext.fakeClient
+    );
   });
 
   afterEach(() => {
@@ -69,7 +69,7 @@ describe("HostedFields", () => {
 
   describe("Constructor", () => {
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it("inherits from EventEmitter", () => {
@@ -217,17 +217,17 @@ describe("HostedFields", () => {
     });
 
     it("sends a timeout event if the fields take too long to set up", () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      jest.advanceTimersByTime(59999);
+      vi.advanceTimersByTime(59999);
       expect(analytics.sendEvent).not.toHaveBeenCalledWith(
         testContext.instance._clientPromise,
         "custom.hosted-fields.load.timed-out"
       );
 
-      jest.advanceTimersByTime(1);
+      vi.advanceTimersByTime(1);
       expect(analytics.sendEvent).toHaveBeenCalledWith(
         testContext.instance._clientPromise,
         "custom.hosted-fields.load.timed-out"
@@ -235,16 +235,16 @@ describe("HostedFields", () => {
     });
 
     it("emits a timeout event if the fields take too long to set up", () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
-      jest.spyOn(testContext.instance, "_emit").mockImplementation();
+      vi.spyOn(testContext.instance, "emit").mockImplementation();
 
-      jest.advanceTimersByTime(59999);
-      expect(testContext.instance._emit).not.toHaveBeenCalledWith("timeout");
+      vi.advanceTimersByTime(59999);
+      expect(testContext.instance.emit).not.toHaveBeenCalledWith("timeout");
 
-      jest.advanceTimersByTime(1);
-      expect(testContext.instance._emit).toHaveBeenCalledWith("timeout");
+      vi.advanceTimersByTime(1);
+      expect(testContext.instance.emit).toHaveBeenCalledWith("timeout");
     });
 
     it("subscribes to FRAME_READY", () => {
@@ -256,269 +256,280 @@ describe("HostedFields", () => {
       );
     });
 
-    it("replies with configuration, only to the final FRAME_READY", (done) => {
-      let frameReadyHandler;
-      const configuration = testContext.defaultConfiguration;
-      const replyStub = jest.fn();
-      const cvvNode = document.createElement("div");
-      const expirationDateNode = document.createElement("div");
+    it("replies with configuration, only to the final FRAME_READY", () =>
+      new Promise((resolve) => {
+        let frameReadyHandler;
+        const configuration = testContext.defaultConfiguration;
+        const replyStub = vi.fn();
+        const cvvNode = document.createElement("div");
+        const expirationDateNode = document.createElement("div");
 
-      cvvNode.id = "cvv";
-      expirationDateNode.id = "expirationDate";
+        cvvNode.id = "cvv";
+        expirationDateNode.id = "expirationDate";
 
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(expirationDateNode);
+        document.body.appendChild(cvvNode);
+        document.body.appendChild(expirationDateNode);
 
-      configuration.fields = {
-        number: { selector: "#number" },
-        cvv: { selector: "#cvv" },
-        expirationDate: { selector: "#expirationDate" },
-      };
-      configuration.orderedFields = ["number", "cvv", "expirationDate"];
+        configuration.fields = {
+          number: { container: "#number" },
+          cvv: { container: "#cvv" },
+          expirationDate: { container: "#expirationDate" },
+        };
+        configuration.orderedFields = ["number", "cvv", "expirationDate"];
 
-      testContext.instance = new HostedFields(configuration);
+        testContext.instance = new HostedFields(configuration);
 
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
-
-      testContext.instance.on("ready", () => {
-        expect(replyStub).toHaveBeenCalledWith(configuration);
-
-        done();
-      });
-
-      frameReadyHandler({ field: "number" }, replyStub);
-      frameReadyHandler({ field: "cvv" }, replyStub);
-      frameReadyHandler({ field: "expirationDate" }, replyStub);
-    });
-
-    it("replies with configuration without container param in fields", (done) => {
-      let frameReadyHandler;
-      const configuration = testContext.defaultConfiguration;
-      const replyStub = jest.fn();
-      const cvvNode = document.createElement("div");
-      const expirationDateNode = document.createElement("div");
-
-      cvvNode.id = "cvv";
-      expirationDateNode.id = "expirationDate";
-
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(expirationDateNode);
-
-      configuration.fields = {
-        number: { container: "#number", placeholder: "4111" },
-        cvv: { container: "#cvv" },
-        expirationDate: { container: "#expirationDate" },
-      };
-      configuration.orderedFields = ["number", "cvv", "expirationDate"];
-
-      testContext.instance = new HostedFields(configuration);
-
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
-
-      testContext.instance.on("ready", () => {
-        expect(replyStub).toHaveBeenCalledWith(
-          expect.objectContaining({
-            fields: {
-              number: { placeholder: "4111" },
-              cvv: {},
-              expirationDate: {},
-            },
-          })
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
         );
 
-        done();
-      });
+        testContext.instance.on("ready", () => {
+          expect(replyStub).toHaveBeenCalledWith(
+            expect.objectContaining({
+              client: configuration.client,
+              orderedFields: configuration.orderedFields,
+            })
+          );
 
-      frameReadyHandler({ field: "number" }, replyStub);
-      frameReadyHandler({ field: "cvv" }, replyStub);
-      frameReadyHandler({ field: "expirationDate" }, replyStub);
-    });
+          resolve();
+        });
 
-    it("creates an iframe for each field", (done) => {
-      let frameReadyHandler;
-      const configuration = testContext.defaultConfiguration;
-      const replyStub = jest.fn();
-      const cvvNode = document.createElement("div");
-      const expirationDateNode = document.createElement("div");
+        frameReadyHandler({ field: "number" }, replyStub);
+        frameReadyHandler({ field: "cvv" }, replyStub);
+        frameReadyHandler({ field: "expirationDate" }, replyStub);
+      }));
 
-      cvvNode.id = "cvv";
-      expirationDateNode.id = "expirationDate";
+    it("replies with configuration without container param in fields", () =>
+      new Promise((resolve) => {
+        let frameReadyHandler;
+        const configuration = testContext.defaultConfiguration;
+        const replyStub = vi.fn();
+        const cvvNode = document.createElement("div");
+        const expirationDateNode = document.createElement("div");
 
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(expirationDateNode);
+        cvvNode.id = "cvv";
+        expirationDateNode.id = "expirationDate";
 
-      configuration.fields = {
-        number: { container: "#number", placeholder: "4111" },
-        cvv: { container: "#cvv" },
-        expirationDate: { container: "#expirationDate" },
-      };
-      configuration.orderedFields = ["number", "cvv", "expirationDate"];
+        document.body.appendChild(cvvNode);
+        document.body.appendChild(expirationDateNode);
 
-      testContext.instance = new HostedFields(configuration);
+        configuration.fields = {
+          number: { container: "#number", placeholder: "4111" },
+          cvv: { container: "#cvv" },
+          expirationDate: { container: "#expirationDate" },
+        };
+        configuration.orderedFields = ["number", "cvv", "expirationDate"];
 
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
+        testContext.instance = new HostedFields(configuration);
 
-      testContext.instance.on("ready", () => {
-        const iframes = document.querySelectorAll("iframe");
-
-        expect(iframes.length).toBe(3);
-        expect(iframes[0].getAttribute("title")).toBe(
-          "Secure Credit Card Frame - Credit Card Number"
-        );
-        expect(iframes[1].getAttribute("title")).toBe(
-          "Secure Credit Card Frame - CVV"
-        );
-        expect(iframes[2].getAttribute("title")).toBe(
-          "Secure Credit Card Frame - Expiration Date"
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
         );
 
-        expect(Bus.prototype.addTargetFrame).toBeCalledTimes(3);
-        expect(Bus.prototype.addTargetFrame).toBeCalledWith(iframes[0]);
-        expect(Bus.prototype.addTargetFrame).toBeCalledWith(iframes[1]);
-        expect(Bus.prototype.addTargetFrame).toBeCalledWith(iframes[2]);
+        testContext.instance.on("ready", () => {
+          expect(replyStub).toHaveBeenCalledWith(
+            expect.objectContaining({
+              fields: {
+                number: { placeholder: "4111" },
+                cvv: {},
+                expirationDate: {},
+              },
+            })
+          );
 
-        done();
-      });
+          resolve();
+        });
 
-      frameReadyHandler({ field: "number" }, replyStub);
-      frameReadyHandler({ field: "cvv" }, replyStub);
-      frameReadyHandler({ field: "expirationDate" }, replyStub);
-    });
+        frameReadyHandler({ field: "number" }, replyStub);
+        frameReadyHandler({ field: "cvv" }, replyStub);
+        frameReadyHandler({ field: "expirationDate" }, replyStub);
+      }));
 
-    it("can pass custom titles for iframes", (done) => {
-      let frameReadyHandler;
-      const configuration = testContext.defaultConfiguration;
-      const replyStub = jest.fn();
-      const cvvNode = document.createElement("div");
-      const expirationDateNode = document.createElement("div");
+    it("creates an iframe for each field", () =>
+      new Promise((resolve) => {
+        let frameReadyHandler;
+        const configuration = testContext.defaultConfiguration;
+        const replyStub = vi.fn();
+        const cvvNode = document.createElement("div");
+        const expirationDateNode = document.createElement("div");
 
-      cvvNode.id = "cvv";
-      expirationDateNode.id = "expirationDate";
+        cvvNode.id = "cvv";
+        expirationDateNode.id = "expirationDate";
 
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(expirationDateNode);
+        document.body.appendChild(cvvNode);
+        document.body.appendChild(expirationDateNode);
 
-      configuration.fields = {
-        number: { container: "#number", iframeTitle: "Number" },
-        cvv: { container: "#cvv", iframeTitle: "CVV" },
-        expirationDate: {
-          container: "#expirationDate",
-          iframeTitle: "Expiration Date",
-        },
-      };
-      configuration.orderedFields = ["number", "cvv", "expirationDate"];
+        configuration.fields = {
+          number: { container: "#number", placeholder: "4111" },
+          cvv: { container: "#cvv" },
+          expirationDate: { container: "#expirationDate" },
+        };
+        configuration.orderedFields = ["number", "cvv", "expirationDate"];
 
-      testContext.instance = new HostedFields(configuration);
+        testContext.instance = new HostedFields(configuration);
 
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
-
-      testContext.instance.on("ready", () => {
-        const iframes = document.querySelectorAll("iframe");
-
-        expect(iframes.length).toBe(3);
-        expect(iframes[0].getAttribute("title")).toBe("Number");
-        expect(iframes[1].getAttribute("title")).toBe("CVV");
-        expect(iframes[2].getAttribute("title")).toBe("Expiration Date");
-
-        done();
-      });
-
-      frameReadyHandler({ field: "number" }, replyStub);
-      frameReadyHandler({ field: "cvv" }, replyStub);
-      frameReadyHandler({ field: "expirationDate" }, replyStub);
-    });
-
-    it("can pass DOM node directly as container", (done) => {
-      let frameReadyHandler;
-      const configuration = testContext.defaultConfiguration;
-      const replyStub = jest.fn();
-      const cvvNode = document.createElement("div");
-      const numberNode = document.createElement("div");
-      const expirationDateNode = document.createElement("div");
-
-      cvvNode.id = "cvv";
-      expirationDateNode.id = "expirationDate";
-      numberNode.id = "number";
-
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(numberNode);
-      document.body.appendChild(expirationDateNode);
-
-      configuration.fields = {
-        number: { container: numberNode },
-        cvv: { container: cvvNode },
-        expirationDate: { container: expirationDateNode },
-      };
-
-      testContext.instance = new HostedFields(configuration);
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
-
-      testContext.instance.on("ready", () => {
-        done();
-      });
-
-      frameReadyHandler({ field: "number" }, replyStub);
-      frameReadyHandler({ field: "cvv" }, replyStub);
-      frameReadyHandler({ field: "expirationDate" }, replyStub);
-    });
-
-    it("can pass shadow DOM node directly as container", (done) => {
-      let frameReadyHandler;
-      const configuration = testContext.defaultConfiguration;
-      const replyStub = jest.fn();
-      const numberNodeContainer = document.createElement("div");
-      const wrapper = document.createElement("div");
-      const numberNode = document.createElement("div");
-      const shadowDom = numberNodeContainer.attachShadow({ mode: "open" });
-
-      numberNode.id = "number";
-      shadowDom.appendChild(wrapper);
-      wrapper.appendChild(numberNode);
-
-      document.body.appendChild(numberNodeContainer);
-      // we have to fake this because jest doesn't recognize
-      // the style sheet property on style nodes within
-      // the shadow DOM
-      jest
-        .spyOn(shadow, "transformToSlot")
-        .mockReturnValue(document.createElement("div"));
-
-      configuration.fields = {
-        number: { container: numberNode },
-      };
-
-      testContext.instance = new HostedFields(configuration);
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
-
-      testContext.instance.on("ready", () => {
-        expect(shadow.transformToSlot).toBeCalledTimes(1);
-        expect(shadow.transformToSlot).toBeCalledWith(
-          numberNode,
-          "height: 100%"
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
         );
-        done();
-      });
 
-      frameReadyHandler({ field: "number" }, replyStub);
-    });
+        testContext.instance.on("ready", () => {
+          const iframes = document.querySelectorAll("iframe");
+
+          expect(iframes.length).toBe(3);
+          expect(iframes[0].getAttribute("title")).toBe(
+            "Secure Credit Card Frame - Credit Card Number"
+          );
+          expect(iframes[1].getAttribute("title")).toBe(
+            "Secure Credit Card Frame - CVV"
+          );
+          expect(iframes[2].getAttribute("title")).toBe(
+            "Secure Credit Card Frame - Expiration Date"
+          );
+
+          expect(Bus.prototype.addTargetFrame).toBeCalledTimes(3);
+          expect(Bus.prototype.addTargetFrame).toBeCalledWith(iframes[0]);
+          expect(Bus.prototype.addTargetFrame).toBeCalledWith(iframes[1]);
+          expect(Bus.prototype.addTargetFrame).toBeCalledWith(iframes[2]);
+
+          resolve();
+        });
+
+        frameReadyHandler({ field: "number" }, replyStub);
+        frameReadyHandler({ field: "cvv" }, replyStub);
+        frameReadyHandler({ field: "expirationDate" }, replyStub);
+      }));
+
+    it("can pass custom titles for iframes", () =>
+      new Promise((resolve) => {
+        let frameReadyHandler;
+        const configuration = testContext.defaultConfiguration;
+        const replyStub = vi.fn();
+        const cvvNode = document.createElement("div");
+        const expirationDateNode = document.createElement("div");
+
+        cvvNode.id = "cvv";
+        expirationDateNode.id = "expirationDate";
+
+        document.body.appendChild(cvvNode);
+        document.body.appendChild(expirationDateNode);
+
+        configuration.fields = {
+          number: { container: "#number", iframeTitle: "Number" },
+          cvv: { container: "#cvv", iframeTitle: "CVV" },
+          expirationDate: {
+            container: "#expirationDate",
+            iframeTitle: "Expiration Date",
+          },
+        };
+        configuration.orderedFields = ["number", "cvv", "expirationDate"];
+
+        testContext.instance = new HostedFields(configuration);
+
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
+        );
+
+        testContext.instance.on("ready", () => {
+          const iframes = document.querySelectorAll("iframe");
+
+          expect(iframes.length).toBe(3);
+          expect(iframes[0].getAttribute("title")).toBe("Number");
+          expect(iframes[1].getAttribute("title")).toBe("CVV");
+          expect(iframes[2].getAttribute("title")).toBe("Expiration Date");
+
+          resolve();
+        });
+
+        frameReadyHandler({ field: "number" }, replyStub);
+        frameReadyHandler({ field: "cvv" }, replyStub);
+        frameReadyHandler({ field: "expirationDate" }, replyStub);
+      }));
+
+    it("can pass DOM node directly as container", () =>
+      new Promise((resolve) => {
+        let frameReadyHandler;
+        const configuration = testContext.defaultConfiguration;
+        const replyStub = vi.fn();
+        const cvvNode = document.createElement("div");
+        const numberNode = document.createElement("div");
+        const expirationDateNode = document.createElement("div");
+
+        cvvNode.id = "cvv";
+        expirationDateNode.id = "expirationDate";
+        numberNode.id = "number";
+
+        document.body.appendChild(cvvNode);
+        document.body.appendChild(numberNode);
+        document.body.appendChild(expirationDateNode);
+
+        configuration.fields = {
+          number: { container: numberNode },
+          cvv: { container: cvvNode },
+          expirationDate: { container: expirationDateNode },
+        };
+
+        testContext.instance = new HostedFields(configuration);
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
+        );
+
+        testContext.instance.on("ready", () => {
+          resolve();
+        });
+
+        frameReadyHandler({ field: "number" }, replyStub);
+        frameReadyHandler({ field: "cvv" }, replyStub);
+        frameReadyHandler({ field: "expirationDate" }, replyStub);
+      }));
+
+    it("can pass shadow DOM node directly as container", () =>
+      new Promise((resolve) => {
+        let frameReadyHandler;
+        const configuration = testContext.defaultConfiguration;
+        const replyStub = vi.fn();
+        const numberNodeContainer = document.createElement("div");
+        const wrapper = document.createElement("div");
+        const numberNode = document.createElement("div");
+        const shadowDom = numberNodeContainer.attachShadow({ mode: "open" });
+
+        numberNode.id = "number";
+        shadowDom.appendChild(wrapper);
+        wrapper.appendChild(numberNode);
+
+        document.body.appendChild(numberNodeContainer);
+        // we have to fake this because jest doesn't recognize
+        // the style sheet property on style nodes within
+        // the shadow DOM
+        vi.spyOn(shadow, "transformToSlot").mockReturnValue(
+          document.createElement("div")
+        );
+
+        configuration.fields = {
+          number: { container: numberNode },
+        };
+
+        testContext.instance = new HostedFields(configuration);
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
+        );
+
+        testContext.instance.on("ready", () => {
+          expect(shadow.transformToSlot).toBeCalledTimes(1);
+          expect(shadow.transformToSlot).toBeCalledWith(
+            numberNode,
+            "height: 100%"
+          );
+          resolve();
+        });
+
+        frameReadyHandler({ field: "number" }, replyStub);
+      }));
 
     it("must pass a DOM node of type 1", () => {
       let error;
@@ -552,9 +563,9 @@ describe("HostedFields", () => {
     });
 
     it("sends analytic event for tokenization starting when CARD_FORM_ENTRY_HAS_BEGUN event fires", () => {
-      jest
-        .spyOn(Bus.prototype, "on")
-        .mockImplementation(yieldsByEvent(events.CARD_FORM_ENTRY_HAS_BEGUN));
+      vi.spyOn(Bus.prototype, "on").mockImplementation(
+        yieldsByEvent(events.CARD_FORM_ENTRY_HAS_BEGUN)
+      );
 
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
@@ -582,11 +593,11 @@ describe("HostedFields", () => {
         testContext.instance._bus.on.mock.calls
       );
 
-      jest.spyOn(testContext.instance, "_emit");
+      vi.spyOn(testContext.instance, "emit");
 
       handler("123456");
 
-      expect(testContext.instance._emit).toHaveBeenCalledWith("binAvailable", {
+      expect(testContext.instance.emit).toHaveBeenCalledWith("binAvailable", {
         bin: "123456",
       });
     });
@@ -600,16 +611,16 @@ describe("HostedFields", () => {
         testContext.instance._bus.on.mock.calls
       );
 
-      jest.spyOn(testContext.instance, "_emit");
+      vi.spyOn(testContext.instance, "emit");
 
       handler("12345678");
 
-      expect(testContext.instance._emit).toHaveBeenCalledWith("binAvailable", {
+      expect(testContext.instance.emit).toHaveBeenCalledWith("binAvailable", {
         bin: "12345678",
       });
     });
 
-    it("can pass selector instead of container for field", () => {
+    it("throws HOSTED_FIELDS_INVALID_FIELD_SELECTOR when selector is passed instead of container", () => {
       let error;
 
       testContext.defaultConfiguration.fields.number.selector =
@@ -622,68 +633,71 @@ describe("HostedFields", () => {
         error = e;
       }
 
-      expect(error).toBeUndefined();
+      expect(error).toBeInstanceOf(BraintreeError);
+      expect(error.code).toBe("HOSTED_FIELDS_INVALID_FIELD_SELECTOR");
     });
 
-    it("converts class name to computed style", (done) => {
-      let frameReadyHandler;
-      const configuration = testContext.defaultConfiguration;
-      const replyStub = jest.fn();
-      const style = document.createElement("style");
+    it("converts class name to computed style", () =>
+      new Promise((resolve) => {
+        let frameReadyHandler;
+        const configuration = testContext.defaultConfiguration;
+        const replyStub = vi.fn();
+        const style = document.createElement("style");
 
-      style.innerText = ".class-name { color: rgb(0, 0, 255); }";
+        style.innerText = ".class-name { color: rgb(0, 0, 255); }";
 
-      document.body.appendChild(style);
+        document.body.appendChild(style);
 
-      configuration.styles = {
-        input: "class-name",
-      };
+        configuration.styles = {
+          input: "class-name",
+        };
 
-      testContext.instance = new HostedFields(configuration);
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
+        testContext.instance = new HostedFields(configuration);
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
+        );
 
-      testContext.instance.on("ready", () => {
-        expect(getStylesFromClass).toHaveBeenCalledWith("class-name");
+        testContext.instance.on("ready", () => {
+          expect(getStylesFromClass).toHaveBeenCalledWith("class-name");
 
-        done();
-      });
+          resolve();
+        });
 
-      frameReadyHandler({ field: "number" }, replyStub);
-    });
+        frameReadyHandler({ field: "number" }, replyStub);
+      }));
 
-    it('emits "ready" when the final FRAME_READY is emitted', (done) => {
-      let frameReadyHandler;
-      const configuration = testContext.defaultConfiguration;
-      const cvvNode = document.createElement("div");
-      const expirationDateNode = document.createElement("div");
+    it('emits "ready" when the final FRAME_READY is emitted', () =>
+      new Promise((resolve) => {
+        let frameReadyHandler;
+        const configuration = testContext.defaultConfiguration;
+        const cvvNode = document.createElement("div");
+        const expirationDateNode = document.createElement("div");
 
-      cvvNode.id = "cvv";
-      expirationDateNode.id = "expirationDate";
+        cvvNode.id = "cvv";
+        expirationDateNode.id = "expirationDate";
 
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(expirationDateNode);
+        document.body.appendChild(cvvNode);
+        document.body.appendChild(expirationDateNode);
 
-      configuration.fields = {
-        number: { container: "#number" },
-        cvv: { container: "#cvv" },
-        expirationDate: { container: "#expirationDate" },
-      };
-      testContext.instance = new HostedFields(configuration);
+        configuration.fields = {
+          number: { container: "#number" },
+          cvv: { container: "#cvv" },
+          expirationDate: { container: "#expirationDate" },
+        };
+        testContext.instance = new HostedFields(configuration);
 
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
+        );
 
-      testContext.instance.on("ready", done);
+        testContext.instance.on("ready", resolve);
 
-      frameReadyHandler({ field: "number" }, noop);
-      frameReadyHandler({ field: "cvv" }, noop);
-      frameReadyHandler({ field: "expirationDate" }, noop);
-    });
+        frameReadyHandler({ field: "number" }, noop);
+        frameReadyHandler({ field: "cvv" }, noop);
+        frameReadyHandler({ field: "expirationDate" }, noop);
+      }));
 
     it("subscribes to INPUT_EVENT", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
@@ -706,7 +720,7 @@ describe("HostedFields", () => {
       document.body.appendChild(cvvNode);
       document.body.appendChild(expirationDateNode);
 
-      jest.spyOn(HostedFields.prototype, "_setupLabelFocus");
+      vi.spyOn(HostedFields.prototype, "_setupLabelFocus");
 
       configuration.fields = {
         number: { container: "#number" },
@@ -784,149 +798,153 @@ describe("HostedFields", () => {
       );
     });
 
-    it("loads deferred when using an authorization instead of a client", (done) => {
-      let frameReadyHandler;
-      const configuration = testContext.defaultConfiguration;
-      const cvvNode = document.createElement("div");
-      const expirationDateNode = document.createElement("div");
+    it("loads deferred when using an authorization instead of a client", () =>
+      new Promise((resolve) => {
+        let frameReadyHandler;
+        const configuration = testContext.defaultConfiguration;
+        const cvvNode = document.createElement("div");
+        const expirationDateNode = document.createElement("div");
 
-      cvvNode.id = "cvv";
-      expirationDateNode.id = "expirationDate";
+        cvvNode.id = "cvv";
+        expirationDateNode.id = "expirationDate";
 
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(expirationDateNode);
+        document.body.appendChild(cvvNode);
+        document.body.appendChild(expirationDateNode);
 
-      configuration.fields = {
-        number: { container: "#number" },
-        cvv: { container: "#cvv" },
-        expirationDate: { container: "#expirationDate" },
-      };
+        configuration.fields = {
+          number: { container: "#number" },
+          cvv: { container: "#cvv" },
+          expirationDate: { container: "#expirationDate" },
+        };
 
-      delete configuration.client;
-      configuration.authorization = fake.clientToken;
-      testContext.instance = new HostedFields(configuration);
+        delete configuration.client;
+        configuration.authorization = fake.clientToken;
+        testContext.instance = new HostedFields(configuration);
 
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
+        );
 
-      testContext.instance.on("ready", () => {
-        expect(createDeferredClient.create).toBeCalledTimes(1);
-        expect(createDeferredClient.create).toHaveBeenCalledWith({
-          name: "Hosted Fields",
-          client: expect.toBeUndefined,
-          authorization: configuration.authorization,
-          debug: false,
-          assetsUrl: "https://example.com/assets",
+        testContext.instance.on("ready", () => {
+          expect(createDeferredClient.create).toBeCalledTimes(1);
+          expect(createDeferredClient.create).toHaveBeenCalledWith({
+            name: "Hosted Fields",
+            client: expect.toBeUndefined,
+            authorization: configuration.authorization,
+            debug: false,
+            assetsUrl: "https://example.com/assets",
+          });
+
+          resolve();
         });
 
-        done();
-      });
+        frameReadyHandler({ field: "number" }, noop);
+        frameReadyHandler({ field: "cvv" }, noop);
+        frameReadyHandler({ field: "expirationDate" }, noop);
+      }));
 
-      frameReadyHandler({ field: "number" }, noop);
-      frameReadyHandler({ field: "cvv" }, noop);
-      frameReadyHandler({ field: "expirationDate" }, noop);
-    });
+    it("sends client to orchestrator frame when it requests the client", () =>
+      new Promise((resolve) => {
+        let frameReadyHandler, clientReadyHandler;
+        const fakeClient = testContext.fakeClient;
+        const configuration = testContext.defaultConfiguration;
+        const cvvNode = document.createElement("div");
+        const expirationDateNode = document.createElement("div");
 
-    it("sends client to orchestrator frame when it requests the client", (done) => {
-      let frameReadyHandler, clientReadyHandler;
-      const fakeClient = testContext.fakeClient;
-      const configuration = testContext.defaultConfiguration;
-      const cvvNode = document.createElement("div");
-      const expirationDateNode = document.createElement("div");
+        cvvNode.id = "cvv";
+        expirationDateNode.id = "expirationDate";
 
-      cvvNode.id = "cvv";
-      expirationDateNode.id = "expirationDate";
+        document.body.appendChild(cvvNode);
+        document.body.appendChild(expirationDateNode);
 
-      document.body.appendChild(cvvNode);
-      document.body.appendChild(expirationDateNode);
+        configuration.fields = {
+          number: { container: "#number" },
+          cvv: { container: "#cvv" },
+          expirationDate: { container: "#expirationDate" },
+        };
 
-      configuration.fields = {
-        number: { container: "#number" },
-        cvv: { container: "#cvv" },
-        expirationDate: { container: "#expirationDate" },
-      };
+        delete configuration.client;
+        configuration.authorization = fake.clientToken;
+        testContext.instance = new HostedFields(configuration);
 
-      delete configuration.client;
-      configuration.authorization = fake.clientToken;
-      testContext.instance = new HostedFields(configuration);
+        frameReadyHandler = findFirstEventCallback(
+          events.FRAME_READY,
+          testContext.instance._bus.on.mock.calls
+        );
+        clientReadyHandler = findFirstEventCallback(
+          events.READY_FOR_CLIENT,
+          testContext.instance._bus.on.mock.calls
+        );
 
-      frameReadyHandler = findFirstEventCallback(
-        events.FRAME_READY,
-        testContext.instance._bus.on.mock.calls
-      );
-      clientReadyHandler = findFirstEventCallback(
-        events.READY_FOR_CLIENT,
-        testContext.instance._bus.on.mock.calls
-      );
+        testContext.instance.on("ready", () => {
+          clientReadyHandler((client) => {
+            expect(client).toBe(fakeClient);
 
-      testContext.instance.on("ready", () => {
-        clientReadyHandler((client) => {
-          expect(client).toBe(fakeClient);
-
-          done();
+            resolve();
+          });
         });
-      });
 
-      frameReadyHandler({ field: "number" }, noop);
-      frameReadyHandler({ field: "cvv" }, noop);
-      frameReadyHandler({ field: "expirationDate" }, noop);
-    });
+        frameReadyHandler({ field: "number" }, noop);
+        frameReadyHandler({ field: "cvv" }, noop);
+        frameReadyHandler({ field: "expirationDate" }, noop);
+      }));
 
     describe("preventCursorJumps configuration", () => {
-      it("does not include preventCursorJumps in configuration when not specified", (done) => {
-        var frameReadyHandler;
-        var configuration = testContext.defaultConfiguration;
-        var replyStub = jest.fn();
+      it("does not include preventCursorJumps in configuration when not specified", () =>
+        new Promise((resolve) => {
+          var frameReadyHandler;
+          var configuration = testContext.defaultConfiguration;
+          var replyStub = vi.fn();
 
-        delete configuration.preventCursorJumps;
+          delete configuration.preventCursorJumps;
 
-        testContext.instance = new HostedFields(configuration);
+          testContext.instance = new HostedFields(configuration);
 
-        frameReadyHandler = findFirstEventCallback(
-          events.FRAME_READY,
-          testContext.instance._bus.on.mock.calls
-        );
-
-        testContext.instance.on("ready", () => {
-          expect(replyStub).toHaveBeenCalledWith(
-            expect.not.objectContaining({
-              preventCursorJumps: expect.anything(),
-            })
+          frameReadyHandler = findFirstEventCallback(
+            events.FRAME_READY,
+            testContext.instance._bus.on.mock.calls
           );
-          done();
-        });
 
-        frameReadyHandler({ field: "number" }, replyStub);
-      });
+          testContext.instance.on("ready", () => {
+            expect(replyStub).toHaveBeenCalledWith(
+              expect.not.objectContaining({
+                preventCursorJumps: expect.anything(),
+              })
+            );
+            resolve();
+          });
 
-      it("includes preventCursorJumps in configuration when set to true", (done) => {
-        var frameReadyHandler;
-        var configuration = testContext.defaultConfiguration;
-        var replyStub = jest.fn();
+          frameReadyHandler({ field: "number" }, replyStub);
+        }));
 
-        configuration.preventCursorJumps = true;
+      it("includes preventCursorJumps in configuration when set to true", () =>
+        new Promise((resolve) => {
+          var frameReadyHandler;
+          var configuration = testContext.defaultConfiguration;
+          var replyStub = vi.fn();
 
-        testContext.instance = new HostedFields(configuration);
+          configuration.preventCursorJumps = true;
 
-        frameReadyHandler = findFirstEventCallback(
-          events.FRAME_READY,
-          testContext.instance._bus.on.mock.calls
-        );
+          testContext.instance = new HostedFields(configuration);
 
-        testContext.instance.on("ready", () => {
-          // Verify that preventCursorJumps was passed to the frame configuration
-          expect(replyStub).toHaveBeenCalledWith(
-            expect.objectContaining({
-              preventCursorJumps: true,
-            })
+          frameReadyHandler = findFirstEventCallback(
+            events.FRAME_READY,
+            testContext.instance._bus.on.mock.calls
           );
-          done();
-        });
 
-        frameReadyHandler({ field: "number" }, replyStub);
-      });
+          testContext.instance.on("ready", () => {
+            // Verify that preventCursorJumps was passed to the frame configuration
+            expect(replyStub).toHaveBeenCalledWith(
+              expect.objectContaining({
+                preventCursorJumps: true,
+              })
+            );
+            resolve();
+          });
+
+          frameReadyHandler({ field: "number" }, replyStub);
+        }));
     });
   });
 
@@ -935,14 +953,14 @@ describe("HostedFields", () => {
       const configuration = testContext.defaultConfiguration;
 
       testContext.fakeContainer = document.createElement("div");
-      testContext.fakeContainer.id = "fakenumbercontainer";
+      testContext.fakeContainer.id = "fake-number-container";
       document.body.appendChild(testContext.fakeContainer);
       configuration.fields.number = {
         container: `#${testContext.fakeContainer.id}`,
       };
 
       testContext.instance = new HostedFields(configuration);
-      jest.spyOn(testContext.instance, "_emit").mockImplementation();
+      vi.spyOn(testContext.instance, "emit").mockImplementation();
 
       testContext.inputEventHandler = findFirstEventCallback(
         events.INPUT_EVENT,
@@ -1036,8 +1054,8 @@ describe("HostedFields", () => {
     it("calls emit with the type and merchant payload", () => {
       testContext.inputEventHandler(testContext.eventData);
 
-      expect(testContext.instance._emit).toHaveBeenCalledTimes(1);
-      expect(testContext.instance._emit).toHaveBeenCalledWith(
+      expect(testContext.instance.emit).toHaveBeenCalledTimes(1);
+      expect(testContext.instance.emit).toHaveBeenCalledWith(
         "foo",
         testContext.eventData.merchantPayload
       );
@@ -1045,54 +1063,46 @@ describe("HostedFields", () => {
   });
 
   describe("tokenize", () => {
-    it("does not require options", (done) => {
+    it("does not require options", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      jest
-        .spyOn(testContext.instance._bus, "emit")
-        .mockImplementation(yieldsAsync([]));
+      vi.spyOn(testContext.instance._bus, "emit").mockImplementation(
+        yieldsAsync([])
+      );
 
-      expect.hasAssertions();
-      testContext.instance.tokenize((err) => {
-        expect(err).toBeFalsy();
-        done();
-      });
+      return testContext.instance.tokenize();
     });
 
-    it("emits TOKENIZATION_REQUEST with empty options", (done) => {
+    it("emits TOKENIZATION_REQUEST with empty options", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      jest
-        .spyOn(testContext.instance._bus, "emit")
-        .mockImplementation(yieldsAsync([]));
+      vi.spyOn(testContext.instance._bus, "emit").mockImplementation(
+        yieldsAsync([])
+      );
 
-      expect.assertions(1);
-      testContext.instance.tokenize(() => {
+      return testContext.instance.tokenize().then(() => {
         expect(testContext.instance._bus.emit).toHaveBeenCalledWith(
           events.TOKENIZATION_REQUEST,
           {},
           expect.any(Function)
         );
-        done();
       });
     });
 
-    it("emits TOKENIZATION_REQUEST with options", (done) => {
+    it("emits TOKENIZATION_REQUEST with options", () => {
       const options = { foo: "bar" };
 
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
-      jest
-        .spyOn(testContext.instance._bus, "emit")
-        .mockImplementation(yieldsAsync([]));
+      vi.spyOn(testContext.instance._bus, "emit").mockImplementation(
+        yieldsAsync([])
+      );
 
-      expect.assertions(1);
-      testContext.instance.tokenize(options, () => {
+      return testContext.instance.tokenize(options).then(() => {
         expect(testContext.instance._bus.emit).toHaveBeenCalledWith(
           events.TOKENIZATION_REQUEST,
           options,
           expect.any(Function)
         );
-        done();
       });
     });
 
@@ -1105,9 +1115,9 @@ describe("HostedFields", () => {
       };
 
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
-      jest
-        .spyOn(testContext.instance._bus, "emit")
-        .mockImplementation(yieldsAsync([error]));
+      vi.spyOn(testContext.instance._bus, "emit").mockImplementation(
+        yieldsAsync([error])
+      );
 
       return testContext.instance
         .tokenize()
@@ -1133,9 +1143,9 @@ describe("HostedFields", () => {
         cvv: { containerElement: {} },
         number: { containerElement: {} },
       };
-      jest
-        .spyOn(testContext.instance._bus, "emit")
-        .mockImplementation(yieldsAsync([error]));
+      vi.spyOn(testContext.instance._bus, "emit").mockImplementation(
+        yieldsAsync([error])
+      );
 
       return testContext.instance
         .tokenize()
@@ -1148,27 +1158,14 @@ describe("HostedFields", () => {
         });
     });
 
-    it("calls the callback when options are not provided", (done) => {
+    it("resolves with data when options are provided", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
-      jest
-        .spyOn(testContext.instance._bus, "emit")
-        .mockImplementation(yieldsAsync([null, "foo"]));
+      vi.spyOn(testContext.instance._bus, "emit").mockImplementation(
+        yieldsAsync([null, "foo"])
+      );
 
-      testContext.instance.tokenize((err, data) => {
+      return testContext.instance.tokenize({ foo: "bar" }).then((data) => {
         expect(data).toBe("foo");
-        done();
-      });
-    });
-
-    it("calls the callback when options are provided", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-      jest
-        .spyOn(testContext.instance._bus, "emit")
-        .mockImplementation(yieldsAsync([null, "foo"]));
-
-      testContext.instance.tokenize({ foo: "bar" }, (err, data) => {
-        expect(data).toBe("foo");
-        done();
       });
     });
 
@@ -1176,9 +1173,9 @@ describe("HostedFields", () => {
       let promise;
 
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
-      jest
-        .spyOn(testContext.instance._bus, "emit")
-        .mockImplementation(yieldsAsync([null, "foo"]));
+      vi.spyOn(testContext.instance._bus, "emit").mockImplementation(
+        yieldsAsync([null, "foo"])
+      );
 
       promise = testContext.instance.tokenize();
 
@@ -1193,7 +1190,7 @@ describe("HostedFields", () => {
   describe("teardown", () => {
     it("calls destructor's teardown", () => {
       const teardownStub = {
-        teardown: jest.fn(),
+        teardown: vi.fn(),
       };
 
       HostedFields.prototype.teardown.call(
@@ -1207,29 +1204,26 @@ describe("HostedFields", () => {
       expect(teardownStub.teardown).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    it("calls teardown analytic", (done) => {
+    it("calls teardown analytic", () => {
       const fakeErr = {};
       const client = testContext.defaultConfiguration.client;
 
-      HostedFields.prototype.teardown.call(
-        {
+      return HostedFields.prototype.teardown
+        .call({
           _clientPromise: client,
           _destructor: {
             teardown(callback) {
               callback(fakeErr);
             },
           },
-        },
-        (err) => {
+        })
+        .catch((err) => {
           expect(err).toBe(fakeErr);
           expect(analytics.sendEvent).toHaveBeenCalledWith(
             client,
             "custom.hosted-fields.teardown-completed"
           );
-
-          done();
-        }
-      );
+        });
     });
 
     it("returns a promise", () => {
@@ -1246,10 +1240,10 @@ describe("HostedFields", () => {
       expect(promise).toBeInstanceOf(Promise);
     });
 
-    it("replaces all methods so error is thrown when methods are invoked", (done) => {
+    it("replaces all methods so error is thrown when methods are invoked", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      testContext.instance.teardown(() => {
+      return testContext.instance.teardown().then(() => {
         methods(HostedFields.prototype)
           .concat(methods(EventEmitter.prototype))
           .forEach((method) => {
@@ -1270,7 +1264,6 @@ describe("HostedFields", () => {
           });
 
         delete testContext.instance;
-        done();
       });
     });
   });
@@ -1292,12 +1285,8 @@ describe("HostedFields", () => {
       );
     });
 
-    it("calls callback if provided", (done) => {
-      testContext.instance.addClass("number", "my-class", done);
-    });
-
-    it("calls errback when given non-allowed field", (done) => {
-      testContext.instance.addClass("rogue-field", "my-class", (err) => {
+    it("throws when given non-allowed field", () =>
+      testContext.instance.addClass("rogue-field", "my-class").catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
         expect(err.type).toBe("MERCHANT");
         expect(err.code).toBe("HOSTED_FIELDS_FIELD_INVALID");
@@ -1308,12 +1297,10 @@ describe("HostedFields", () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.ADD_CLASS
         );
-        done();
-      });
-    });
+      }));
 
-    it("calls errback when given field not supplied by merchant", (done) => {
-      testContext.instance.addClass("cvv", "my-class", (err) => {
+    it("throws when given field not supplied by merchant", () =>
+      testContext.instance.addClass("cvv", "my-class").catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
         expect(err.type).toBe("MERCHANT");
         expect(err.code).toBe("HOSTED_FIELDS_FIELD_NOT_PRESENT");
@@ -1324,9 +1311,7 @@ describe("HostedFields", () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.ADD_CLASS
         );
-        done();
-      });
-    });
+      }));
   });
 
   describe("removeClass", () => {
@@ -1345,28 +1330,24 @@ describe("HostedFields", () => {
       );
     });
 
-    it("calls callback if provided", (done) => {
-      testContext.instance.removeClass("number", "my-class", done);
-    });
+    it("throws when given non-allowed field", () =>
+      testContext.instance
+        .removeClass("rogue-field", "my-class")
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("MERCHANT");
+          expect(err.code).toBe("HOSTED_FIELDS_FIELD_INVALID");
+          expect(err.message).toBe(
+            '"rogue-field" is not a valid field. You must use a valid field option when removing a class.'
+          );
+          expect(err.details).not.toBeDefined();
+          expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
+            events.REMOVE_CLASS
+          );
+        }));
 
-    it("calls errback when given non-allowed field", (done) => {
-      testContext.instance.removeClass("rogue-field", "my-class", (err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("MERCHANT");
-        expect(err.code).toBe("HOSTED_FIELDS_FIELD_INVALID");
-        expect(err.message).toBe(
-          '"rogue-field" is not a valid field. You must use a valid field option when removing a class.'
-        );
-        expect(err.details).not.toBeDefined();
-        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
-          events.REMOVE_CLASS
-        );
-        done();
-      });
-    });
-
-    it("calls errback when given field not supplied by merchant", (done) => {
-      testContext.instance.removeClass("cvv", "my-class", (err) => {
+    it("throws when given field not supplied by merchant", () =>
+      testContext.instance.removeClass("cvv", "my-class").catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
         expect(err.type).toBe("MERCHANT");
         expect(err.code).toBe("HOSTED_FIELDS_FIELD_NOT_PRESENT");
@@ -1377,9 +1358,7 @@ describe("HostedFields", () => {
         expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
           events.REMOVE_CLASS
         );
-        done();
-      });
-    });
+      }));
   });
 
   describe("setAttribute", () => {
@@ -1402,29 +1381,16 @@ describe("HostedFields", () => {
       );
     });
 
-    it("calls callback if provided", (done) => {
+    it("throws when given non-allowed field", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      testContext.instance.setAttribute(
-        {
-          field: "number",
-          attribute: "placeholder",
-          value: "1111 1111 1111 1111",
-        },
-        done
-      );
-    });
-
-    it("calls errback when given non-allowed field", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.setAttribute(
-        {
+      return testContext.instance
+        .setAttribute({
           field: "rogue-field",
           attribute: "placeholder",
           value: "1111 1111 1111 1111",
-        },
-        (err) => {
+        })
+        .catch((err) => {
           expect(err).toBeInstanceOf(BraintreeError);
           expect(err.type).toBe("MERCHANT");
           expect(err.code).toBe("HOSTED_FIELDS_FIELD_INVALID");
@@ -1436,40 +1402,19 @@ describe("HostedFields", () => {
             events.SET_ATTRIBUTE,
             expect.anything()
           );
-          done();
-        }
-      );
+        });
     });
 
-    it("does not emit SET_ATTRIBUTE event when given non-allowed field", (done) => {
+    it("throws when given field not supplied by merchant", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      testContext.instance.setAttribute(
-        {
-          field: "rogue-field",
-          attribute: "placeholder",
-          value: "1111 1111 1111 1111",
-        },
-        () => {
-          expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
-            events.SET_ATTRIBUTE,
-            expect.anything()
-          );
-          done();
-        }
-      );
-    });
-
-    it("calls errback when given field not supplied by merchant", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.setAttribute(
-        {
+      return testContext.instance
+        .setAttribute({
           field: "cvv",
           attribute: "placeholder",
           value: "123",
-        },
-        (err) => {
+        })
+        .catch((err) => {
           expect(err).toBeInstanceOf(BraintreeError);
           expect(err.type).toBe("MERCHANT");
           expect(err.code).toBe("HOSTED_FIELDS_FIELD_NOT_PRESENT");
@@ -1481,28 +1426,7 @@ describe("HostedFields", () => {
             events.SET_ATTRIBUTE,
             expect.anything()
           );
-          done();
-        }
-      );
-    });
-
-    it("does not emit SET_ATTRIBUTE event when given field not supplied by merchant", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.setAttribute(
-        {
-          field: "cvv",
-          attribute: "placeholder",
-          value: "123",
-        },
-        () => {
-          expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
-            events.SET_ATTRIBUTE,
-            expect.anything()
-          );
-          done();
-        }
-      );
+        });
     });
   });
 
@@ -1510,10 +1434,10 @@ describe("HostedFields", () => {
     beforeEach(() => {
       testContext.defaultConfiguration.fields = {
         number: {
-          selector: "#number",
+          container: "#number",
         },
         expirationMonth: {
-          selector: "#month",
+          container: "#month",
           select: true,
         },
       };
@@ -1526,7 +1450,7 @@ describe("HostedFields", () => {
     it("emits SET_MONTH_OPTIONS event", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      jest.spyOn(testContext.instance._bus, "emit");
+      vi.spyOn(testContext.instance._bus, "emit");
 
       testContext.instance.setMonthOptions([
         "1",
@@ -1643,9 +1567,9 @@ describe("HostedFields", () => {
     it("resolves when bus yields a response", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      jest
-        .spyOn(testContext.instance._bus, "emit")
-        .mockImplementation(yieldsAsync());
+      vi.spyOn(testContext.instance._bus, "emit").mockImplementation(
+        yieldsAsync()
+      );
 
       return testContext.instance
         .setMonthOptions([
@@ -1705,27 +1629,15 @@ describe("HostedFields", () => {
       );
     });
 
-    it("calls callback if provided", (done) => {
+    it("throws when given non-allowed field", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      testContext.instance.removeAttribute(
-        {
-          field: "number",
-          attribute: "disabled",
-        },
-        done
-      );
-    });
-
-    it("calls errback when given non-allowed field", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.removeAttribute(
-        {
+      return testContext.instance
+        .removeAttribute({
           field: "rogue-field",
           attribute: "disabled",
-        },
-        (err) => {
+        })
+        .catch((err) => {
           expect(err).toBeInstanceOf(BraintreeError);
           expect(err.type).toBe("MERCHANT");
           expect(err.code).toBe("HOSTED_FIELDS_FIELD_INVALID");
@@ -1733,38 +1645,22 @@ describe("HostedFields", () => {
             '"rogue-field" is not a valid field. You must use a valid field option when removing an attribute.'
           );
           expect(err.details).not.toBeDefined();
-          done();
-        }
-      );
-    });
-
-    it("does not emit REMOVE_ATTRIBUTE event when given non-allowed field", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.removeAttribute(
-        {
-          field: "rogue-field",
-          attribute: "disabled",
-        },
-        () => {
           expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
             events.REMOVE_ATTRIBUTE,
             expect.anything()
           );
-          done();
-        }
-      );
+        });
     });
 
-    it("calls errback when given field not supplied by merchant", (done) => {
+    it("throws when given field not supplied by merchant", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      testContext.instance.removeAttribute(
-        {
+      return testContext.instance
+        .removeAttribute({
           field: "cvv",
           attribute: "disabled",
-        },
-        (err) => {
+        })
+        .catch((err) => {
           expect(err).toBeInstanceOf(BraintreeError);
           expect(err.type).toBe("MERCHANT");
           expect(err.code).toBe("HOSTED_FIELDS_FIELD_NOT_PRESENT");
@@ -1772,38 +1668,22 @@ describe("HostedFields", () => {
             'Cannot remove attribute for "cvv" field because it is not part of the current Hosted Fields options.'
           );
           expect(err.details).not.toBeDefined();
-          done();
-        }
-      );
-    });
-
-    it("does not emit REMOVE_ATTRIBUTE event when given field not supplied by merchant", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.removeAttribute(
-        {
-          field: "cvv",
-          attribute: "disabled",
-        },
-        () => {
           expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
             events.REMOVE_ATTRIBUTE,
             expect.anything()
           );
-          done();
-        }
-      );
+        });
     });
 
-    it("calls errback when given non-allowed attribute", (done) => {
+    it("throws when given non-allowed attribute", () => {
       testContext.instance = new HostedFields(testContext.defaultConfiguration);
 
-      testContext.instance.removeAttribute(
-        {
+      return testContext.instance
+        .removeAttribute({
           field: "number",
           attribute: "illegal",
-        },
-        (err) => {
+        })
+        .catch((err) => {
           expect(err).toBeInstanceOf(BraintreeError);
           expect(err.type).toBe("MERCHANT");
           expect(err.code).toBe("HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED");
@@ -1811,118 +1691,11 @@ describe("HostedFields", () => {
             'The "illegal" attribute is not supported in Hosted Fields.'
           );
           expect(err.details).not.toBeDefined();
-          done();
-        }
-      );
-    });
-
-    it("does not emit REMOVE_ATTRIBUTE event when given non-allowed attribute", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.removeAttribute(
-        {
-          field: "number",
-          attribute: "illegal",
-        },
-        () => {
           expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
             events.REMOVE_ATTRIBUTE,
             expect.anything()
           );
-          done();
-        }
-      );
-    });
-  });
-
-  describe("setPlaceholder", () => {
-    it("calls setAttribute", () => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      jest.spyOn(HostedFields.prototype, "setAttribute");
-
-      testContext.instance.setPlaceholder("number", "great-placeholder");
-      expect(testContext.instance.setAttribute).toHaveBeenCalledWith({
-        field: "number",
-        attribute: "placeholder",
-        value: "great-placeholder",
-      });
-    });
-
-    it("calls callback if provided", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.setPlaceholder("number", "great-placeholder", done);
-    });
-
-    it("calls errback when given non-allowed field", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.setPlaceholder(
-        "rogue-field",
-        "rogue-placeholder",
-        (err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe("MERCHANT");
-          expect(err.code).toBe("HOSTED_FIELDS_FIELD_INVALID");
-          expect(err.message).toBe(
-            '"rogue-field" is not a valid field. You must use a valid field option when setting an attribute.'
-          );
-          expect(err.details).not.toBeDefined();
-          expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
-            events.SET_ATTRIBUTE,
-            expect.anything()
-          );
-          done();
-        }
-      );
-    });
-
-    it("does not emit SET_ATTRIBUTE event when given non-allowed field", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.setPlaceholder(
-        "rogue-field",
-        "rogue-placeholder",
-        () => {
-          expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
-            events.SET_ATTRIBUTE,
-            expect.anything()
-          );
-          done();
-        }
-      );
-    });
-
-    it("calls errback when given field not supplied by merchant", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.setPlaceholder("cvv", "great-placeholder", (err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("MERCHANT");
-        expect(err.code).toBe("HOSTED_FIELDS_FIELD_NOT_PRESENT");
-        expect(err.message).toBe(
-          'Cannot set attribute for "cvv" field because it is not part of the current Hosted Fields options.'
-        );
-        expect(err.details).not.toBeDefined();
-        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
-          events.SET_ATTRIBUTE,
-          expect.anything()
-        );
-        done();
-      });
-    });
-
-    it("does not emit SET_ATTRIBUTE event when given field not supplied by merchant", (done) => {
-      testContext.instance = new HostedFields(testContext.defaultConfiguration);
-
-      testContext.instance.setPlaceholder("cvv", "great-placeholder", () => {
-        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
-          events.SET_ATTRIBUTE,
-          expect.anything()
-        );
-        done();
-      });
+        });
     });
   });
 
@@ -1941,12 +1714,8 @@ describe("HostedFields", () => {
       );
     });
 
-    it("calls callback if provided", (done) => {
-      testContext.instance.clear("number", done);
-    });
-
-    it("calls errback when given non-allowed field", (done) => {
-      testContext.instance.clear("rogue-field", (err) => {
+    it("throws when given non-allowed field", () =>
+      testContext.instance.clear("rogue-field").catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
         expect(err.type).toBe("MERCHANT");
         expect(err.code).toBe("HOSTED_FIELDS_FIELD_INVALID");
@@ -1960,12 +1729,10 @@ describe("HostedFields", () => {
             field: expect.any(String),
           }
         );
-        done();
-      });
-    });
+      }));
 
-    it("calls errback when given field not supplied by merchant", (done) => {
-      testContext.instance.clear("cvv", (err) => {
+    it("throws when given field not supplied by merchant", () =>
+      testContext.instance.clear("cvv").catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
         expect(err.type).toBe("MERCHANT");
         expect(err.code).toBe("HOSTED_FIELDS_FIELD_NOT_PRESENT");
@@ -1979,9 +1746,7 @@ describe("HostedFields", () => {
             field: expect.any(String),
           }
         );
-        done();
-      });
-    });
+      }));
   });
 
   describe("focus", () => {
@@ -2001,7 +1766,7 @@ describe("HostedFields", () => {
     });
 
     it("focuses on iframe", () => {
-      const spy = jest.spyOn(
+      const spy = vi.spyOn(
         testContext.instance._fields.number.frameElement,
         "focus"
       );
@@ -2012,30 +1777,30 @@ describe("HostedFields", () => {
     });
 
     it("scrolls container into view when on ios and not visible", () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       browserDetection.isIos.mockReturnValue(true);
       const spy =
         (testContext.instance._fields.number.containerElement.scrollIntoView =
-          jest.fn());
+          vi.fn());
 
       testContext.instance.focus("number");
 
-      jest.runAllTimers();
+      vi.runAllTimers();
 
       expect(spy).toBeCalledTimes(1);
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
-    it("does not scroll container into view when on ios and aalready visible", () => {
-      jest.useFakeTimers();
+    it("does not scroll container into view when on ios and already visible", () => {
+      vi.useFakeTimers();
 
       browserDetection.isIos.mockReturnValue(true);
       const container = testContext.instance._fields.number.containerElement;
-      const spy = (container.scrollIntoView = jest.fn());
+      const spy = (container.scrollIntoView = vi.fn());
 
-      container.getBoundingClientRect = jest.fn().mockReturnValue({
+      container.getBoundingClientRect = vi.fn().mockReturnValue({
         height: 10,
         width: 10,
         bottom: 100,
@@ -2046,71 +1811,69 @@ describe("HostedFields", () => {
 
       testContext.instance.focus("number");
 
-      jest.runAllTimers();
+      vi.runAllTimers();
 
       expect(spy).not.toBeCalled();
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it("does not scroll container into view when not on ios", () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       browserDetection.isIos.mockReturnValue(false);
       const spy =
         (testContext.instance._fields.number.containerElement.scrollIntoView =
-          jest.fn());
+          vi.fn());
 
       testContext.instance.focus("number");
 
-      jest.runAllTimers();
+      vi.runAllTimers();
 
       expect(spy).not.toBeCalled();
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
-    it("calls callback if provided", (done) => {
-      testContext.instance.focus("number", done);
-    });
+    it("throws when given non-allowed field", () =>
+      new Promise((resolve) => {
+        testContext.instance.focus("rogue-field").catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("MERCHANT");
+          expect(err.code).toBe("HOSTED_FIELDS_FIELD_INVALID");
+          expect(err.message).toBe(
+            '"rogue-field" is not a valid field. You must use a valid field option when focusing a field.'
+          );
+          expect(err.details).not.toBeDefined();
+          expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
+            events.TRIGGER_INPUT_FOCUS,
+            {
+              field: expect.any(String),
+            }
+          );
+          resolve();
+        });
+      }));
 
-    it("calls errback when given non-allowed field", (done) => {
-      testContext.instance.focus("rogue-field", (err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("MERCHANT");
-        expect(err.code).toBe("HOSTED_FIELDS_FIELD_INVALID");
-        expect(err.message).toBe(
-          '"rogue-field" is not a valid field. You must use a valid field option when focusing a field.'
-        );
-        expect(err.details).not.toBeDefined();
-        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
-          events.TRIGGER_INPUT_FOCUS,
-          {
-            field: expect.any(String),
-          }
-        );
-        done();
-      });
-    });
-
-    it("calls errback when given field not supplied by merchant", (done) => {
-      testContext.instance.focus("cvv", (err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("MERCHANT");
-        expect(err.code).toBe("HOSTED_FIELDS_FIELD_NOT_PRESENT");
-        expect(err.message).toBe(
-          'Cannot focus "cvv" field because it is not part of the current Hosted Fields options.'
-        );
-        expect(err.details).not.toBeDefined();
-        expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
-          events.TRIGGER_INPUT_FOCUS,
-          {
-            field: expect.any(String),
-          }
-        );
-        done();
-      });
-    });
+    it("throws when given field not supplied by merchant", () =>
+      new Promise((resolve) => {
+        testContext.instance.focus("cvv").catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("MERCHANT");
+          expect(err.code).toBe("HOSTED_FIELDS_FIELD_NOT_PRESENT");
+          expect(err.message).toBe(
+            'Cannot focus "cvv" field because it is not part of the current Hosted Fields options.'
+          );
+          expect(err.details).not.toBeDefined();
+          expect(testContext.instance._bus.emit).not.toHaveBeenCalledWith(
+            events.TRIGGER_INPUT_FOCUS,
+            {
+              field: expect.any(String),
+            }
+          );
+          resolve();
+        });
+      }));
   });
 
   describe("getState", () => {
@@ -2147,12 +1910,12 @@ describe("HostedFields", () => {
       expect(cardTypes).toEqual(["American Express", "Discover", "Visa"]);
     });
 
-    it("converts MasterCard -> Mastercard", async () => {
+    it("returns 'Mastercard' for the MASTERCARD brand", async () => {
       testContext.defaultConfiguration.client.getConfiguration = () => {
         return {
           gatewayConfiguration: {
-            creditCards: {
-              supportedCardTypes: ["Visa", "MasterCard"],
+            creditCard: {
+              supportedCardBrands: ["VISA", "MASTERCARD"],
             },
           },
         };
@@ -2161,6 +1924,22 @@ describe("HostedFields", () => {
       const cardTypes = await instance.getSupportedCardTypes();
 
       expect(cardTypes).toEqual(["Visa", "Mastercard"]);
+    });
+
+    it("silently drops card brands that are not in the display name map", async () => {
+      testContext.defaultConfiguration.client.getConfiguration = () => {
+        return {
+          gatewayConfiguration: {
+            creditCard: {
+              supportedCardBrands: ["VISA", "SOME_UNKNOWN_BRAND"],
+            },
+          },
+        };
+      };
+      const instance = new HostedFields(testContext.defaultConfiguration);
+      const cardTypes = await instance.getSupportedCardTypes();
+
+      expect(cardTypes).toEqual(["Visa"]);
     });
 
     it("rejects if client fails to setup", async () => {

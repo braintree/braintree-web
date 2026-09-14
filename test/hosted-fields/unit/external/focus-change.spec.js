@@ -1,13 +1,9 @@
-"use strict";
+import browserDetection from "../../../../src/hosted-fields/shared/browser-detection";
+import { navigationDirections as directions } from "../../../../src/hosted-fields/shared/constants";
+import focusChange from "../../../../src/hosted-fields/external/focus-change";
+import focusIntercept from "../../../../src/hosted-fields/shared/focus-intercept";
 
-const browserDetection = require("../../../../src/hosted-fields/shared/browser-detection");
-const {
-  navigationDirections: directions,
-} = require("../../../../src/hosted-fields/shared/constants");
-const focusChange = require("../../../../src/hosted-fields/external/focus-change");
-const focusIntercept = require("../../../../src/hosted-fields/shared/focus-intercept");
-
-jest.mock("../../../../src/hosted-fields/shared/browser-detection");
+vi.mock("../../../../src/hosted-fields/shared/browser-detection");
 
 function createSampleIntercept(type, direction) {
   const sampleIntercept = document.createElement("input");
@@ -27,7 +23,7 @@ describe("focus-change", () => {
     beforeEach(() => {
       testContext = {};
 
-      testContext.removeStub = jest.fn();
+      testContext.removeStub = vi.fn();
       testContext.form = document.createElement("form");
       testContext.firstInput = document.createElement("input");
       testContext.firstInput.id = "first";
@@ -48,7 +44,7 @@ describe("focus-change", () => {
 
       document.body.appendChild(testContext.form);
 
-      jest.spyOn(focusIntercept, "matchFocusElement");
+      vi.spyOn(focusIntercept, "matchFocusElement");
     });
 
     afterEach(() => {
@@ -142,8 +138,8 @@ describe("focus-change", () => {
       testContext.formNode.appendChild(testContext.cvvNode);
       document.body.appendChild(testContext.formNode);
 
-      testContext.removeStub = jest.fn();
-      testContext.triggerStub = jest.fn();
+      testContext.removeStub = vi.fn();
+      testContext.triggerStub = vi.fn();
       testContext.handler = focusChange.createFocusChangeHandler("unique-id", {
         onRemoveFocusIntercepts: testContext.removeStub,
         onTriggerInputFocus: testContext.triggerStub,

@@ -4,7 +4,10 @@ export function isScriptLoaded(url: string): boolean {
   return Boolean(document.querySelector(`script[src="${url}"]`));
 }
 
-export function loadScript(url: string): Promise<void> {
+export function loadScript(
+  url: string,
+  options: { type?: string } = {}
+): Promise<void> {
   return new Promise((resolve, reject) => {
     if (isScriptLoaded(url)) {
       resolve();
@@ -14,6 +17,10 @@ export function loadScript(url: string): Promise<void> {
     const script = document.createElement("script");
 
     script.src = url;
+
+    if (options.type) {
+      script.type = options.type;
+    }
 
     script.onload = () => {
       console.log(`Loaded: ${url}`);

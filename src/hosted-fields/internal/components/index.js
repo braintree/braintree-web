@@ -1,11 +1,25 @@
-"use strict";
+import { CardholderNameInput } from "./cardholder-name-input";
+import { CreditCardInput } from "./credit-card-input";
+import { ExpirationDateInput } from "./expiration-date-input";
+import { ExpirationMonthInput } from "./expiration-month-input";
+import { ExpirationYearInput } from "./expiration-year-input";
+import { CVVInput } from "./cvv-input";
+import { PostalCodeInput } from "./postal-code-input";
 
-module.exports = {
-  cardholderName: require("./cardholder-name-input").CardholderNameInput,
-  number: require("./credit-card-input").CreditCardInput,
-  expirationDate: require("./expiration-date-input").ExpirationDateInput,
-  expirationMonth: require("./expiration-month-input").ExpirationMonthInput,
-  expirationYear: require("./expiration-year-input").ExpirationYearInput,
-  cvv: require("./cvv-input").CVVInput,
-  postalCode: require("./postal-code-input").PostalCodeInput,
+export const cardholderName = CardholderNameInput;
+export const number = CreditCardInput;
+export const expirationDate = ExpirationDateInput;
+export const expirationMonth = ExpirationMonthInput;
+export const expirationYear = ExpirationYearInput;
+export const cvv = CVVInput;
+export const postalCode = PostalCodeInput;
+
+export default {
+  cardholderName: CardholderNameInput,
+  number: CreditCardInput,
+  expirationDate: ExpirationDateInput,
+  expirationMonth: ExpirationMonthInput,
+  expirationYear: ExpirationYearInput,
+  cvv: CVVInput,
+  postalCode: PostalCodeInput,
 };

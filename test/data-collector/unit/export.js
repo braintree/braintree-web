@@ -1,7 +1,5 @@
-"use strict";
-
-const dataCollector = require("../../../src/data-collector");
-const { version } = require("../../../package.json");
+import dataCollector from "../../../src/data-collector";
+import { version } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

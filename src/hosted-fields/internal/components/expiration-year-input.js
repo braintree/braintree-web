@@ -1,8 +1,6 @@
-"use strict";
-
-var ExpirationSplitInput =
-  require("./expiration-split-input").ExpirationSplitInput;
-var constants = require("../../shared/constants");
+// @ts-nocheck
+import { ExpirationSplitInput } from "./expiration-split-input";
+import constants from "../../shared/constants";
 
 var PATTERN = "{{9999}}";
 
@@ -40,6 +38,8 @@ ExpirationYearInput.prototype.constructSelectOptions = function (element) {
   element.selectedIndex = 0;
 };
 
-module.exports = {
-  ExpirationYearInput: ExpirationYearInput,
+export { ExpirationYearInput };
+
+export default {
+  ExpirationYearInput,
 };

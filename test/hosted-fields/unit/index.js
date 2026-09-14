@@ -1,18 +1,18 @@
-"use strict";
+vi.mock("../../../src/lib/basic-component-verification");
 
-jest.mock("../../../src/lib/basic-component-verification");
+import Bus from "framebus";
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import BraintreeError from "../../../src/lib/braintree-error";
+import { events } from "../../../src/hosted-fields/shared/constants";
+import hostedFields from "../../../src/hosted-fields";
+import HostedFields from "../../../src/hosted-fields/external/hosted-fields";
+import _imp0 from "../../helpers";
 
-const Bus = require("framebus");
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const { events } = require("../../../src/hosted-fields/shared/constants");
-const hostedFields = require("../../../src/hosted-fields");
-const HostedFields = require("../../../src/hosted-fields/external/hosted-fields");
 const {
   fake: { client: fakeClient, clientToken },
   noop,
   findFirstEventCallback,
-} = require("../../helpers");
+} = _imp0;
 
 describe("hostedFields", () => {
   let testContext;
@@ -40,107 +40,117 @@ describe("hostedFields", () => {
       testContext.fakeClient._request = noop;
     });
 
-    it("verifies with basicComponentVerification with client", (done) => {
-      const client = testContext.fakeClient;
+    it("verifies with basicComponentVerification with client", () =>
+      new Promise((resolve) => {
+        const client = testContext.fakeClient;
+        const cvvNode = document.createElement("div");
 
-      hostedFields.create(
-        {
-          client,
-          fields: {
-            cvv: { selector: "#cvv" },
-          },
-        },
-        () => {
-          expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
-          expect(basicComponentVerification.verify).toHaveBeenCalledWith({
-            name: "Hosted Fields",
+        cvvNode.id = "cvv";
+        document.body.appendChild(cvvNode);
+
+        hostedFields
+          .create({
             client,
+            fields: {
+              cvv: { container: "#cvv" },
+            },
+          })
+          .then(() => {
+            expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
+            expect(basicComponentVerification.verify).toHaveBeenCalledWith({
+              name: "Hosted Fields",
+              client,
+            });
+            resolve();
           });
-          done();
-        }
-      );
-    });
 
-    it("verifies with basicComponentVerification with authorization", (done) => {
-      const authorization = testContext.fakeAuthorization;
+        callFrameReadyHandler();
+      }));
 
-      hostedFields.create(
-        {
-          authorization,
-          fields: {
-            cvv: { selector: "#cvv" },
-          },
-        },
-        () => {
-          expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
-          expect(basicComponentVerification.verify).toHaveBeenCalledWith({
-            name: "Hosted Fields",
+    it("verifies with basicComponentVerification with authorization", () =>
+      new Promise((resolve) => {
+        const authorization = testContext.fakeAuthorization;
+        const cvvNode = document.createElement("div");
+
+        cvvNode.id = "cvv";
+        document.body.appendChild(cvvNode);
+
+        hostedFields
+          .create({
             authorization,
+            fields: {
+              cvv: { container: "#cvv" },
+            },
+          })
+          .then(() => {
+            expect(basicComponentVerification.verify).toHaveBeenCalledTimes(1);
+            expect(basicComponentVerification.verify).toHaveBeenCalledWith({
+              name: "Hosted Fields",
+              authorization,
+            });
+            resolve();
           });
-          done();
-        }
-      );
-    });
 
-    it("instantiates a Hosted Fields integration", (done) => {
-      const cvvNode = document.createElement("div");
+        callFrameReadyHandler();
+      }));
 
-      cvvNode.id = "cvv";
-      document.body.appendChild(cvvNode);
+    it("instantiates a Hosted Fields integration", () =>
+      new Promise((resolve) => {
+        const cvvNode = document.createElement("div");
 
-      hostedFields.create(
-        {
-          client: testContext.fakeClient,
-          fields: {
-            cvv: { selector: "#cvv" },
-          },
-        },
-        (err, thingy) => {
-          expect(err).toBeFalsy();
-          expect(thingy).toBeInstanceOf(HostedFields);
+        cvvNode.id = "cvv";
+        document.body.appendChild(cvvNode);
 
-          done();
-        }
-      );
+        hostedFields
+          .create({
+            client: testContext.fakeClient,
+            fields: {
+              cvv: { container: "#cvv" },
+            },
+          })
+          .then((thingy) => {
+            expect(thingy).toBeInstanceOf(HostedFields);
 
-      callFrameReadyHandler();
-    });
+            resolve();
+          });
 
-    it("calls callback with timeout error", (done) => {
-      const cvvNode = document.createElement("div");
+        callFrameReadyHandler();
+      }));
 
-      jest
-        .spyOn(HostedFields.prototype, "on")
-        .mockImplementation((event, callback) => {
-          if (event === "timeout") {
-            callback();
+    it("rejects with timeout error", () =>
+      new Promise((resolve) => {
+        const cvvNode = document.createElement("div");
+
+        vi.spyOn(HostedFields.prototype, "on").mockImplementation(
+          (event, callback) => {
+            if (event === "timeout") {
+              callback();
+            }
           }
-        });
+        );
 
-      cvvNode.id = "cvv";
-      document.body.appendChild(cvvNode);
+        cvvNode.id = "cvv";
+        document.body.appendChild(cvvNode);
 
-      hostedFields.create(
-        {
-          client: testContext.fakeClient,
-          fields: {
-            cvv: { selector: "#cvv" },
-          },
-        },
-        (err, thingy) => {
-          expect(thingy).toBeFalsy();
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.code).toBe("HOSTED_FIELDS_TIMEOUT");
-          expect(err.type).toBe("UNKNOWN");
-          expect(err.message).toBe(
-            "Hosted Fields timed out when attempting to set up."
-          );
+        hostedFields
+          .create({
+            client: testContext.fakeClient,
+            fields: {
+              cvv: { container: "#cvv" },
+            },
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.code).toBe("HOSTED_FIELDS_TIMEOUT");
+            expect(err.type).toBe("UNKNOWN");
+            expect(err.message).toBe(
+              "Hosted Fields timed out when attempting to set up."
+            );
 
-          HostedFields.prototype.on.mockRestore();
-          done();
-        }
-      );
-    });
+            HostedFields.prototype.on.mockRestore();
+            resolve();
+          });
+      }));
 
     it("returns a promise", () => {
       /*
@@ -165,7 +175,7 @@ describe("hostedFields", () => {
       promise = hostedFields.create({
         client: testContext.fakeClient,
         fields: {
-          cvv: { selector: "#cvv" },
+          cvv: { container: "#cvv" },
         },
       });
 
@@ -173,20 +183,20 @@ describe("hostedFields", () => {
       expect(promise.catch).toStrictEqual(expect.any(Function));
     });
 
-    it("returns error if hosted fields integration throws an error", (done) => {
-      hostedFields.create(
-        {
-          fields: {
-            cvv: { selector: "#cvv" },
-          },
-        },
-        (err) => {
-          expect(err).toBeDefined();
+    it("returns error if hosted fields integration throws an error", () =>
+      new Promise((resolve) => {
+        hostedFields
+          .create({
+            fields: {
+              cvv: { container: "#cvv" },
+            },
+          })
+          .catch((err) => {
+            expect(err).toBeDefined();
 
-          done();
-        }
-      );
-    });
+            resolve();
+          });
+      }));
   });
 
   describe("supportsInputFormatting", () => {

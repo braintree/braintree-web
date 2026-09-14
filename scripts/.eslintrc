@@ -1,4 +1,0 @@
----
-  extends: 
-    - braintree/es6
-    - braintree/server

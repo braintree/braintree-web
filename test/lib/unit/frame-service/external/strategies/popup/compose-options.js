@@ -1,18 +1,16 @@
-"use strict";
-
-jest.mock(
+vi.mock(
   "../../../../../../../src/lib/frame-service/external/strategies/popup/position"
 );
 
-const composePopupOptions = require("../../../../../../../src/lib/frame-service/external/strategies/popup/compose-options");
-const position = require("../../../../../../../src/lib/frame-service/external/strategies/popup/position");
+import composePopupOptions from "../../../../../../../src/lib/frame-service/external/strategies/popup/compose-options";
+import position from "../../../../../../../src/lib/frame-service/external/strategies/popup/position";
 
 describe("composeOptions", () => {
   it("returns a string of window params with configured height and width", () => {
     let result;
 
-    jest.spyOn(position, "top").mockReturnValue("2");
-    jest.spyOn(position, "left").mockReturnValue("3");
+    vi.spyOn(position, "top").mockReturnValue("2");
+    vi.spyOn(position, "left").mockReturnValue("3");
 
     result = composePopupOptions({
       height: 123,

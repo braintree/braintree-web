@@ -1,8 +1,6 @@
-"use strict";
-
-var BraintreeError = require("../../lib/braintree-error");
-var errors = require("../shared/errors");
-var allowedAttributes = require("../shared/constants").allowedAttributes;
+import BraintreeError from "../../lib/braintree-error";
+import errors from "../shared/errors";
+import { allowedAttributes } from "../shared/constants";
 
 function attributeValidationError(attribute, value) {
   var err;
@@ -41,4 +39,4 @@ function _isValid(attribute, value) {
   return false;
 }
 
-module.exports = attributeValidationError;
+export default attributeValidationError;

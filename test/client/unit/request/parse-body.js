@@ -1,6 +1,4 @@
-"use strict";
-
-const parseBody = require("../../../../src/client/request/parse-body");
+import parseBody from "../../../../src/client/request/parse-body";
 
 describe("parseBody", () => {
   it("parses body as JSON", () => {

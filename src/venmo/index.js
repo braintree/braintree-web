@@ -1,17 +1,16 @@
-"use strict";
+// @ts-nocheck
 /** @module braintree-web/venmo */
 
-var analytics = require("../lib/analytics");
-var basicComponentVerification = require("../lib/basic-component-verification");
-var createDeferredClient = require("../lib/create-deferred-client");
-var createAssetsUrl = require("../lib/create-assets-url");
-var errors = require("./shared/errors");
-var wrapPromise = require("@braintree/wrap-promise");
-var BraintreeError = require("../lib/braintree-error");
-var Venmo = require("./venmo");
-var supportsVenmo = require("./shared/supports-venmo");
-var VERSION = process.env.npm_package_version;
-var browserDetection = require("./shared/browser-detection");
+import analytics from "../lib/analytics";
+import basicComponentVerification from "../lib/basic-component-verification";
+import createDeferredClient from "../lib/create-deferred-client";
+import createAssetsUrl from "../lib/create-assets-url";
+import errors from "./shared/errors";
+import BraintreeError from "../lib/braintree-error";
+import Venmo from "./venmo";
+import supportsVenmo from "./shared/supports-venmo";
+import browserDetection from "./shared/browser-detection";
+const VERSION = __SDK_VERSION__;
 
 /**
  * @typedef {object} Venmo~lineItem
@@ -33,7 +32,6 @@ var browserDetection = require("./shared/browser-detection");
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {boolean} [options.allowNewBrowserTab=true] This should be set to false if your payment flow requires returning to the same tab, e.g. single page applications. Doing so causes {@link Venmo#isBrowserSupported|isBrowserSupported} to return true only for mobile web browsers that support returning from the Venmo app to the same tab.
  * @param {boolean} [options.allowWebviews=true] This should be set to false if your payment flow does not occur from within a webview that you control. Doing so causes {@link Venmo#isBrowserSupported|isBrowserSupported} to return true only for mobile web browsers that are not webviews.
- * @param {boolean} [options.ignoreHistoryChanges=false] When the Venmo app returns to the website, it will modify the hash of the url to include data about the tokenization. By default, the SDK will put the state of the hash back to where it was before the change was made. Pass `true` to handle the hash change instead of the SDK.
  * @param {string} [options.profileId] The Venmo profile ID to be used during payment authorization. Customers will see the business name and logo associated with this Venmo profile, and it will show up in the Venmo app as a "Connected Merchant". Venmo profile IDs can be found in the Braintree Control Panel. Omitting this value will use the default Venmo profile.
  * @param {string} [options.deepLinkReturnUrl] An override for the URL that the Venmo iOS app opens to return from an app switch.
  * @param {boolean} [options.requireManualReturn=false] When `true`, the customer will have to manually switch back to the browser/webview that is presenting Venmo to complete the payment.
@@ -47,8 +45,8 @@ var browserDetection = require("./shared/browser-detection");
  * Due to a bug in iOS's implementation of `window.open` in iOS webviews and Safari View Controllers, if `useRedirectForIOS` is not set to `true` and the flow is launched from an iOS webview or Safari View Controller, the customer will be presented with a blank screen, halting the flow and leaving the customer unable to return to the merchant's website. Setting `useRedirectForIOS` to `true` will allow the flow to continue, but the Venmo app will be unable to return back to the webview/Safari View Controller. It will instead open the merchant's site in a new window in the customer's browser, which means the merchant site must be able to process the Venmo payment. If the SDK is configured with `allowNewBrowserTab = false`, it is unlikely that the website is set up to process the Venmo payment from a new window.
  *
  * If processing the payment from a new window is not possible, use this flag in conjunction with `requireManualReturn` so that the customer may start the flow from a webview/Safari View Controller or their Safari browser and manually return to the place that originated the flow once the Venmo app has authorized the payment and instructed them to do so.
- * @param {string} [options.paymentMethodUsage] The intended usage for the Venmo payment method nonce. Possible options are:
- * * single_use - intended as a one time transaction
+ * @param {string} options.paymentMethodUsage The intended usage for the Venmo payment method nonce. Required. Possible options are:
+ * * single_use - intended as a one time transaction. Requires `totalAmount`.
  * * multi_use - intended to be vaulted and used for multiple transactions
  * @param {string} [options.displayName] The business name that will be displayed in the Venmo app payment approval screen. Only applicable when used with `paymentMethodUsage` and used by merchants onboarded as PayFast channel partners.
  * @param {boolean} [options.allowDesktop] Used to support desktop users. When enabled, the default mode is to render a scannable QR-code customers scan with their phone's to approve via the mobile app.
@@ -66,10 +64,9 @@ var browserDetection = require("./shared/browser-detection");
  * @param {string} [options.discountAmount] The total discount amount applied on the transaction.
  * @param {string} [options.shippingAmount] Shipping amount to be charged for the transaction.
  * @param {string} [options.taxAmount] The total tax amount applied to the transaction. This value can't be negative or zero.
- * @param {string} [options.totalAmount] The grand total amount of the transaction.
+ * @param {string} [options.totalAmount] The grand total amount of the transaction. Required when `paymentMethodUsage` is `single_use`.
  *
  * Note: This flow currently requires a full page redirect, which means to utilize this flow your page will need to be able to handle the checkout session across different pages.
- * @param {callback} [callback] The second argument, `data`, is the {@link Venmo} instance. If no callback is provided, `create` returns a promise that resolves with the {@link Venmo} instance.
  * @example
  * braintree.venmo.create({
  *   client: clientInstance
@@ -87,7 +84,7 @@ var browserDetection = require("./shared/browser-detection");
  * }).catch(function (createErr) {
  *   console.error('Error creating Venmo instance', createErr);
  * });
- * @returns {(Promise|void)} Returns the Venmo instance.
+ * @returns {Promise} Returns a promise that resolves with the {@link Venmo} instance.
  */
 function create(options) {
   var name = "Venmo";
@@ -100,29 +97,45 @@ function create(options) {
     })
     .then(function () {
       var createPromise, instance;
-      var incognitoPromise = browserDetection.isIncognito();
+      var incognitoPromise = browserDetection.isIncognito().catch(function () {
+        return { isPrivate: false, browserName: "unknown" };
+      });
+
+      if (!options.paymentMethodUsage) {
+        throw new BraintreeError(errors.VENMO_PAYMENT_METHOD_USAGE_REQUIRED);
+      }
+
+      if (
+        typeof options.paymentMethodUsage !== "string" ||
+        (options.paymentMethodUsage !== "single_use" &&
+          options.paymentMethodUsage !== "multi_use")
+      ) {
+        throw new BraintreeError(errors.VENMO_INVALID_PAYMENT_METHOD_USAGE);
+      }
+
+      if (
+        options.paymentMethodUsage === "single_use" &&
+        (typeof options.totalAmount !== "string" || options.totalAmount === "")
+      ) {
+        throw new BraintreeError(errors.VENMO_TOTAL_AMOUNT_REQUIRED);
+      }
 
       if (options.profileId && typeof options.profileId !== "string") {
-        return Promise.reject(
-          new BraintreeError(errors.VENMO_INVALID_PROFILE_ID)
-        );
+        throw new BraintreeError(errors.VENMO_INVALID_PROFILE_ID);
       }
 
       if (
         options.deepLinkReturnUrl &&
         typeof options.deepLinkReturnUrl !== "string"
       ) {
-        return Promise.reject(
-          new BraintreeError(errors.VENMO_INVALID_DEEP_LINK_RETURN_URL)
-        );
+        throw new BraintreeError(errors.VENMO_INVALID_DEEP_LINK_RETURN_URL);
       }
+
       if (
         options.riskCorrelationId &&
         typeof options.riskCorrelationId !== "string"
       ) {
-        return Promise.reject(
-          new BraintreeError(errors.VENMO_INVALID_RISK_CORRELATION_ID)
-        );
+        throw new BraintreeError(errors.VENMO_INVALID_RISK_CORRELATION_ID);
       }
 
       createPromise = createDeferredClient
@@ -138,8 +151,8 @@ function create(options) {
 
           options.client = client;
 
-          if (!configuration.gatewayConfiguration.payWithVenmo) {
-            return Promise.reject(new BraintreeError(errors.VENMO_NOT_ENABLED));
+          if (!configuration.gatewayConfiguration.venmo) {
+            throw new BraintreeError(errors.VENMO_NOT_ENABLED);
           }
 
           return client;
@@ -148,7 +161,6 @@ function create(options) {
       return Promise.all([createPromise, incognitoPromise]).then(
         function (results) {
           var isIncognito = results[1];
-
           options._isIncognito = isIncognito.isPrivate;
 
           options.createPromise = createPromise;
@@ -197,12 +209,12 @@ function isBrowserSupported(options) {
   return supportsVenmo.isBrowserSupported(options);
 }
 
-module.exports = {
-  create: wrapPromise(create),
-  isBrowserSupported: isBrowserSupported,
+export default {
+  create,
+  isBrowserSupported,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION,
+  VERSION,
 };

@@ -1,8 +1,6 @@
-"use strict";
-
-var iFramer = require("@braintree/iframer");
-var assign = require("../../../assign").assign;
-var browserDetection = require("../../shared/browser-detection");
+import iFramer from "@braintree/iframer";
+import { assign } from "../../../assign";
+import browserDetection from "../../shared/browser-detection";
 
 var ELEMENT_STYLES = {
   position: "fixed",
@@ -21,8 +19,10 @@ function noop() {}
 
 /**
  *
- * We should not ever really use the Modal. Modals are _like_  popups, but the key difference is that the customer can't actually verify it's app domain and thus secure/valid. Old PP sdk (./src/paypal) uses this
- * to get info from webviews (e.g. facebook).
+ * We should not use the Modal directly. We also can't remove it yet because it
+ * is used as the fallback for when popups are unavailable (see frame-service.js:_getFrameForEnvironment).
+ * Modals are _like_ popups, but the key difference is that the customer can't
+ * verify its app domain and thus secure/valid.
  */
 
 function Modal(options) {
@@ -117,4 +117,4 @@ Modal.prototype._lockScrolling = function () {
   window.scrollTo(0, 0);
 };
 
-module.exports = Modal;
+export default Modal;

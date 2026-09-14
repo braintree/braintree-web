@@ -1,9 +1,5 @@
-"use strict";
-
-const InputComponents = require("../../../../src/hosted-fields/internal/components");
-const {
-  CreditCardForm,
-} = require("../../../../src/hosted-fields/internal/models/credit-card-form");
+import InputComponents from "../../../../src/hosted-fields/internal/components";
+import { CreditCardForm } from "../../../../src/hosted-fields/internal/models/credit-card-form";
 
 function getModelConfig(fieldKey, initial) {
   const config = {
@@ -35,13 +31,17 @@ function createInput(fieldKey, initial) {
   });
 }
 
-module.exports = {
+export const triggerEvent = function (name, target) {
+  const event = document.createEvent("Event");
+
+  event.initEvent(name, true, true);
+  target.dispatchEvent(event);
+};
+
+export { getModelConfig, createInput };
+
+export default {
   getModelConfig,
   createInput,
-  triggerEvent(name, target) {
-    const event = document.createEvent("Event");
-
-    event.initEvent(name, true, true);
-    target.dispatchEvent(event);
-  },
+  triggerEvent,
 };

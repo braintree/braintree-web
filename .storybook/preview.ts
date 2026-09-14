@@ -24,12 +24,11 @@ const preview: Preview = {
     },
   },
   initialGlobals: {
-    // Default to "dev" (local build) for development workflow
-    sdkVersion: "dev",
+    sdkVersion: versions[0],
   },
   loaders: [
     async ({ globals, parameters }) => {
-      let version: string = globals.sdkVersion || "dev";
+      let version: string = globals.sdkVersion || versions[0];
 
       const urlParams = new URLSearchParams(window.location.search);
       const globalsParam = urlParams.get("globals");

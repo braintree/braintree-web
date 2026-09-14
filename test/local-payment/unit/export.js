@@ -1,7 +1,8 @@
-"use strict";
+import _e3 from "../../../src/local-payment";
 
-const { VERSION, create } = require("../../../src/local-payment");
-const { version: packageVersion } = require("../../../package.json");
+const { VERSION, create } = _e3;
+
+import { version as packageVersion } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

@@ -1,12 +1,9 @@
-"use strict";
-
-var atob = require("../lib/vendor/polyfill").atob;
-var analytics = require("../lib/analytics");
-var BraintreeError = require("../lib/braintree-error");
-var constants = require("./constants");
-var errors = require("./errors");
-var querystring = require("../lib/querystring");
-var wrapPromise = require("@braintree/wrap-promise");
+// @ts-nocheck
+import analytics from "../lib/analytics";
+import BraintreeError from "../lib/braintree-error";
+import constants from "./constants";
+import errors from "./errors";
+import querystring from "../lib/querystring";
 
 /**
  * @class
@@ -36,15 +33,17 @@ function InstantVerification(options) {
  * Initiates the Instant Verification payment flow by redirecting to the authorization page.
  * @public
  * @param {InstantVerification~startPaymentOptions} options The options for starting a payment session.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {void}
  * @example
  * button.addEventListener('click', function () {
- *   instantVerificationInstance.startPayment({
- *     jwt: 'JWT_STRING_FROM_YOUR_SERVER',
- *   }).catch(function (err) {
+ *   try {
+ *     instantVerificationInstance.startPayment({
+ *       jwt: 'JWT_STRING_FROM_YOUR_SERVER',
+ *     });
+ *   } catch (err) {
  *     // Handle error
  *     console.error(err);
- *   });
+ *   }
  * });
  */
 InstantVerification.prototype.startPayment = function (options) {
@@ -57,9 +56,7 @@ InstantVerification.prototype.startPayment = function (options) {
 
   // Check if jwt is provided
   if (!options.jwt) {
-    return Promise.reject(
-      new BraintreeError(errors.INSTANT_VERIFICATION_JWT_REQUIRED)
-    );
+    throw new BraintreeError(errors.INSTANT_VERIFICATION_JWT_REQUIRED);
   }
 
   redirectUrl =
@@ -78,8 +75,6 @@ InstantVerification.prototype.startPayment = function (options) {
     );
     window.location.href = redirectUrl;
   }
-
-  return Promise.resolve();
 };
 
 function getBaseUrl(configuration) {
@@ -108,32 +103,30 @@ function getBaseUrl(configuration) {
  * Handle redirect back to merchant page from Instant Verification experience.
  * @param {object} options - Options for the handling redirect back from Instant Verification UI.
  * @param {string} [options.success] URL query param returned from Instant Verification UI
- * @param {string} [options.cancel] URL query param return from Instant Verification UI
- * @param {string} [options.error] URL query param return from Instant Verification UI
- * @returns {Promise<string>|BraintreeError}  Returns a promise if no callback is provided.
- * If the redirect from the Instant Verification page is successful, the Promise will resolve with a nonce.
- * Otherwise, the promise rejects with a `BraintreeError`.
+ * @param {string} [options.cancel] URL query param returned from Instant Verification UI
+ * @param {string} [options.error] URL query param returned from Instant Verification UI
+ * @returns {string} If the redirect from the Instant Verification page is successful, returns a nonce.
+ * Otherwise, throws a `BraintreeError`.
  * @example
  * const urlParams = new URL(window.location.href).searchParams;
- * instantVerificationInstance.handleRedirect({
- *   success: urlParams.get('success');,
- *   cancel: urlParams.get('cancel');,
- *   error: urlParams.get('error');
- * })
- * .then((result) => {
+ * try {
+ *   var result = instantVerificationInstance.handleRedirect({
+ *     success: urlParams.get('success'),
+ *     cancel: urlParams.get('cancel'),
+ *     error: urlParams.get('error')
+ *   });
  *   if (result) {
  *     console.log('nonce: %s', result);
  *   } else {
  *     console.log('empty result');
  *   }
- * })
- * .catch((err) => {
- *   console.error(error: ${JSON.stringify(err)}`);
- * })
+ * } catch (err) {
+ *   console.error(`error: ${JSON.stringify(err)}`);
+ * }
  */
 InstantVerification.prototype.handleRedirect = function (options) {
   var self = this;
-  var error, payload, nonce;
+  var payload, nonce;
 
   if (options.success) {
     payload = JSON.parse(atob(options.success));
@@ -147,7 +140,7 @@ InstantVerification.prototype.handleRedirect = function (options) {
       nonce = payload.tokenizedAccounts[0].tokenized_account;
     }
 
-    return Promise.resolve(nonce);
+    return nonce;
   }
 
   if (options.cancel) {
@@ -156,7 +149,7 @@ InstantVerification.prototype.handleRedirect = function (options) {
       self._client,
       "instant-verification.redirect.completed.canceled"
     );
-    error = new BraintreeError(errors.INSTANT_VERIFICATION_CANCELED);
+    throw new BraintreeError(errors.INSTANT_VERIFICATION_CANCELED);
   }
 
   if (options.error) {
@@ -165,10 +158,8 @@ InstantVerification.prototype.handleRedirect = function (options) {
       self._client,
       "instant-verification.redirect.completed.error"
     );
-    error = new BraintreeError(errors.INSTANT_VERIFICATION_FAILURE);
+    throw new BraintreeError(errors.INSTANT_VERIFICATION_FAILURE);
   }
-
-  return Promise.reject(error);
 };
 
 /**
@@ -176,100 +167,83 @@ InstantVerification.prototype.handleRedirect = function (options) {
  * @public
  * @param {object} options - Options for fetching ACH mandate details.
  * @param {string} options.mandateId - The ID of the mandate to retrieve details for.
- * @returns {Promise<object>} Returns a promise that resolves with the ACH mandate details.
- * If successful, the promise resolves with an object containing mandate information.
+ * @returns {Promise<object>} If successful, resolves with an object containing the ACH mandate details.
  * Otherwise, the promise rejects with a `BraintreeError`.
  * @example
- * instantVerificationInstance.getAchMandateDetails({
- *   mandateId: 'mandate-id-from-tokenization'
- * })
- * .then(function (mandateDetails) {
+ * try {
+ *   var mandateDetails = await instantVerificationInstance.getAchMandateDetails({
+ *    mandateId: 'mandate-id-from-tokenization'
+ *   });
+ *
  *   console.log('Bank name:', mandateDetails.bankName);
  *   console.log('Account holder:', mandateDetails.accountHolderName);
  *   console.log('Last 4:', mandateDetails.last4);
  *   console.log('Routing number:', mandateDetails.routingNumber);
- * })
- * .catch(function (err) {
+ * } catch (err) {
  *   if (err.code === 'INSTANT_VERIFICATION_MANDATE_ID_REQUIRED') {
  *     console.error('A mandate ID is required');
  *   } else if (err.code === 'INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED') {
  *     console.error('Failed to fetch mandate details:', err);
  *   }
- * });
+ * }
  */
-InstantVerification.prototype.getAchMandateDetails = function (options) {
+InstantVerification.prototype.getAchMandateDetails = async function (options) {
   var self = this;
   var mandateId = options && options.mandateId;
+  var response, node;
 
-  return new Promise(function (resolve, reject) {
-    if (!mandateId) {
-      reject(
-        new BraintreeError(errors.INSTANT_VERIFICATION_MANDATE_ID_REQUIRED)
-      );
-      return;
-    }
-    self._client.request(
-      {
-        api: "graphQLApi",
-        method: "post",
-        data: {
-          query: constants.ACH_MANDATE_DETAILS_QUERY,
-          variables: { id: mandateId },
-          operationName: "AchMandateDetails",
-        },
+  if (!mandateId) {
+    throw new BraintreeError(errors.INSTANT_VERIFICATION_MANDATE_ID_REQUIRED);
+  }
+
+  try {
+    response = await self._client.request({
+      api: "graphQLApi",
+      method: "post",
+      data: {
+        query: constants.ACH_MANDATE_DETAILS_QUERY,
+        variables: { id: mandateId },
+        operationName: "AchMandateDetails",
       },
-      function (err, response) {
-        if (err) {
-          analytics.sendEvent(
-            self._client,
-            "instant-verification.ach-mandate-details.failed"
-          );
-
-          reject(
-            new BraintreeError({
-              type: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.type,
-              code: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.code,
-              message:
-                errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.message,
-              details: { originalError: err },
-            })
-          );
-          return;
-        }
-
-        if (!response.data || !response.data.node) {
-          reject(
-            new BraintreeError({
-              type: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.type,
-              code: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.code,
-              message: "No mandate details found for the provided ID.",
-            })
-          );
-          return;
-        }
-
-        var node = response.data.node;
-
-        if (!node.details) {
-          reject(
-            new BraintreeError({
-              type: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.type,
-              code: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.code,
-              message: "Mandate details are missing in the response.",
-            })
-          );
-          return;
-        }
-
-        analytics.sendEvent(
-          self._client,
-          "instant-verification.ach-mandate-details.succeeded"
-        );
-
-        resolve(_formatMandateResponse(node));
-      }
+    });
+  } catch (err) {
+    analytics.sendEvent(
+      self._client,
+      "instant-verification.ach-mandate-details.failed"
     );
-  });
+
+    throw new BraintreeError({
+      type: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.type,
+      code: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.code,
+      message: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.message,
+      details: { originalError: err },
+    });
+  }
+
+  if (!response.data || !response.data.node) {
+    throw new BraintreeError({
+      type: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.type,
+      code: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.code,
+      message: "No mandate details found for the provided ID.",
+    });
+  }
+
+  node = response.data.node;
+
+  if (!node.details) {
+    throw new BraintreeError({
+      type: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.type,
+      code: errors.INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED.code,
+      message: "Mandate details are missing in the response.",
+    });
+  }
+
+  analytics.sendEvent(
+    self._client,
+    "instant-verification.ach-mandate-details.succeeded"
+  );
+
+  return _formatMandateResponse(node);
 };
 
 function _formatMandateResponse(nodeData) {
@@ -283,4 +257,4 @@ function _formatMandateResponse(nodeData) {
   };
 }
 
-module.exports = wrapPromise.wrapPrototype(InstantVerification);
+export default InstantVerification;

@@ -1,14 +1,8 @@
-"use strict";
-
-const {
-  BaseInput,
-} = require("../../../../../src/hosted-fields/internal/components/base-input");
-const {
-  ExpirationDateInput,
-} = require("../../../../../src/hosted-fields/internal/components/expiration-date-input");
-const browserDetection = require("../../../../../src/hosted-fields/shared/browser-detection");
-const { createInput } = require("../../helpers");
-const RestrictedInput = require("restricted-input");
+import { BaseInput } from "../../../../../src/hosted-fields/internal/components/base-input";
+import { ExpirationDateInput } from "../../../../../src/hosted-fields/internal/components/expiration-date-input";
+import browserDetection from "../../../../../src/hosted-fields/shared/browser-detection";
+import { createInput } from "../../helpers";
+import RestrictedInput from "restricted-input";
 
 describe("Expiration Date Input", () => {
   let testContext;
@@ -28,7 +22,7 @@ describe("Expiration Date Input", () => {
 
       expect(inputWithFormatting.element.type).toBe("text");
 
-      jest.spyOn(RestrictedInput, "supportsFormatting").mockReturnValue(false);
+      vi.spyOn(RestrictedInput, "supportsFormatting").mockReturnValue(false);
 
       const inputWithoutFormatting = createInput("expirationDate");
 
@@ -80,8 +74,8 @@ describe("Expiration Date Input", () => {
     });
 
     it("has pattern set to [0-9/ ]*", () => {
-      jest.spyOn(browserDetection, "isIosSafari").mockReturnValue(true);
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIosSafari").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
 
       testContext.input = createInput("expirationDate");
       expect(testContext.input.element.getAttribute("pattern")).toBe(
@@ -96,7 +90,7 @@ describe("Expiration Date Input", () => {
 
   describe("formatting", () => {
     beforeEach(() => {
-      jest.spyOn(testContext.input.formatter, "setPattern");
+      vi.spyOn(testContext.input.formatter, "setPattern");
     });
 
     describe.each([

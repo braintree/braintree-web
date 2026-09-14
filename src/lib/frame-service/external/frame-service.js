@@ -1,23 +1,20 @@
-"use strict";
-
-var Popup = require("./strategies/popup");
-var PopupBridge = require("./strategies/popup-bridge");
-var Modal = require("./strategies/modal");
-var Bus = require("framebus");
-var events = require("../shared/events");
-var errors = require("../shared/errors");
-var constants = require("../shared/constants");
-var uuid = require("@braintree/uuid");
-var iFramer = require("@braintree/iframer");
-var BraintreeError = require("../../braintree-error");
-var browserDetection = require("../shared/browser-detection");
-var assign = require("./../../assign").assign;
-var BUS_CONFIGURATION_REQUEST_EVENT =
-  require("../../constants").BUS_CONFIGURATION_REQUEST_EVENT;
+// @ts-nocheck
+import Popup from "./strategies/popup";
+import PopupBridge from "./strategies/popup-bridge";
+import Modal from "./strategies/modal";
+import Bus from "framebus";
+import events from "../shared/events";
+import errors from "../shared/errors";
+import constants from "../shared/constants";
+import uuid from "@braintree/uuid";
+import iFramer from "@braintree/iframer";
+import BraintreeError from "../../braintree-error";
+import browserDetection from "../shared/browser-detection";
+import { assign } from "./../../assign";
+import documentVisibility from "../../document-visibility";
+import isVerifiedDomain from "../../is-verified-domain";
 
 var REQUIRED_CONFIG_KEYS = ["name", "dispatchFrameUrl", "openFrameUrl"];
-
-function noop() {}
 
 function _validateFrameConfiguration(options) {
   if (!options) {
@@ -49,9 +46,13 @@ function FrameService(options) {
     top: options.top,
     left: options.left,
   };
-  this.state = options.state || {};
 
-  this._bus = new Bus({ channel: this._serviceId });
+  this._bus = new Bus({
+    channel: this._serviceId,
+    verifyDomain: isVerifiedDomain,
+    // Initially empty because the target dispatch frame is not created yet
+    targetFrames: [],
+  });
   this._setBusEvents();
 }
 
@@ -84,6 +85,8 @@ FrameService.prototype._writeDispatchFrame = function () {
   });
 
   document.body.appendChild(this._dispatchFrame);
+  // Dispatch frame now created, add as a target frame for the bus
+  this._bus.addTargetFrame(this._dispatchFrame);
 };
 
 FrameService.prototype._setBusEvents = function () {
@@ -96,17 +99,11 @@ FrameService.prototype._setBusEvents = function () {
       this._frame.close();
 
       this._onCompleteCallback = null;
+      this._cleanupFrame();
 
       if (reply) {
         reply();
       }
-    }.bind(this)
-  );
-
-  this._bus.on(
-    BUS_CONFIGURATION_REQUEST_EVENT,
-    function (reply) {
-      reply(this.state);
     }.bind(this)
   );
 };
@@ -124,9 +121,9 @@ FrameService.prototype.open = function (options, callback) {
     return;
   }
 
-  assign(this.state, options.state);
-
   this._onCompleteCallback = callback;
+  this._onSuspend = options.onSuspend;
+  this._onResume = options.onResume;
   this._frame.open();
 
   if (this.isFrameClosed()) {
@@ -139,6 +136,7 @@ FrameService.prototype.open = function (options, callback) {
     return;
   }
   this._pollForPopupClose();
+  this._addVisibilityListeners();
 };
 
 FrameService.prototype.redirect = function (url) {
@@ -159,34 +157,6 @@ FrameService.prototype.focus = function () {
   }
 };
 
-FrameService.prototype.createHandler = function (options) {
-  options = options || {};
-
-  return {
-    close: function () {
-      if (options.beforeClose) {
-        options.beforeClose();
-      }
-
-      this.close();
-    }.bind(this),
-    focus: function () {
-      if (options.beforeFocus) {
-        options.beforeFocus();
-      }
-
-      this.focus();
-    }.bind(this),
-  };
-};
-
-FrameService.prototype.createNoopHandler = function () {
-  return {
-    close: noop,
-    focus: noop,
-  };
-};
-
 FrameService.prototype.teardown = function () {
   this.close();
   this._dispatchFrame.parentNode.removeChild(this._dispatchFrame);
@@ -202,24 +172,117 @@ FrameService.prototype._cleanupFrame = function () {
   this._frame = null;
   clearInterval(this._popupInterval);
   this._popupInterval = null;
+  this._removeVisibilityListeners();
+};
+
+FrameService.prototype._reportFrameClosed = function () {
+  var callback = this._onCompleteCallback;
+
+  this._onCompleteCallback = null;
+  this._cleanupFrame();
+
+  if (callback) {
+    callback(new BraintreeError(errors.FRAME_SERVICE_FRAME_CLOSED));
+  }
 };
 
 FrameService.prototype._pollForPopupClose = function () {
   this._popupInterval = setInterval(
     function () {
       if (this.isFrameClosed()) {
-        this._cleanupFrame();
-        if (this._onCompleteCallback) {
-          this._onCompleteCallback(
-            new BraintreeError(errors.FRAME_SERVICE_FRAME_CLOSED)
-          );
-        }
+        this._reportFrameClosed();
       }
     }.bind(this),
     constants.POPUP_POLL_INTERVAL
   );
 
   return this._popupInterval;
+};
+
+FrameService.prototype._addVisibilityListeners = function () {
+  var self = this;
+
+  this._onVisibilityChange = function () {
+    if (documentVisibility.isDocumentHidden()) {
+      self._handleSuspend();
+    } else {
+      self._handleResume();
+    }
+  };
+
+  this._onPageShow = function (event) {
+    if (event && event.persisted) {
+      self._handleResume();
+    }
+  };
+
+  // Attach after a delay so the outbound app switch, which flips the page
+  // hidden then visible on its way out, doesn't trip the resume handler.
+  this._visibilityInstallTimeout = setTimeout(function () {
+    window.document.addEventListener(
+      documentVisibility.getVisibilityChangeEventName(),
+      self._onVisibilityChange
+    );
+    window.addEventListener("pageshow", self._onPageShow);
+  }, constants.VISIBILITY_CHANGE_LISTENER_INSTALL_DELAY);
+};
+
+FrameService.prototype._removeVisibilityListeners = function () {
+  clearTimeout(this._visibilityInstallTimeout);
+  this._visibilityInstallTimeout = null;
+
+  clearTimeout(this._resumeRecheckTimeout);
+  this._resumeRecheckTimeout = null;
+
+  this._backgrounded = false;
+
+  if (this._onVisibilityChange) {
+    window.document.removeEventListener(
+      documentVisibility.getVisibilityChangeEventName(),
+      this._onVisibilityChange
+    );
+    this._onVisibilityChange = null;
+  }
+
+  if (this._onPageShow) {
+    window.removeEventListener("pageshow", this._onPageShow);
+    this._onPageShow = null;
+  }
+};
+
+FrameService.prototype._handleSuspend = function () {
+  if (this._backgrounded) {
+    return;
+  }
+  this._backgrounded = true;
+
+  if (this._onSuspend) {
+    this._onSuspend();
+  }
+};
+
+FrameService.prototype._handleResume = function () {
+  var self = this;
+
+  // A bfcache restore can fire both pageshow and visibilitychange; only
+  // process the first resume that follows a suspend.
+  if (!this._backgrounded) {
+    return;
+  }
+  this._backgrounded = false;
+
+  if (this._onResume) {
+    this._onResume();
+  }
+
+  // The close poll is throttled while backgrounded, so re-check the frame
+  // state directly on return rather than waiting for the next poll tick.
+  clearTimeout(this._resumeRecheckTimeout);
+  this._resumeRecheckTimeout = setTimeout(function () {
+    if (self.isFrameClosed()) {
+      self._reportFrameClosed();
+    }
+  }, constants.RESUME_PROCESS_DELAY);
 };
 
 FrameService.prototype._getFrameForEnvironment = function (options) {
@@ -238,4 +301,4 @@ FrameService.prototype._getFrameForEnvironment = function (options) {
   return new Modal(initOptions);
 };
 
-module.exports = FrameService;
+export default FrameService;

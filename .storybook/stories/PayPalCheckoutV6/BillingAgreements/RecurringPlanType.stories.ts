@@ -6,18 +6,26 @@ import type {
 import { createSimpleBraintreeStory } from "../../../utils/story-helper";
 import { getClientToken } from "../../../utils/sdk-config";
 import { getBraintreeSDK } from "../../../utils/braintree-sdk";
+import {
+  FUNDING_SOURCE_CONFIG,
+  formatPayPalDate,
+  createPayPalButton,
+  showSimpleError,
+  showDetailedError,
+} from "../common";
+import {
+  billingAgreementArgTypes,
+  applyBillingAgreementOptions,
+  type BillingAgreementArgs,
+} from "./common";
 import "../../../css/main.css";
 import "../../PayPalCheckout/payPalCheckout.css";
 
-/**
- * Format date for PayPal billing cycles
- * PayPal expects format: YYYY-MM-DD (date only, no time)
- */
-const formatPayPalDate = (date: Date): string => {
-  return date.toISOString().split("T")[0];
-};
+interface RecurringPlanTypeArgs extends BillingAgreementArgs {
+  fundingSource?: string;
+}
 
-const meta: Meta = {
+const meta: Meta<RecurringPlanTypeArgs> = {
   title: "Braintree/PayPal Checkout V6/Billing Agreements",
   parameters: {
     layout: "centered",
@@ -32,31 +40,18 @@ Examples: Monthly gym membership, weekly subscription box, annual software licen
       },
     },
   },
+  argTypes: billingAgreementArgTypes,
+  args: {
+    locale: "en_US",
+    landingPageType: "none",
+    enableShippingAddress: false,
+    shippingAddressEditable: true,
+    displayName: "Recurring Subscription Service",
+    riskCorrelationId: "",
+  },
 };
 
 export default meta;
-
-const showDetailedError = (
-  resultDiv: HTMLElement,
-  title: string,
-  err: IBraintreeError
-): void => {
-  const errorCode = err.code || "UNKNOWN";
-  const errorMessage = err.message || "An error occurred";
-  const errorType = err.type || "Unknown";
-
-  resultDiv.className =
-    "shared-result shared-result--visible shared-result--error";
-  resultDiv.innerHTML = `
-    <strong>${title}</strong><br>
-    <small><strong>Code:</strong> ${errorCode}</small><br>
-    <small><strong>Type:</strong> ${errorType}</small><br>
-    <small><strong>Message:</strong> ${errorMessage}</small>
-  `;
-
-  // eslint-disable-next-line no-console
-  console.error(`${title}:`, err);
-};
 
 const createRecurringForm = (): HTMLElement => {
   const container = document.createElement("div");
@@ -80,7 +75,10 @@ const createRecurringForm = (): HTMLElement => {
   return container;
 };
 
-const setupRecurringFlow = async (container: HTMLElement): Promise<void> => {
+const setupRecurringFlow = async (
+  container: HTMLElement,
+  args: RecurringPlanTypeArgs
+): Promise<void> => {
   const clientToken = await getClientToken();
   const resultDiv = container.querySelector("#result") as HTMLElement;
 
@@ -106,9 +104,68 @@ const setupRecurringFlow = async (container: HTMLElement): Promise<void> => {
 
     await paypalCheckoutV6Instance.loadPayPalSDK();
 
-    const session = paypalCheckoutV6Instance.createBillingAgreementSession({
-      billingAgreementDescription: "Monthly recurring subscription",
-      planType: "RECURRING",
+    // Check eligibility for recurring billing agreements
+    const eligibilityResult =
+      await paypalCheckoutV6Instance.findEligibleMethods({
+        amount: "29.99",
+        currency: "USD",
+        paymentFlow: "RECURRING_PAYMENT",
+      });
+
+    // Extract funding source and get configuration
+    const selectedFundingSource = args?.fundingSource || "PayPal";
+    const fundingSourceConfig =
+      FUNDING_SOURCE_CONFIG[selectedFundingSource as string];
+
+    // Handle unexpected or unsupported funding source values gracefully
+    if (!fundingSourceConfig) {
+      showSimpleError(
+        resultDiv,
+        "Invalid Funding Source",
+        `The funding source "${selectedFundingSource}" is not supported.`
+      );
+      return;
+    }
+
+    const fundingSource = fundingSourceConfig.fundingSource;
+    const componentTag = fundingSourceConfig.componentTag;
+
+    // Check if selected funding source is eligible
+    const isEligible = eligibilityResult[fundingSource];
+
+    if (!isEligible) {
+      showSimpleError(
+        resultDiv,
+        `${selectedFundingSource} Not Available`,
+        `${selectedFundingSource} is not eligible for recurring billing agreements.`
+      );
+      return;
+    }
+
+    const fundingSourceDetails =
+      eligibilityResult.getDetails(fundingSource) || {};
+
+    // Check if funding source can be vaulted
+    if (
+      fundingSourceDetails.canBeVaulted !== undefined &&
+      !fundingSourceDetails.canBeVaulted
+    ) {
+      showSimpleError(
+        resultDiv,
+        `${selectedFundingSource} Ineligible for Vaulting`,
+        `${selectedFundingSource} is not eligible to be saved for recurring billing agreements.`
+      );
+      return;
+    }
+
+    const isPayPalCredit = fundingSource === "credit";
+
+    // Session configuration shared between both funding sources
+    const sessionOptions = {
+      billingAgreementDescription: isPayPalCredit
+        ? "Monthly recurring subscription with PayPal Credit"
+        : "Monthly recurring subscription",
+      planType: "RECURRING" as const,
       amount: "29.99",
       currency: "USD",
       planMetadata: {
@@ -147,6 +204,7 @@ const setupRecurringFlow = async (container: HTMLElement): Promise<void> => {
         resultDiv.innerHTML = `
           <strong>PayPal account vaulted!</strong><br>
           <small>Plan Type: RECURRING</small><br>
+          <small>Funding Source: ${selectedFundingSource}</small><br>
           <small>Nonce: ${payload.nonce}</small><br>
           <small>Email: ${email}</small><br>
           <small>Amount: $29.99/month</small>
@@ -164,29 +222,28 @@ const setupRecurringFlow = async (container: HTMLElement): Promise<void> => {
       onError: (err: IBraintreeError) => {
         showDetailedError(resultDiv, "PayPal Error", err);
       },
-    });
+    };
 
+    // Apply additional billing agreement options from Storybook controls
+    applyBillingAgreementOptions(sessionOptions, args);
+
+    // Add offerCredit for PayPal Credit
+    if (isPayPalCredit) {
+      Object.assign(sessionOptions, { offerCredit: true });
+    }
+
+    // Create billing agreement session
+    const session =
+      paypalCheckoutV6Instance.createBillingAgreementSession(sessionOptions);
+
+    // Render PayPal button using web components
     const paypalButtonContainer = container.querySelector(
       "#paypal-button"
     ) as HTMLElement;
-    const button = document.createElement("button");
-    button.textContent = "Create Recurring Billing";
-    button.className = "paypal-button";
-    button.style.cssText = `
-      background-color: #0070ba;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 500;
-      width: 100%;
-    `;
 
-    button.addEventListener("click", () => {
-      session.start();
-    });
+    session.start();
+
+    const button = createPayPalButton(componentTag, fundingSourceDetails);
 
     paypalButtonContainer.appendChild(button);
   } catch (error) {
@@ -200,11 +257,23 @@ const setupRecurringFlow = async (container: HTMLElement): Promise<void> => {
 
 export const RecurringPlanType: StoryObj = {
   render: createSimpleBraintreeStory(
-    async (container) => {
+    async (container, storyArgs) => {
+      const args = storyArgs as unknown as RecurringPlanTypeArgs;
       const formContainer = createRecurringForm();
       container.appendChild(formContainer);
-      await setupRecurringFlow(formContainer);
+      await setupRecurringFlow(formContainer, args);
     },
     ["client.min.js", "paypal-checkout-v6.min.js"]
   ),
+  argTypes: {
+    fundingSource: {
+      control: { type: "select" },
+      options: ["PayPal", "PayPal Credit"],
+      description:
+        "Funding source for the billing agreement (PayPal or PayPal Credit)",
+    },
+  },
+  args: {
+    fundingSource: "PayPal",
+  },
 };

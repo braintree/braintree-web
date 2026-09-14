@@ -5,6 +5,8 @@
 }
 
 .venmo-button {
+  display: none;
+  cursor: pointer;
   background-color: var(--color-venmo-blue);
   color: var(--color-white);
   border: 1px solid var(--color-venmo-blue);
@@ -13,6 +15,11 @@
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
+}
+
+.venmo-button img {
+  display: block;
+  max-height: 32px;
 }
 
 .venmo-button:hover,

@@ -1,8 +1,6 @@
-"use strict";
-
-var enumerate = require("../../lib/enumerate");
-var errors = require("./errors");
-var VERSION = process.env.npm_package_version;
+import enumerate from "../../lib/enumerate";
+import errors from "./errors";
+const VERSION = __SDK_VERSION__;
 
 var constants = {
   VERSION: VERSION,
@@ -40,9 +38,6 @@ var constants = {
   },
   tokenizationErrorCodes: {
     81724: errors.HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE,
-    // NEXT_MAJOR_VERSION this error triggers for both AVS and CVV errors
-    // but the code name implies that it would only trigger for CVV verification
-    // failures
     81736: errors.HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED,
   },
   allowedStyles: [
@@ -165,6 +160,19 @@ var constants = {
     cvv: "cc-csc",
     "postal-code": "billing postal-code",
   },
+  supportedCardBrandDisplayNames: {
+    AMERICAN_EXPRESS: "American Express",
+    DISCOVER: "Discover",
+    INTERNATIONAL_MAESTRO: "Maestro",
+    JCB: "JCB",
+    MASTERCARD: "Mastercard",
+    SOLO: "Solo",
+    UK_MAESTRO: "UK Maestro",
+    VISA: "Visa",
+    ELO: "Elo",
+    HIPER: "Hiper",
+    HIPERCARD: "Hipercard",
+  },
 };
 
 constants.events = enumerate(
@@ -192,4 +200,12 @@ constants.events = enumerate(
   "hosted-fields:"
 );
 
-module.exports = constants;
+export const {
+  events,
+  externalEvents,
+  navigationDirections,
+  allowedAttributes,
+  allowedStyles,
+} = constants;
+
+export default constants;

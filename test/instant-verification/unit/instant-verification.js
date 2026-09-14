@@ -1,22 +1,23 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
 
-jest.mock("../../../src/lib/analytics");
+import analytics from "../../../src/lib/analytics";
+import BraintreeError from "../../../src/lib/braintree-error";
+import { fake } from "../../helpers";
+import InstantVerification from "../../../src/instant-verification/instant-verification";
+import _e7 from "../../../src/instant-verification";
 
-const analytics = require("../../../src/lib/analytics");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const { fake } = require("../../helpers");
-const InstantVerification = require("../../../src/instant-verification/instant-verification");
-const { create } = require("../../../src/instant-verification");
-const uuid = require("@braintree/uuid");
+const { create } = _e7;
+
+import uuid from "@braintree/uuid";
 
 describe("Instant-Verification", () => {
   let testContext, mockClose;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
 
-    mockClose = jest.fn();
+    mockClose = vi.fn();
     delete window.location;
     window.location = { href: "" };
 
@@ -33,56 +34,43 @@ describe("Instant-Verification", () => {
     };
 
     testContext.client = {
-      request: jest.fn().mockResolvedValue({}),
+      request: vi.fn().mockResolvedValue({}),
       getVersion: () => process.env.npm_package_version,
       getConfiguration: () => testContext.configuration,
     };
   });
 
-  it("sends analytics when instant-verification initialized successfully", () => {
-    expect.assertions(1);
+  it("sends analytics when instant-verification initialized successfully", () =>
+    new Promise((done) => {
+      new InstantVerification({
+        client: testContext.client,
+      });
 
-    new InstantVerification({
-      client: testContext.client,
-    });
-
-    expect(analytics.sendEvent).toBeCalledWith(
-      testContext.client,
-      "instant-verification.component.initialized"
-    );
-  });
-
-  it("throws error when openBanking configuration is not present during create", async () => {
-    delete testContext.configuration.gatewayConfiguration.openBanking;
-
-    expect.assertions(4);
-
-    await create({
-      client: testContext.client,
-    }).catch((err) => {
-      expect(err).toBeInstanceOf(BraintreeError);
-      expect(err.type).toBe("MERCHANT");
-      expect(err.code).toBe("INSTANT_VERIFICATION_NOT_ENABLED");
-      expect(err.message).toBe(
-        "Instant Verification is not enabled for this merchant account."
+      expect(analytics.sendEvent).toBeCalledWith(
+        testContext.client,
+        "instant-verification.component.initialized"
       );
-    });
-  });
+      done();
+    }));
+
+  it("throws error when openBanking configuration is not present during create", () =>
+    new Promise((done) => {
+      delete testContext.configuration.gatewayConfiguration.openBanking;
+
+      create({
+        client: testContext.client,
+      }).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe("MERCHANT");
+        expect(err.code).toBe("INSTANT_VERIFICATION_NOT_ENABLED");
+        expect(err.message).toBe(
+          "Instant Verification is not enabled for this merchant account."
+        );
+        done();
+      });
+    }));
 
   describe("startPayment", () => {
-    it("promise resolves when invoked successfully", async () => {
-      const options = {
-        client: testContext.client,
-      };
-      const instantVerification = new InstantVerification(options);
-
-      await expect(
-        instantVerification.startPayment({
-          jwt: "jwt",
-        })
-      ).resolves.not.toThrow();
-    });
-
     it("redirects to the experience URL with the JWT and client auth fingerprint", () => {
       const options = {
         client: testContext.client,
@@ -102,23 +90,25 @@ describe("Instant-Verification", () => {
       );
     });
 
-    it("throws error if jwt is not provided", async () => {
-      const options = {
-        client: testContext.client,
-      };
-      const instantVerification = new InstantVerification(options);
+    it("throws error if jwt is not provided", () =>
+      new Promise((done) => {
+        const options = {
+          client: testContext.client,
+        };
+        const instantVerification = new InstantVerification(options);
 
-      expect.assertions(4);
-
-      await instantVerification.startPayment({}).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.code).toBe("INSTANT_VERIFICATION_JWT_MISSING");
-        expect(err.message).toBe(
-          "JWT is required for Instant Verification payment flow."
-        );
-        expect(err.type).toBe("MERCHANT");
-      });
-    });
+        try {
+          instantVerification.startPayment({});
+        } catch (err) {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("INSTANT_VERIFICATION_JWT_MISSING");
+          expect(err.message).toBe(
+            "JWT is required for Instant Verification payment flow."
+          );
+          expect(err.type).toBe("MERCHANT");
+          done();
+        }
+      }));
 
     it("sends analytics event upon launching redirect", async () => {
       const options = {
@@ -186,108 +176,103 @@ describe("Instant-Verification", () => {
       };
     });
 
-    it("returns nonce extracted from success param", () => {
-      const encodedSuccessParam = btoa(JSON.stringify(mockSuccessPayload));
+    it("returns nonce extracted from success param", () =>
+      new Promise((done) => {
+        const encodedSuccessParam = btoa(JSON.stringify(mockSuccessPayload));
 
-      expect.assertions(1);
-
-      return btIvInstance
-        .handleRedirect({
+        const result = btIvInstance.handleRedirect({
           success: encodedSuccessParam,
-        })
-        .then((result) => {
-          expect(result).toBe(mockNonce);
         });
-    });
+        expect(result).toBe(mockNonce);
+        done();
+      }));
 
-    it("rejects with error upon Instant Verification payment cancelled", () => {
-      const encodedCancelParam = btoa(JSON.stringify(mockCancelPayload));
+    it("rejects with error upon Instant Verification payment cancelled", () =>
+      new Promise((done) => {
+        const encodedCancelParam = btoa(JSON.stringify(mockCancelPayload));
 
-      expect.assertions(4);
-
-      return btIvInstance
-        .handleRedirect({
-          cancel: encodedCancelParam,
-        })
-        .catch((err) => {
+        try {
+          btIvInstance.handleRedirect({
+            cancel: encodedCancelParam,
+          });
+        } catch (err) {
           expect(err).toBeInstanceOf(BraintreeError);
           expect(err.message).toBe(
             "Customer canceled the Instant Verification payment before authorizing."
           );
           expect(err.code).toBe("INSTANT_VERIFICATION_CANCELED");
           expect(err.type).toBe("CUSTOMER");
-        });
-    });
+          done();
+        }
+      }));
 
-    it("rejects with error upon failed auth completion", () => {
-      const encodedErrorParam = btoa(JSON.stringify(mockErrorPayload));
+    it("rejects with error upon failed auth completion", () =>
+      new Promise((done) => {
+        const encodedErrorParam = btoa(JSON.stringify(mockErrorPayload));
 
-      expect.assertions(4);
-
-      return btIvInstance
-        .handleRedirect({
-          error: encodedErrorParam,
-        })
-        .catch((err) => {
+        try {
+          btIvInstance.handleRedirect({
+            error: encodedErrorParam,
+          });
+        } catch (err) {
           expect(err).toBeInstanceOf(BraintreeError);
           expect(err.message).toBe(
             "Instant Verification payment failed during authorizing."
           );
           expect(err.code).toBe("INSTANT_VERIFICATION_FAILURE");
           expect(err.type).toBe("UNKNOWN");
-        });
-    });
+          done();
+        }
+      }));
 
-    it("sends analytics event for success auth completion", () => {
-      const encodedSuccessParam = btoa(JSON.stringify(mockSuccessPayload));
+    it("sends analytics event for success auth completion", () =>
+      new Promise((done) => {
+        const encodedSuccessParam = btoa(JSON.stringify(mockSuccessPayload));
 
-      expect.assertions(1);
-
-      return btIvInstance
-        .handleRedirect({
+        btIvInstance.handleRedirect({
           success: encodedSuccessParam,
-        })
-        .then(() => {
-          expect(analytics.sendEvent).toBeCalledWith(
-            testContext.client,
-            "instant-verification.redirect.completed.success"
-          );
         });
-    });
 
-    it("sends analytics event for cancel upon failed auth completion", () => {
-      const encodedCancelParam = btoa(JSON.stringify(mockCancelPayload));
+        expect(analytics.sendEvent).toBeCalledWith(
+          testContext.client,
+          "instant-verification.redirect.completed.success"
+        );
+        done();
+      }));
 
-      expect.assertions(1);
+    it("sends analytics event for cancel upon failed auth completion", () =>
+      new Promise((done) => {
+        const encodedCancelParam = btoa(JSON.stringify(mockCancelPayload));
 
-      return btIvInstance
-        .handleRedirect({
-          cancel: encodedCancelParam,
-        })
-        .catch(() => {
+        try {
+          btIvInstance.handleRedirect({
+            cancel: encodedCancelParam,
+          });
+        } catch {
           expect(analytics.sendEvent).toBeCalledWith(
             testContext.client,
             "instant-verification.redirect.completed.canceled"
           );
-        });
-    });
+          done();
+        }
+      }));
 
-    it("sends analytics event for error upon failed auth completion", () => {
-      const encodedErrorParam = btoa(JSON.stringify(mockErrorPayload));
+    it("sends analytics event for error upon failed auth completion", () =>
+      new Promise((done) => {
+        const encodedErrorParam = btoa(JSON.stringify(mockErrorPayload));
 
-      expect.assertions(1);
-
-      return btIvInstance
-        .handleRedirect({
-          error: encodedErrorParam,
-        })
-        .catch(() => {
+        try {
+          btIvInstance.handleRedirect({
+            error: encodedErrorParam,
+          });
+        } catch {
           expect(analytics.sendEvent).toBeCalledWith(
             testContext.client,
             "instant-verification.redirect.completed.error"
           );
-        });
-    });
+          done();
+        }
+      }));
   });
 
   describe("getAchMandateDetails", () => {
@@ -326,44 +311,37 @@ describe("Instant-Verification", () => {
       };
     });
 
-    it("throws error if mandateId is not provided", () => {
-      expect.assertions(4);
-
-      return btIvInstance.getAchMandateDetails({}).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("MERCHANT");
-        expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_ID_REQUIRED");
-        expect(err.message).toBe(
-          "Mandate ID is required to fetch ACH mandate details."
-        );
-      });
-    });
+    it("throws error if mandateId is not provided", () =>
+      new Promise((done) => {
+        return btIvInstance.getAchMandateDetails({}).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("MERCHANT");
+          expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_ID_REQUIRED");
+          expect(err.message).toBe(
+            "Mandate ID is required to fetch ACH mandate details."
+          );
+          done();
+        });
+      }));
 
     it("makes a request to the GraphQL API with the correct parameters", () => {
-      testContext.client.request.mockImplementation((options, callback) => {
-        callback(null, mockNodeResponse);
-      });
+      testContext.client.request.mockResolvedValue(mockNodeResponse);
 
       return btIvInstance.getAchMandateDetails({ mandateId }).then(() => {
-        expect(testContext.client.request).toHaveBeenCalledWith(
-          {
-            api: "graphQLApi",
-            method: "post",
-            data: {
-              query: expect.any(String),
-              variables: { id: mandateId },
-              operationName: "AchMandateDetails",
-            },
+        expect(testContext.client.request).toHaveBeenCalledWith({
+          api: "graphQLApi",
+          method: "post",
+          data: {
+            query: expect.any(String),
+            variables: { id: mandateId },
+            operationName: "AchMandateDetails",
           },
-          expect.any(Function)
-        );
+        });
       });
     });
 
     it("formats the mandate details correctly on success", () => {
-      testContext.client.request.mockImplementation((options, callback) => {
-        callback(null, mockNodeResponse);
-      });
+      testContext.client.request.mockResolvedValue(mockNodeResponse);
 
       return btIvInstance.getAchMandateDetails({ mandateId }).then((result) => {
         expect(result).toEqual({
@@ -378,9 +356,7 @@ describe("Instant-Verification", () => {
     });
 
     it("sends analytics event on successful mandate details fetch", () => {
-      testContext.client.request.mockImplementation((options, callback) => {
-        callback(null, mockNodeResponse);
-      });
+      testContext.client.request.mockResolvedValue(mockNodeResponse);
 
       return btIvInstance.getAchMandateDetails({ mandateId }).then(() => {
         expect(analytics.sendEvent).toHaveBeenCalledWith(
@@ -390,82 +366,78 @@ describe("Instant-Verification", () => {
       });
     });
 
-    it("rejects with BraintreeError if request fails", () => {
-      const mockError = new Error("Network error");
-      testContext.client.request.mockImplementation((_, callback) => {
-        callback(mockError);
-      });
+    it("rejects with BraintreeError if request fails", () =>
+      new Promise((done) => {
+        const mockError = new Error("Network error");
 
-      expect.assertions(5);
+        testContext.client.request.mockRejectedValue(mockError);
 
-      return btIvInstance.getAchMandateDetails({ mandateId }).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("NETWORK");
-        expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED");
-        expect(err.message).toBe("Failed to fetch ACH mandate details.");
-        expect(err.details.originalError).toBe(mockError);
-      });
-    });
+        return btIvInstance.getAchMandateDetails({ mandateId }).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("NETWORK");
+          expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED");
+          expect(err.message).toBe("Failed to fetch ACH mandate details.");
+          expect(err.details.originalError).toBe(mockError);
+          done();
+        });
+      }));
 
-    it("sends analytics event when mandate details fetch fails", () => {
-      const mockError = new Error("Network error");
-      testContext.client.request.mockImplementation((_, callback) => {
-        callback(mockError);
-      });
+    it("sends analytics event when mandate details fetch fails", () =>
+      new Promise((done) => {
+        const mockError = new Error("Network error");
 
-      expect.assertions(1);
+        testContext.client.request.mockRejectedValue(mockError);
 
-      return btIvInstance.getAchMandateDetails({ mandateId }).catch(() => {
-        expect(analytics.sendEvent).toHaveBeenCalledWith(
-          testContext.client,
-          "instant-verification.ach-mandate-details.failed"
-        );
-      });
-    });
+        return btIvInstance.getAchMandateDetails({ mandateId }).catch(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "instant-verification.ach-mandate-details.failed"
+          );
+          done();
+        });
+      }));
 
-    it("rejects with BraintreeError if node is missing from response", () => {
-      const missingNodeResponse = {
-        data: {},
-      };
-      testContext.client.request.mockImplementation((_, callback) => {
-        callback(null, missingNodeResponse);
-      });
+    it("rejects with BraintreeError if node is missing from response", () =>
+      new Promise((done) => {
+        const missingNodeResponse = {
+          data: {},
+        };
 
-      expect.assertions(4);
+        testContext.client.request.mockResolvedValue(missingNodeResponse);
 
-      return btIvInstance.getAchMandateDetails({ mandateId }).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("NETWORK");
-        expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED");
-        expect(err.message).toBe(
-          "No mandate details found for the provided ID."
-        );
-      });
-    });
+        return btIvInstance.getAchMandateDetails({ mandateId }).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("NETWORK");
+          expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED");
+          expect(err.message).toBe(
+            "No mandate details found for the provided ID."
+          );
+          done();
+        });
+      }));
 
-    it("rejects with BraintreeError if details is missing from node response", () => {
-      const missingDetailsResponse = {
-        data: {
-          node: {
-            id: mandateId,
-            // Missing details object
+    it("rejects with BraintreeError if details is missing from node response", () =>
+      new Promise((done) => {
+        const missingDetailsResponse = {
+          data: {
+            node: {
+              id: mandateId,
+              // Missing details object
+            },
           },
-        },
-      };
-      testContext.client.request.mockImplementation((_, callback) => {
-        callback(null, missingDetailsResponse);
-      });
+        };
 
-      expect.assertions(4);
+        testContext.client.request.mockResolvedValue(missingDetailsResponse);
 
-      return btIvInstance.getAchMandateDetails({ mandateId }).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("NETWORK");
-        expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED");
-        expect(err.message).toBe(
-          "Mandate details are missing in the response."
-        );
-      });
-    });
+        return btIvInstance.getAchMandateDetails({ mandateId }).catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.type).toBe("NETWORK");
+          expect(err.code).toBe("INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED");
+          expect(err.message).toBe(
+            "Mandate details are missing in the response."
+          );
+          done();
+        });
+      }));
   });
 });

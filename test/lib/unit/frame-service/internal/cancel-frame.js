@@ -1,11 +1,9 @@
-"use strict";
+vi.mock("../../../../../src/lib/frame-service/internal");
 
-jest.mock("../../../../../src/lib/frame-service/internal");
-
-const cancelFrame = require("../../../../../src/lib/frame-service/internal/cancel-frame");
-const frameService = require("../../../../../src/lib/frame-service/internal");
-const BraintreeError = require("../../../../../src/lib/braintree-error");
-const querystring = require("../../../../../src/lib/querystring");
+import cancelFrame from "../../../../../src/lib/frame-service/internal/cancel-frame";
+import frameService from "../../../../../src/lib/frame-service/internal";
+import BraintreeError from "../../../../../src/lib/braintree-error";
+import querystring from "../../../../../src/lib/querystring";
 
 describe("cancel-frame", () => {
   describe("start", () => {
@@ -25,7 +23,7 @@ describe("cancel-frame", () => {
     });
 
     it("includes query params", () => {
-      jest.spyOn(querystring, "parse").mockReturnValue({
+      vi.spyOn(querystring, "parse").mockReturnValue({
         foo: "bar",
       });
       cancelFrame.start();

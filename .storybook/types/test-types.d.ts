@@ -20,27 +20,12 @@ interface TestError extends Error {
 /**
  * Type guard to check if an error is a TestError
  */
-function isTestError(error: unknown): error is TestError {
-  return (
-    error !== null &&
-    typeof error === "object" &&
-    "message" in error &&
-    typeof (error as TestError).message === "string"
-  );
-}
+declare function isTestError(error: unknown): error is TestError;
 
 /**
  * Helper to safely get error message from unknown error
  */
-function getErrorMessage(error: unknown): string {
-  if (isTestError(error)) {
-    return error.message;
-  }
-  if (typeof error === "string") {
-    return error;
-  }
-  return "Unknown error occurred";
-}
+declare function getErrorMessage(error: unknown): string;
 
 /**
  * Default hosted field values for testing
@@ -68,43 +53,22 @@ type HostedFieldKey =
   | "cardholderName";
 
 /**
+ * Element states for querying on a page
+ */
+export type AllowedElementState =
+  | "visible"
+  | "attached"
+  | "detached"
+  | "hidden"
+  | undefined;
+
+/**
  * Test URL configuration
  */
 interface TestUrlConfig {
   baseUrl: string;
   path: string;
   params?: Record<string, string>;
-}
-
-/**
- * Story args type for Storybook
- * Represents the args object passed to story render functions
- */
-interface StoryArgs {
-  [key: string]: unknown;
-}
-
-/**
- * Typed story args for specific use cases
- */
-interface HostedFieldsStoryArgs extends StoryArgs {
-  includePostalCode?: boolean;
-  includeCardholderName?: boolean;
-  includeSeparateExpirationFields?: boolean;
-  styles?: Record<string, unknown>;
-}
-
-interface PayPalStoryArgs extends StoryArgs {
-  flow?: "checkout" | "vault";
-  amount?: string;
-  currency?: string;
-  intent?: string;
-}
-
-interface ThreeDSecureStoryArgs extends StoryArgs {
-  amount?: string;
-  challengeRequested?: boolean;
-  exemptionRequested?: boolean;
 }
 
 /**
@@ -199,10 +163,6 @@ export {
   HostedFieldsTestValues,
   HostedFieldKey,
   TestUrlConfig,
-  StoryArgs,
-  HostedFieldsStoryArgs,
-  PayPalStoryArgs,
-  ThreeDSecureStoryArgs,
   BrowserExecuteResult,
   WaitUntilCondition,
   WaitUntilOptions,

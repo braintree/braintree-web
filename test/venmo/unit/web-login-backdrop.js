@@ -1,17 +1,15 @@
-"use strict";
-const assign = require("../../../src/lib/assign").assign;
-
-const {
+import { assign } from "../../../src/lib/assign";
+import {
   runWebLogin,
   setupDesktopWebLogin,
   openPopup,
   POPUP_WIDTH,
   POPUP_HEIGHT,
-} = require("../../../src/venmo/shared/web-login-backdrop");
-const frameService = require("../../../src/lib/frame-service/external");
-const { version: VERSION } = require("../../../package.json");
+} from "../../../src/venmo/shared/web-login-backdrop";
+import frameService from "../../../src/lib/frame-service/external";
+import { version as VERSION } from "../../../package.json";
 
-jest.mock("../../../src/lib/frame-service/external");
+vi.mock("../../../src/lib/frame-service/external");
 
 describe("web-login-backdrop", () => {
   const mockVenmoUrl = "https://path.com/to/venmo/login";
@@ -29,40 +27,40 @@ describe("web-login-backdrop", () => {
     openOptions;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    window.open = jest.fn().mockReturnValue({ close: mockClose });
-    window.setInterval = jest.fn();
-    window.clearInterval = jest.fn();
-    document.head.appendChild = jest.fn();
-    document.body.appendChild = jest.fn();
+    vi.clearAllMocks();
+    window.open = vi.fn().mockReturnValue({ close: mockClose });
+    window.setInterval = vi.fn();
+    window.clearInterval = vi.fn();
+    document.head.appendChild = vi.fn();
+    document.body.appendChild = vi.fn();
 
-    jest.spyOn(document, "addEventListener");
-    jest.spyOn(document, "createElement");
+    vi.spyOn(document, "addEventListener");
+    vi.spyOn(document, "createElement");
 
-    mockClose = jest.fn();
-    mockCancelTokenization = jest.fn();
-    mockStatusCheck = jest.fn().mockResolvedValue();
-    mockPaymentContextStatus = jest.fn().mockResolvedValue();
-    classListAddMock = jest.fn();
-    eventListenerMock = jest.fn();
-    classListRemoveMock = jest.fn();
+    mockClose = vi.fn();
+    mockCancelTokenization = vi.fn();
+    mockStatusCheck = vi.fn().mockResolvedValue();
+    mockPaymentContextStatus = vi.fn().mockResolvedValue();
+    classListAddMock = vi.fn();
+    eventListenerMock = vi.fn();
+    classListRemoveMock = vi.fn();
     mockFrameService = {
-      open: jest.fn().mockImplementation((obj, callback) => {
+      open: vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback());
       }),
-      redirect: jest.fn(),
-      close: jest.fn(),
-      focus: jest.fn(),
+      redirect: vi.fn(),
+      close: vi.fn(),
+      focus: vi.fn(),
     };
     setupOptions = {
-      assetsUrl: mockAssetUrl,
+      assetsUrl: `${mockAssetUrl}/web/${VERSION}`,
       cancelTokenization: mockCancelTokenization,
       checkForStatusChange: mockStatusCheck,
     };
-    frameService.create = jest.fn().mockImplementation((obj, callback) => {
+    frameService.create = vi.fn().mockImplementation((obj, callback) => {
       return Promise.resolve(callback(mockFrameService));
     });
-    document.getElementById = jest.fn().mockReturnValue({
+    document.getElementById = vi.fn().mockReturnValue({
       addEventListener: eventListenerMock,
       classList: { add: classListAddMock, remove: classListRemoveMock },
     });
@@ -77,7 +75,7 @@ describe("web-login-backdrop", () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("opens the popup", async () => {
@@ -142,10 +140,10 @@ describe("web-login-backdrop", () => {
 
   describe("Continue Button", () => {
     it("refocuses if popup is already open", async () => {
-      mockFrameService.open = jest.fn((obj, callback) => {
+      mockFrameService.open = vi.fn((obj, callback) => {
         callback();
       });
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
       const popupName = "venmo-popup-continue-button";
@@ -167,10 +165,10 @@ describe("web-login-backdrop", () => {
 
   describe("Cancel Button", () => {
     it("closes popup, cancels tokenization, and hides the backdrop when clicked", async () => {
-      mockFrameService.open = jest.fn((obj, callback) => {
+      mockFrameService.open = vi.fn((obj, callback) => {
         callback();
       });
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
 
@@ -275,10 +273,10 @@ describe("web-login-backdrop", () => {
     });
 
     it("sets button event listeners when frameservice is created", async () => {
-      mockFrameService.open = jest.fn((obj, callback) => {
+      mockFrameService.open = vi.fn((obj, callback) => {
         callback();
       });
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
 
@@ -294,10 +292,10 @@ describe("web-login-backdrop", () => {
         venmoSuccess: 1,
       };
 
-      mockFrameService.open = jest.fn((obj, callback) => {
+      mockFrameService.open = vi.fn((obj, callback) => {
         callback(undefined, hashFromRedirectParams);
       });
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
 
@@ -327,10 +325,10 @@ describe("web-login-backdrop", () => {
         venmoCancel: 1,
       };
 
-      mockFrameService.open = jest.fn((obj, callback) => {
+      mockFrameService.open = vi.fn((obj, callback) => {
         callback(undefined, hashFromRedirectParams);
       });
-      frameService.create = jest.fn().mockImplementation((obj, callback) => {
+      frameService.create = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback(mockFrameService));
       });
       const expectedRejectedValue = "some err";
@@ -351,12 +349,95 @@ describe("web-login-backdrop", () => {
 
     it("rejects when open returns an error", async () => {
       expect.assertions(1);
-      mockFrameService.open = jest.fn().mockImplementation((obj, callback) => {
+      mockFrameService.open = vi.fn().mockImplementation((obj, callback) => {
         return Promise.resolve(callback("some error"));
       });
 
       await openPopup(openOptions).catch((err) => {
         expect(err).toBe("some error");
+      });
+    });
+
+    describe("analyticsCallback", () => {
+      let mockAnalyticsCallback;
+      let optionsWithCallback;
+
+      beforeEach(() => {
+        mockAnalyticsCallback = vi.fn();
+        optionsWithCallback = assign({}, openOptions, {
+          analyticsCallback: mockAnalyticsCallback,
+        });
+        mockFrameService.open = vi.fn((obj, callback) => {
+          callback();
+        });
+      });
+
+      it("calls login.start when runWebLogin is called", () => {
+        // Override open to not fire its callback so only login.start fires
+        mockFrameService.open = vi.fn();
+
+        runWebLogin(optionsWithCallback);
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith("login", "start");
+        expect(mockAnalyticsCallback).toHaveBeenCalledTimes(1);
+      });
+
+      it("calls login.succeeded and return-to-merchant.started when popup closes without error", async () => {
+        await openPopup(optionsWithCallback);
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "login",
+          "succeeded"
+        );
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "return-to-merchant",
+          "start"
+        );
+      });
+
+      it("calls return-to-merchant.succeeded when status check resolves", async () => {
+        mockStatusCheck.mockResolvedValueOnce({ status: "APPROVED" });
+
+        await openPopup(optionsWithCallback);
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "return-to-merchant",
+          "succeeded"
+        );
+      });
+
+      it("calls return-to-merchant.canceled when status is CREATED after status check rejects", async () => {
+        mockStatusCheck.mockRejectedValueOnce(new Error("some error"));
+        mockPaymentContextStatus.mockResolvedValueOnce({ status: "CREATED" });
+
+        await openPopup(optionsWithCallback).catch(() => {});
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "return-to-merchant",
+          "canceled"
+        );
+      });
+
+      it("calls return-to-merchant.failed when status check rejects with non-CREATED status", async () => {
+        mockStatusCheck.mockRejectedValueOnce(new Error("some error"));
+        mockPaymentContextStatus.mockResolvedValueOnce({ status: "FAILED" });
+
+        await openPopup(optionsWithCallback).catch(() => {});
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith(
+          "return-to-merchant",
+          "failed"
+        );
+      });
+
+      it("calls login.failed when open returns an error", async () => {
+        mockFrameService.open = vi.fn().mockImplementation((obj, callback) => {
+          return Promise.resolve(callback("some error"));
+        });
+
+        await openPopup(optionsWithCallback).catch(() => {});
+
+        expect(mockAnalyticsCallback).toHaveBeenCalledWith("login", "failed");
       });
     });
   });

@@ -1,8 +1,6 @@
-"use strict";
-
-var createAuthorizationData = require("./create-authorization-data");
-var jsonClone = require("./json-clone");
-var constants = require("./constants");
+import createAuthorizationData from "./create-authorization-data";
+import jsonClone from "./json-clone";
+import constants from "./constants";
 
 function addMetadata(configuration, data) {
   var key;
@@ -36,7 +34,7 @@ function addEventMetadata(clientInstanceOrPromise) {
 
   /* eslint-disable camelcase */
   var metadata = {
-    api_integration_type: configuration.analyticsMetadata.integrationType,
+    api_integration_type: configuration.analyticsMetadata.integration,
     app_id: window.location.host,
     c_sdk_ver: constants.VERSION,
     component: "braintreeclientsdk",
@@ -62,7 +60,9 @@ function addEventMetadata(clientInstanceOrPromise) {
   return metadata;
 }
 
-module.exports = {
-  addMetadata: addMetadata,
-  addEventMetadata: addEventMetadata,
+export { addMetadata, addEventMetadata };
+
+export default {
+  addMetadata,
+  addEventMetadata,
 };

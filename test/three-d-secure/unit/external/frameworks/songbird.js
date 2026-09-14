@@ -1,11 +1,11 @@
-"use strict";
+vi.mock("../../../../../src/lib/assets");
+vi.mock("@braintree/asset-loader/load-script");
 
-jest.mock("../../../../../src/lib/assets");
-jest.mock("@braintree/asset-loader/load-script");
+import Bus from "framebus";
+import BaseFramework from "../../../../../src/three-d-secure/external/frameworks/base";
+import SongbirdFramework from "../../../../../src/three-d-secure/external/frameworks/songbird";
+import _imp0 from "../../../../helpers";
 
-const Bus = require("framebus");
-const BaseFramework = require("../../../../../src/three-d-secure/external/frameworks/base");
-const SongbirdFramework = require("../../../../../src/three-d-secure/external/frameworks/songbird");
 const {
   wait,
   fake: { clientToken },
@@ -13,15 +13,16 @@ const {
   yieldsByEventAsync,
   yieldsByEvents,
   findFirstEventCallback,
-} = require("../../../../helpers");
-const BraintreeError = require("../../../../../src/lib/braintree-error");
-const { version: VERSION } = require("../../../../../package.json");
-const analytics = require("../../../../../src/lib/analytics");
-const {
+} = _imp0;
+
+import BraintreeError from "../../../../../src/lib/braintree-error";
+import { version as VERSION } from "../../../../../package.json";
+import analytics from "../../../../../src/lib/analytics";
+import {
   BRAINTREE_LIBRARY_VERSION,
   PLATFORM,
-} = require("../../../../../src/lib/constants");
-const assets = require("../../../../../src/lib/assets");
+} from "../../../../../src/lib/constants";
+import assets from "../../../../../src/lib/assets";
 
 describe("SongbirdFramework", () => {
   let testContext, createFramework;
@@ -29,19 +30,19 @@ describe("SongbirdFramework", () => {
   beforeEach(() => {
     testContext = {};
 
-    jest
-      .spyOn(SongbirdFramework.prototype, "setupSongbird")
-      .mockImplementation(() => {
+    vi.spyOn(SongbirdFramework.prototype, "setupSongbird").mockImplementation(
+      () => {
         window.Cardinal = testContext.fakeCardinal;
 
         return Promise.resolve();
-      });
-    jest.spyOn(assets, "loadScript").mockImplementation(() => {
+      }
+    );
+    vi.spyOn(assets, "loadScript").mockImplementation(() => {
       window.Cardinal = testContext.fakeCardinal;
 
       return Promise.resolve();
     });
-    jest.spyOn(Bus.prototype, "on").mockImplementation();
+    vi.spyOn(Bus.prototype, "on").mockImplementation();
 
     testContext.onEventBehavior = [
       { event: "payments.setupComplete", args: [{}] },
@@ -56,24 +57,26 @@ describe("SongbirdFramework", () => {
       gatewayConfiguration: {
         environment: "sandbox",
         assetsUrl: "http://example.com/assets",
-        threeDSecure: {
-          cardinalAuthenticationJWT: "jwt",
-          cardinalSongbirdUrl:
-            "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
+        creditCard: {
+          threeDSecure: {
+            cardinalAuthenticationJWT: "jwt",
+            cardinalSongbirdUrl:
+              "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
+          },
         },
       },
     };
     testContext.client = {
-      request: jest.fn().mockResolvedValue(null),
+      request: vi.fn().mockResolvedValue(null),
       getConfiguration: () => testContext.configuration,
     };
     testContext.fakeCardinal = {
-      configure: jest.fn(),
-      setup: jest.fn(),
-      on: jest.fn(),
-      off: jest.fn(),
-      trigger: jest.fn().mockResolvedValue({ Status: false }),
-      continue: jest.fn(),
+      configure: vi.fn(),
+      setup: vi.fn(),
+      on: vi.fn(),
+      off: vi.fn(),
+      trigger: vi.fn().mockResolvedValue({ Status: false }),
+      continue: vi.fn(),
     };
 
     testContext.applyActionCode = (actionCode = "SUCCESS", options = {}) => {
@@ -123,46 +126,45 @@ describe("SongbirdFramework", () => {
   });
 
   describe("setUpEventListeners", () => {
-    it("sets up listener for on lookup complete event", (done) => {
-      const framework = createFramework();
+    it("sets up listener for on lookup complete event", () =>
+      new Promise((resolve) => {
+        const framework = createFramework();
 
-      jest
-        .spyOn(framework, "on")
-        .mockImplementationOnce(yieldsAsync("some data", "a fake function"));
+        vi.spyOn(framework, "on").mockImplementationOnce(
+          yieldsAsync({ data: "some data", next: "a fake function" })
+        );
 
-      framework.setUpEventListeners((eventName, data, fakeFunction) => {
-        expect(eventName).toBe("lookup-complete");
-        expect(data).toBe("some data");
-        expect(fakeFunction).toBe("a fake function");
+        framework.setUpEventListeners((eventName, payload) => {
+          expect(eventName).toBe("lookup-complete");
+          expect(payload.data).toBe("some data");
+          expect(payload.next).toBe("a fake function");
 
-        done();
-      });
-    });
+          resolve();
+        });
+      }));
 
     it.each([
       ["CUSTOMER_CANCELED", "customer-canceled"],
       ["UI.CLOSE", "authentication-modal-close"],
       ["UI.RENDER", "authentication-modal-render"],
-      ["UI.RENDERHIDDEN", "authentication-modal-render-hidden"],
-      ["UI.LOADING.CLOSE", "authentication-modal-loader-close"],
-      ["UI.LOADING.RENDER", "authentication-modal-loader-render"],
     ])(
       "sets up %s event without payload",
-      (eventName, publicEventName, done) => {
-        const framework = createFramework();
+      (eventName, publicEventName) =>
+        new Promise((resolve) => {
+          const framework = createFramework();
 
-        jest.spyOn(framework, "on").mockImplementation((event, cb) => {
-          if (event === `songbird-framework:${eventName}`) {
-            cb();
-          }
-        });
+          vi.spyOn(framework, "on").mockImplementation((event, cb) => {
+            if (event === `songbird-framework:${eventName}`) {
+              cb();
+            }
+          });
 
-        framework.setUpEventListeners((event) => {
-          expect(event).toBe(publicEventName);
+          framework.setUpEventListeners((event) => {
+            expect(event).toBe(publicEventName);
 
-          done();
-        });
-      }
+            resolve();
+          });
+        })
     );
   });
 
@@ -175,6 +177,10 @@ describe("SongbirdFramework", () => {
           details: {
             bin: "123456",
             cardType: "Visa",
+          },
+          threeDSecureInfo: {
+            liabilityShiftPossible: true,
+            liabilityShifted: true,
           },
         },
         lookup: {
@@ -195,7 +201,7 @@ describe("SongbirdFramework", () => {
           cardType: "Visa",
         },
       };
-      jest.spyOn(testContext.fakeCardinal, "on").mockImplementation(
+      vi.spyOn(testContext.fakeCardinal, "on").mockImplementation(
         yieldsByEventAsync("payments.setupComplete", {
           sessionId: "df",
         })
@@ -211,7 +217,7 @@ describe("SongbirdFramework", () => {
       it("requires an onLookupComplete function", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
 
         return framework
           .verifyCard({
@@ -232,10 +238,10 @@ describe("SongbirdFramework", () => {
       it("it does not require an onLookupComplete function if override is passed into additional options", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
 
-        framework.on(SongbirdFramework.events.LOOKUP_COMPLETE, (data, next) => {
-          next();
+        framework.on(SongbirdFramework.events.LOOKUP_COMPLETE, (payload) => {
+          payload.next();
         });
 
         return framework
@@ -259,7 +265,7 @@ describe("SongbirdFramework", () => {
       it("calls reload 3DS after verifyCard is done", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "_reloadThreeDSecure");
+        vi.spyOn(framework, "_reloadThreeDSecure");
 
         return framework
           .verifyCard({
@@ -277,8 +283,8 @@ describe("SongbirdFramework", () => {
       it("reloadThreeDSecure tears down and rebuilds cardinal SDK", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "teardown");
-        jest.spyOn(framework, "_configureCardinalSdk");
+        vi.spyOn(framework, "teardown");
+        vi.spyOn(framework, "_configureCardinalSdk");
 
         return framework._reloadThreeDSecure().then(() => {
           expect(framework.teardown).toHaveBeenCalledTimes(1);
@@ -437,7 +443,7 @@ describe("SongbirdFramework", () => {
       it("prepares the lookup", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "prepareLookup");
+        vi.spyOn(framework, "prepareLookup");
 
         return framework
           .verifyCard({
@@ -458,7 +464,7 @@ describe("SongbirdFramework", () => {
       it("makes a request to the 3DS lookup endpoint df reference id", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
@@ -491,7 +497,7 @@ describe("SongbirdFramework", () => {
       it("makes a request to the 3DS lookup endpoint with cardAddChallengeRequested", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
 
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
@@ -524,82 +530,10 @@ describe("SongbirdFramework", () => {
           });
       });
 
-      it("makes a request to the 3DS lookup endpoint with cardAdd", () => {
-        const framework = createFramework();
-
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
-        testContext.client.request.mockResolvedValue({
-          paymentMethod: {},
-          threeDSecureInfo: {},
-          lookup: {
-            threeDSecureVersion: "2.1.0",
-            transactionId: "txn-id",
-          },
-        });
-
-        return framework
-          .verifyCard({
-            nonce: testContext.tokenizedCard.nonce,
-            bin: testContext.tokenizedCard.details.bin,
-            cardAdd: false,
-            amount: 100,
-            onLookupComplete: yieldsAsync(),
-          })
-          .then(() => {
-            expect(testContext.client.request).toHaveBeenCalledTimes(1);
-            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
-              endpoint: "payment_methods/abcdef/three_d_secure/lookup",
-              method: "post",
-              data: {
-                cardAdd: false,
-                dfReferenceId: "df-id",
-                amount: 100,
-              },
-            });
-          });
-      });
-
-      it("prefers cardAddChallengeRequested over cardAdd", () => {
-        const framework = createFramework();
-
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
-
-        testContext.client.request.mockResolvedValue({
-          paymentMethod: {},
-          threeDSecureInfo: {},
-          lookup: {
-            threeDSecureVersion: "2.1.0",
-            transactionId: "txn-id",
-          },
-        });
-
-        return framework
-          .verifyCard({
-            nonce: testContext.tokenizedCard.nonce,
-            bin: testContext.tokenizedCard.details.bin,
-            cardAddChallengeRequested: true,
-            cardAdd: false,
-            amount: 100,
-            onLookupComplete: yieldsAsync(),
-          })
-          .then(() => {
-            expect(testContext.client.request).toHaveBeenCalledTimes(1);
-            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
-              endpoint: "payment_methods/abcdef/three_d_secure/lookup",
-              method: "post",
-              data: {
-                cardAdd: true,
-                dfReferenceId: "df-id",
-                amount: 100,
-              },
-            });
-          });
-      });
-
       it("makes a request to the 3DS lookup endpoint with accountType", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
@@ -634,7 +568,7 @@ describe("SongbirdFramework", () => {
       it("makes a request to the 3DS lookup endpoint with challengeRequested", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
@@ -669,7 +603,7 @@ describe("SongbirdFramework", () => {
       it("makes a request to the 3DS lookup endpoint with merchantName", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
@@ -704,7 +638,7 @@ describe("SongbirdFramework", () => {
       it("makes a request to the 3DS lookup endpoint with requestedExemptionType", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
@@ -740,8 +674,8 @@ describe("SongbirdFramework", () => {
       it("returns validation error for invalid requestedExemptionType", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "_reloadThreeDSecure");
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "_reloadThreeDSecure");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         expect.assertions(3);
 
         return framework
@@ -763,10 +697,10 @@ describe("SongbirdFramework", () => {
           });
       });
 
-      it("doesnt send requestedExemptionType when blank", () => {
+      it("doesn't send requestedExemptionType when blank", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         expect.assertions(1);
 
         return framework
@@ -792,7 +726,7 @@ describe("SongbirdFramework", () => {
       it("makes a request to the 3DS lookup endpoint with custom fields", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
@@ -828,7 +762,7 @@ describe("SongbirdFramework", () => {
       it("doesn't send custom fields when null", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         expect.assertions(1);
 
         return framework
@@ -854,7 +788,7 @@ describe("SongbirdFramework", () => {
       it("makes a request to the 3DS lookup endpoint with dataOnlyRequested", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
@@ -886,45 +820,10 @@ describe("SongbirdFramework", () => {
           });
       });
 
-      it("makes a request to the 3DS lookup endpoint with exemptionRequested", () => {
-        const framework = createFramework();
-
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
-        testContext.client.request.mockResolvedValue({
-          paymentMethod: {},
-          threeDSecureInfo: {},
-          lookup: {
-            threeDSecureVersion: "2.1.0",
-            transactionId: "txn-id",
-          },
-        });
-
-        return framework
-          .verifyCard({
-            nonce: testContext.tokenizedCard.nonce,
-            bin: testContext.tokenizedCard.details.bin,
-            exemptionRequested: true,
-            amount: 100,
-            onLookupComplete: yieldsAsync(),
-          })
-          .then(() => {
-            expect(testContext.client.request).toHaveBeenCalledTimes(1);
-            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
-              endpoint: "payment_methods/abcdef/three_d_secure/lookup",
-              method: "post",
-              data: {
-                exemptionRequested: true,
-                dfReferenceId: "df-id",
-                amount: 100,
-              },
-            });
-          });
-      });
-
       it("makes a request to the 3DS lookup endpoint with requestVisaDAF", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
@@ -959,7 +858,7 @@ describe("SongbirdFramework", () => {
       it("does not send requestVisaDAF when false", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
         testContext.client.request.mockResolvedValue({
           paymentMethod: {},
           threeDSecureInfo: {},
@@ -994,11 +893,46 @@ describe("SongbirdFramework", () => {
           });
       });
 
+      it("makes a request to the 3DS lookup endpoint with applySmartAuthentication", () => {
+        const framework = createFramework();
+
+        vi.spyOn(framework, "getDfReferenceId").mockResolvedValue("df-id");
+        testContext.client.request.mockResolvedValue({
+          paymentMethod: {},
+          threeDSecureInfo: {},
+          lookup: {
+            threeDSecureVersion: "2.1.0",
+            transactionId: "txn-id",
+          },
+        });
+
+        return framework
+          .verifyCard({
+            nonce: testContext.tokenizedCard.nonce,
+            bin: testContext.tokenizedCard.details.bin,
+            applySmartAuthentication: true,
+            amount: 100,
+            onLookupComplete: yieldsAsync(),
+          })
+          .then(() => {
+            expect(testContext.client.request).toHaveBeenCalledTimes(1);
+            expect(testContext.client.request.mock.calls[0][0]).toMatchObject({
+              endpoint: "payment_methods/abcdef/three_d_secure/lookup",
+              method: "post",
+              data: {
+                applySmartAuthentication: true,
+                dfReferenceId: "df-id",
+                amount: 100,
+              },
+            });
+          });
+      });
+
       it("calls initializeChallengeWithLookupResponse with lookup response and options", () => {
         const framework = createFramework();
         const lookupResponse = testContext.lookupResponse;
 
-        jest.spyOn(framework, "initializeChallengeWithLookupResponse");
+        vi.spyOn(framework, "initializeChallengeWithLookupResponse");
 
         return framework
           .verifyCard({
@@ -1054,7 +988,11 @@ describe("SongbirdFramework", () => {
                 cardType: "Visa",
                 bin: "123456",
               },
-              threeDSecureInfo: {},
+              threeDSecureInfo: {
+                liabilityShifted: true,
+                liabilityShiftPossible: true,
+                threeDSecureVersion: "2.1.0",
+              },
             },
             threeDSecureInfo: {
               liabilityShifted: true,
@@ -1072,7 +1010,11 @@ describe("SongbirdFramework", () => {
                 cardType: "Visa",
                 bin: "123456",
               },
-              threeDSecureInfo: {},
+              threeDSecureInfo: {
+                liabilityShifted: false,
+                liabilityShiftPossible: true,
+                threeDSecureVersion: "2.1.0",
+              },
             },
             threeDSecureInfo: {
               liabilityShifted: false,
@@ -1098,15 +1040,15 @@ describe("SongbirdFramework", () => {
           .verifyCard(options)
           .then((data) => {
             expect(data.nonce).toBe("new-nonce");
-            expect(data.liabilityShifted).toBe(true);
-            expect(data.liabilityShiftPossible).toBe(true);
+            expect(data.threeDSecureInfo.liabilityShifted).toBe(true);
+            expect(data.threeDSecureInfo.liabilityShiftPossible).toBe(true);
 
             return framework.verifyCard(options);
           })
           .then((data2) => {
             expect(data2.nonce).toBe("upgraded-nonce");
-            expect(data2.liabilityShifted).toBe(false);
-            expect(data2.liabilityShiftPossible).toBe(true);
+            expect(data2.threeDSecureInfo.liabilityShifted).toBe(false);
+            expect(data2.threeDSecureInfo.liabilityShiftPossible).toBe(true);
           });
       });
     });
@@ -1114,6 +1056,13 @@ describe("SongbirdFramework", () => {
     describe("payload results", () => {
       beforeEach(() => {
         testContext.lookupResponse.lookup.acsUrl = "https://example.com/acs";
+        // Mirrors the real gateway authenticate_from_jwt success response:
+        // liability lives on paymentMethod.threeDSecureInfo (the source the
+        // iOS and Android SDKs also read) alongside the full nested field
+        // set. Several leaf fields are repeated in snake_case as well as
+        // camelCase; this is the gateway's
+        // `leaf_paths_to_mirror_as_snake_case` backwards-compatibility
+        // behavior and the duplicated keys are intentional.
         testContext.payloadTestsResponse = {
           paymentMethod: {
             nonce: "new-nonce",
@@ -1124,7 +1073,28 @@ describe("SongbirdFramework", () => {
               cardType: "Visa",
               bin: "123456",
             },
-            threeDSecureInfo: {},
+            threeDSecureInfo: {
+              liabilityShifted: true,
+              liabilityShiftPossible: true,
+              status: "authenticate_successful",
+              enrolled: "Y",
+              cavv: "MTIzNDU2Nzg5MDEyMzQ1Njc4OTA=",
+              eci_flag: "05",
+              eciFlag: "05",
+              three_d_secure_version: "2.1.0",
+              threeDSecureVersion: "2.1.0",
+              ds_transaction_id: "e1aaed8b-4c2e-4e50-b6a9-8d48779c90b3",
+              dsTransactionId: "e1aaed8b-4c2e-4e50-b6a9-8d48779c90b3",
+              acs_transaction_id: "e2f621db-b23a-4b0a-983c-91f72b23d16b",
+              acsTransactionId: "e2f621db-b23a-4b0a-983c-91f72b23d16b",
+              three_d_secure_server_transaction_id:
+                "d6909f17-6a92-4ea1-9148-5499677dee60",
+              threeDSecureServerTransactionId:
+                "d6909f17-6a92-4ea1-9148-5499677dee60",
+              pares_status: "Y",
+              paresStatus: "Y",
+              threeDSecureAuthenticationId: "3fg8syh4nsmq3nzrmv",
+            },
           },
           threeDSecureInfo: {
             liabilityShifted: true,
@@ -1166,8 +1136,8 @@ describe("SongbirdFramework", () => {
                   cardType: "Visa",
                   bin: "123456",
                 });
-                expect(data.liabilityShiftPossible).toBe(true);
-                expect(data.liabilityShifted).toBe(true);
+                expect(data.threeDSecureInfo.liabilityShiftPossible).toBe(true);
+                expect(data.threeDSecureInfo.liabilityShifted).toBe(true);
               });
           });
 
@@ -1227,6 +1197,50 @@ describe("SongbirdFramework", () => {
           });
         }
       );
+
+      it("surfaces the full threeDSecureInfo field set from the payment method", () => {
+        const framework = createFramework();
+
+        testContext.client.request
+          .mockResolvedValueOnce(testContext.lookupResponse)
+          .mockResolvedValueOnce(testContext.payloadTestsResponse);
+
+        testContext.applyActionCode("SUCCESS");
+
+        return framework
+          .verifyCard({
+            nonce: "nonce",
+            amount: 100,
+            bin: 369,
+            onLookupComplete: yieldsAsync(),
+          })
+          .then((data) => {
+            expect(data.threeDSecureInfo.liabilityShifted).toBe(true);
+            expect(data.threeDSecureInfo.liabilityShiftPossible).toBe(true);
+            expect(data.threeDSecureInfo.status).toBe(
+              "authenticate_successful"
+            );
+            expect(data.threeDSecureInfo.enrolled).toBe("Y");
+            expect(data.threeDSecureInfo.cavv).toBe(
+              "MTIzNDU2Nzg5MDEyMzQ1Njc4OTA="
+            );
+            expect(data.threeDSecureInfo.eciFlag).toBe("05");
+            expect(data.threeDSecureInfo.threeDSecureVersion).toBe("2.1.0");
+            expect(data.threeDSecureInfo.dsTransactionId).toBe(
+              "e1aaed8b-4c2e-4e50-b6a9-8d48779c90b3"
+            );
+            expect(data.threeDSecureInfo.acsTransactionId).toBe(
+              "e2f621db-b23a-4b0a-983c-91f72b23d16b"
+            );
+            expect(data.threeDSecureInfo.threeDSecureServerTransactionId).toBe(
+              "d6909f17-6a92-4ea1-9148-5499677dee60"
+            );
+            expect(data.threeDSecureInfo.paresStatus).toBe("Y");
+            expect(data.threeDSecureInfo.threeDSecureAuthenticationId).toBe(
+              "3fg8syh4nsmq3nzrmv"
+            );
+          });
+      });
 
       it("passes back a `requiresUserAuthentication=true` when an acs url is present", () => {
         const framework = createFramework();
@@ -1406,7 +1420,7 @@ describe("SongbirdFramework", () => {
         );
         const framework = createFramework();
 
-        jest.spyOn(framework, "_reloadThreeDSecure");
+        vi.spyOn(framework, "_reloadThreeDSecure");
 
         testContext.applyActionCode();
 
@@ -1447,7 +1461,7 @@ describe("SongbirdFramework", () => {
           },
         });
 
-        const spy = jest.fn();
+        const spy = vi.fn();
 
         framework.on("songbird-framework:CUSTOMER_CANCELED", spy);
 
@@ -1476,7 +1490,7 @@ describe("SongbirdFramework", () => {
           },
         });
 
-        const spy = jest.fn();
+        const spy = vi.fn();
 
         framework.on("songbird-framework:CUSTOMER_CANCELED", spy);
 
@@ -1526,7 +1540,7 @@ describe("SongbirdFramework", () => {
         );
         const framework = createFramework();
 
-        jest.spyOn(framework, "_reloadThreeDSecure");
+        vi.spyOn(framework, "_reloadThreeDSecure");
 
         testContext.applyActionCode();
         testContext.client.request
@@ -1557,9 +1571,9 @@ describe("SongbirdFramework", () => {
 
   describe("setupSongbird", () => {
     beforeEach(() => {
-      jest
-        .spyOn(testContext.fakeCardinal, "on")
-        .mockImplementation(yieldsByEvents(testContext.onEventBehavior));
+      vi.spyOn(testContext.fakeCardinal, "on").mockImplementation(
+        yieldsByEvents(testContext.onEventBehavior)
+      );
 
       SongbirdFramework.prototype.setupSongbird.mockRestore();
 
@@ -1590,7 +1604,7 @@ describe("SongbirdFramework", () => {
     it("loads cardinal script onto page when identity hash is present", () => {
       let identityHash = "sha256-vEcT3Nt+azgYAFOiCFiu2nP5vWcJdeXlxHeS7Zl2BrQ=";
 
-      testContext.configuration.gatewayConfiguration.threeDSecure.cardinalSongbirdIdentityHash =
+      testContext.configuration.gatewayConfiguration.creditCard.threeDSecure.cardinalSongbirdIdentityHash =
         identityHash;
 
       const framework = createFramework();
@@ -1606,7 +1620,7 @@ describe("SongbirdFramework", () => {
     });
 
     it("loads cardinal script onto page when identity hash is empty", () => {
-      testContext.configuration.gatewayConfiguration.threeDSecure.cardinalSongbirdIdentityHash =
+      testContext.configuration.gatewayConfiguration.creditCard.threeDSecure.cardinalSongbirdIdentityHash =
         "";
 
       const framework = createFramework();
@@ -1620,8 +1634,8 @@ describe("SongbirdFramework", () => {
     });
 
     it("loads cardinal script onto page when identity hash is not provided", () => {
-      delete testContext.configuration.gatewayConfiguration.threeDSecure
-        .cardinalSongbirdIdentityHash;
+      delete testContext.configuration.gatewayConfiguration.creditCard
+        .threeDSecure.cardinalSongbirdIdentityHash;
 
       const framework = createFramework();
 
@@ -1733,31 +1747,26 @@ describe("SongbirdFramework", () => {
       });
     });
 
-    it.each([
-      "ui.close",
-      "ui.render",
-      "ui.renderHidden",
-      "ui.loading.close",
-      "ui.loading.render",
-    ])("sets up %s listener", (eventName) => {
+    it.each(["ui.close", "ui.render"])("sets up %s listener", (eventName) => {
       expect.assertions(3);
 
-      jest
-        .spyOn(SongbirdFramework.prototype, "setCardinalListener")
-        .mockImplementation((name, cb) => {
-          if (name === eventName) {
-            // ensure that this specific event was listened for
-            expect(name).toBe(eventName);
-            cb();
-          }
+      vi.spyOn(
+        SongbirdFramework.prototype,
+        "setCardinalListener"
+      ).mockImplementation((name, cb) => {
+        if (name === eventName) {
+          // ensure that this specific event was listened for
+          expect(name).toBe(eventName);
+          cb();
+        }
 
-          // ensure that the framework finishes setting up
-          if (name === "payments.setupComplete") {
-            cb();
-          }
-        });
+        // ensure that the framework finishes setting up
+        if (name === "payments.setupComplete") {
+          cb();
+        }
+      });
 
-      jest.spyOn(SongbirdFramework.prototype, "_emit");
+      vi.spyOn(SongbirdFramework.prototype, "emit");
 
       return createFramework()
         .setupSongbird()
@@ -1765,7 +1774,7 @@ describe("SongbirdFramework", () => {
           expect(
             SongbirdFramework.prototype.setCardinalListener
           ).toHaveBeenCalledWith(eventName, expect.any(Function));
-          expect(SongbirdFramework.prototype._emit).toBeCalledWith(
+          expect(SongbirdFramework.prototype.emit).toBeCalledWith(
             `songbird-framework:${eventName.toUpperCase()}`
           );
         });
@@ -1783,7 +1792,7 @@ describe("SongbirdFramework", () => {
     });
 
     it("sets dfReferenceId when setupComplete event fires", () => {
-      jest.spyOn(testContext.fakeCardinal, "on").mockImplementation(
+      vi.spyOn(testContext.fakeCardinal, "on").mockImplementation(
         yieldsByEventAsync("payments.setupComplete", {
           sessionId: "df-reference",
         })
@@ -1799,42 +1808,43 @@ describe("SongbirdFramework", () => {
         });
     });
 
-    it("resolves any previous getDfReferenceId calls", (done) => {
-      let setupSongbirdHasResolved = false;
-      let promises;
+    it("resolves any previous getDfReferenceId calls", () =>
+      new Promise((resolve, reject) => {
+        let setupSongbirdHasResolved = false;
+        let promises;
 
-      jest.spyOn(testContext.fakeCardinal, "on").mockImplementation(
-        yieldsByEventAsync("payments.setupComplete", {
-          sessionId: "df-reference",
-        })
-      );
+        vi.spyOn(testContext.fakeCardinal, "on").mockImplementation(
+          yieldsByEventAsync("payments.setupComplete", {
+            sessionId: "df-reference",
+          })
+        );
 
-      const framework = createFramework();
+        const framework = createFramework();
 
-      promises = [
-        framework.getDfReferenceId(),
-        framework.getDfReferenceId(),
-        framework.getDfReferenceId(),
-        framework.getDfReferenceId(),
-      ];
+        promises = [
+          framework.getDfReferenceId(),
+          framework.getDfReferenceId(),
+          framework.getDfReferenceId(),
+          framework.getDfReferenceId(),
+        ];
 
-      Promise.all(promises)
-        .then((results) => {
-          expect(setupSongbirdHasResolved).toBe(true);
-          results.forEach((res) => {
-            expect(res).toBe("df-reference");
+        Promise.all(promises)
+          .then((results) => {
+            expect(setupSongbirdHasResolved).toBe(true);
+            results.forEach((res) => {
+              expect(res).toBe("df-reference");
+            });
+
+            resolve();
+          })
+          .catch(reject);
+
+        createFramework()
+          .setupSongbird()
+          .then(() => {
+            setupSongbirdHasResolved = true;
           });
-
-          done();
-        })
-        .catch(done);
-
-      createFramework()
-        .setupSongbird()
-        .then(() => {
-          setupSongbirdHasResolved = true;
-        });
-    });
+      }));
 
     it("sets up Cardinal", () =>
       createFramework()
@@ -1880,14 +1890,14 @@ describe("SongbirdFramework", () => {
           );
         }));
 
-    it("uses v1 fallback if loadScript fails", () => {
+    it("calls handleSongbirdError if loadScript fails", () => {
       assets.loadScript.mockRejectedValue(
-        new Error("uses v1 fallback if loadScript fails")
+        new Error("calls handleSongbirdError if loadScript fails")
       );
 
       const framework = createFramework();
 
-      jest.spyOn(framework, "handleSongbirdError");
+      vi.spyOn(framework, "handleSongbirdError");
 
       return framework.setupSongbird().then(() => {
         expect(framework.handleSongbirdError).toBeCalledTimes(1);
@@ -1897,15 +1907,15 @@ describe("SongbirdFramework", () => {
       });
     });
 
-    it("uses v1 fallback if loadScript resolves but no Cardinal global is available", () => {
+    it("calls handleSongbirdError if loadScript resolves but no Cardinal global is available", () => {
       delete window.Cardinal;
-      jest
-        .spyOn(assets, "loadScript")
-        .mockResolvedValue(document.createElement("script"));
+      vi.spyOn(assets, "loadScript").mockResolvedValue(
+        document.createElement("script")
+      );
 
       const framework = createFramework();
 
-      jest.spyOn(framework, "handleSongbirdError");
+      vi.spyOn(framework, "handleSongbirdError");
 
       return framework.setupSongbird().then(() => {
         expect(framework.handleSongbirdError).toBeCalledTimes(1);
@@ -1915,16 +1925,16 @@ describe("SongbirdFramework", () => {
       });
     });
 
-    it("uses v1 fallback if loadScript resolves but Cardinal configuration throws an error", () => {
+    it("calls handleSongbirdError if loadScript resolves but Cardinal configuration throws an error", () => {
       testContext.fakeCardinal.configure.mockImplementation(() => {
         throw new Error(
-          "uses v1 fallback if loadScript resolves but Cardinal configuration throws an error"
+          "calls handleSongbirdError if loadScript resolves but Cardinal configuration throws an error"
         );
       });
 
       const framework = createFramework();
 
-      jest.spyOn(framework, "handleSongbirdError");
+      vi.spyOn(framework, "handleSongbirdError");
 
       return framework
         .setupSongbird()
@@ -1940,7 +1950,7 @@ describe("SongbirdFramework", () => {
     });
 
     it("sets up Cardinal if mpiProvider information is available and it is cardinal", () => {
-      testContext.configuration.gatewayConfiguration.threeDSecure.versionTwo =
+      testContext.configuration.gatewayConfiguration.creditCard.threeDSecure.versionTwo =
         "cardinal";
 
       const framework = createFramework();
@@ -1954,13 +1964,11 @@ describe("SongbirdFramework", () => {
     });
 
     it("sets getDfReferenceId to reject if Cardinal cannot be set up", () => {
-      jest
-        .spyOn(assets, "loadScript")
-        .mockRejectedValue(
-          new Error(
-            "sets getDfReferenceId to reject if Cardinal cannot be set up"
-          )
-        );
+      vi.spyOn(assets, "loadScript").mockRejectedValue(
+        new Error(
+          "sets getDfReferenceId to reject if Cardinal cannot be set up"
+        )
+      );
 
       const framework = createFramework();
 
@@ -1975,13 +1983,15 @@ describe("SongbirdFramework", () => {
         });
     });
 
-    it("uses v1 fallback if Cardinal method throws an error", () => {
+    it("calls handleSongbirdError if Cardinal method throws an error", () => {
       testContext.fakeCardinal.on.mockImplementation(() => {
-        throw new Error("uses v1 fallback if Cardinal method throws an error");
+        throw new Error(
+          "calls handleSongbirdError if Cardinal method throws an error"
+        );
       });
       const framework = createFramework();
 
-      jest.spyOn(framework, "handleSongbirdError");
+      vi.spyOn(framework, "handleSongbirdError");
 
       return framework.setupSongbird().then(() => {
         expect(framework.handleSongbirdError).toBeCalledTimes(1);
@@ -2036,23 +2046,23 @@ describe("SongbirdFramework", () => {
 
     describe("when timing out", () => {
       beforeEach(() => {
-        jest.useFakeTimers();
+        vi.useFakeTimers();
         analytics.sendEvent.mockClear();
         assets.loadScript.mockImplementation(() => {
-          jest.runAllTimers();
+          vi.runAllTimers();
 
           return Promise.resolve();
         });
       });
 
       afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
       });
 
       it("uses v1 fallback if cardinal takes longer than 60 seconds to set up", () => {
         const framework = createFramework();
 
-        jest.spyOn(framework, "handleSongbirdError");
+        vi.spyOn(framework, "handleSongbirdError");
 
         return framework.setupSongbird({ timeout: 60 }).then(() => {
           expect(framework.handleSongbirdError).toBeCalledTimes(1);
@@ -2105,9 +2115,10 @@ describe("SongbirdFramework", () => {
     it("calls setupSongbird before continuing with the call", () => {
       const instance = createFramework();
 
-      jest
-        .spyOn(BaseFramework.prototype, "initializeChallengeWithLookupResponse")
-        .mockResolvedValue(null);
+      vi.spyOn(
+        BaseFramework.prototype,
+        "initializeChallengeWithLookupResponse"
+      ).mockResolvedValue(null);
 
       instance.setupSongbird.mockClear();
 
@@ -2125,7 +2136,7 @@ describe("SongbirdFramework", () => {
     });
 
     it("reports action code in analytics event", () => {
-      jest.spyOn(testContext.fakeCardinal, "on").mockImplementation(
+      vi.spyOn(testContext.fakeCardinal, "on").mockImplementation(
         yieldsByEventAsync("payments.setupComplete", {
           sessionId: "df",
         })
@@ -2230,9 +2241,10 @@ describe("SongbirdFramework", () => {
     beforeEach(() => {
       window.Cardinal = testContext.fakeCardinal;
 
-      jest
-        .spyOn(SongbirdFramework.prototype, "getDfReferenceId")
-        .mockResolvedValue("df-id");
+      vi.spyOn(
+        SongbirdFramework.prototype,
+        "getDfReferenceId"
+      ).mockResolvedValue("df-id");
       testContext.fakeCardinal.trigger.mockResolvedValue({
         Status: "status",
       });
@@ -2382,7 +2394,7 @@ describe("SongbirdFramework", () => {
     it("errors verifyCard with cancel error", () => {
       const framework = createFramework();
 
-      jest.spyOn(framework, "_reloadThreeDSecure");
+      vi.spyOn(framework, "_reloadThreeDSecure");
 
       return framework
         .verifyCard({
@@ -2405,7 +2417,7 @@ describe("SongbirdFramework", () => {
       const err = new Error("custom error");
       const framework = createFramework();
 
-      jest.spyOn(framework, "_reloadThreeDSecure");
+      vi.spyOn(framework, "_reloadThreeDSecure");
 
       return framework
         .verifyCard({
@@ -2430,14 +2442,15 @@ describe("SongbirdFramework", () => {
         threeDSecureInfo: {
           liabilityShiftPossible: true,
           liabilityShifted: false,
+          threeDSecureVersion: "2.1.0",
           verificationDetails: {},
         },
       };
 
       return framework.cancelVerifyCard().then((response) => {
         expect(response.nonce).toBe("fake-nonce");
-        expect(response.liabilityShiftPossible).toBe(true);
-        expect(response.liabilityShifted).toBe(false);
+        expect(response.threeDSecureInfo.liabilityShiftPossible).toBe(true);
+        expect(response.threeDSecureInfo.liabilityShifted).toBe(false);
         expect(response.verificationDetails).toEqual({});
       });
     });
@@ -2445,7 +2458,7 @@ describe("SongbirdFramework", () => {
 
   describe("setCardinalListener", () => {
     it("sets up listener for Cardinal", async () => {
-      const spy = jest.fn();
+      const spy = vi.fn();
       const framework = createFramework();
 
       framework.setCardinalListener("foo", spy);
@@ -2456,7 +2469,7 @@ describe("SongbirdFramework", () => {
   });
 
   describe("handleSongbirdError", () => {
-    it("initializeChallengeWithLookupResponse does not present the v1 challenge", () => {
+    it("initializeChallengeWithLookupResponse does not present the challenge when songbird init failed", () => {
       const lookupResponse = {
         threeDSecureInfo: {
           liabilityShiftPossible: true,
@@ -2477,11 +2490,6 @@ describe("SongbirdFramework", () => {
 
       return wait().then(() => {
         expect(window.Cardinal.continue).not.toBeCalled();
-        expect(
-          document.querySelector(
-            '[data-braintree-v1-fallback-iframe-container="true"] iframe'
-          )
-        ).toBeFalsy();
       });
     });
 
@@ -2524,9 +2532,9 @@ describe("SongbirdFramework", () => {
     it("removes all cardinal listeners", () => {
       const framework = createFramework();
 
-      framework.setCardinalListener("foo", jest.fn());
-      framework.setCardinalListener("bar", jest.fn());
-      framework.setCardinalListener("baz", jest.fn());
+      framework.setCardinalListener("foo", vi.fn());
+      framework.setCardinalListener("bar", vi.fn());
+      framework.setCardinalListener("baz", vi.fn());
 
       framework.handleSongbirdError("buzz");
       expect(window.Cardinal.off).toBeCalledTimes(3);
@@ -2573,8 +2581,8 @@ describe("SongbirdFramework", () => {
     it("removes all configured Cardinal listeners", () => {
       const framework = createFramework();
 
-      framework.setCardinalListener("foo", jest.fn());
-      framework.setCardinalListener("bar", jest.fn());
+      framework.setCardinalListener("foo", vi.fn());
+      framework.setCardinalListener("bar", vi.fn());
 
       return framework.teardown().then(() => {
         expect(window.Cardinal.off).toHaveBeenCalledWith("foo");

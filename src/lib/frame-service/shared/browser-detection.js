@@ -1,7 +1,7 @@
-"use strict";
+import isIos from "@braintree/browser-detection/is-ios";
+import isIosWKWebview from "@braintree/browser-detection/is-ios-wkwebview";
+import supportsPopups from "@braintree/browser-detection/supports-popups";
 
-module.exports = {
-  isIos: require("@braintree/browser-detection/is-ios"),
-  isIosWKWebview: require("@braintree/browser-detection/is-ios-wkwebview"),
-  supportsPopups: require("@braintree/browser-detection/supports-popups"),
-};
+export { isIos, isIosWKWebview, supportsPopups };
+
+export default { isIos, isIosWKWebview, supportsPopups };

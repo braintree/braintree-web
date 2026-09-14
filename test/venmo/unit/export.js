@@ -1,7 +1,8 @@
-"use strict";
+import _e9 from "../../../src/venmo";
 
-const { VERSION, create } = require("../../../src/venmo");
-const { version: packageVersion } = require("../../../package.json");
+const { VERSION, create } = _e9;
+
+import { version as packageVersion } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

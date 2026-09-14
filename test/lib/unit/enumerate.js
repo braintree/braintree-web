@@ -1,6 +1,4 @@
-"use strict";
-
-const enumerate = require("../../../src/lib/enumerate");
+import enumerate from "../../../src/lib/enumerate";
 
 describe("enumerate", () => {
   it("sets keys equal to their values", () => {

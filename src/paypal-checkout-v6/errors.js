@@ -1,4 +1,4 @@
-"use strict";
+import BraintreeError from "../lib/braintree-error";
 
 /**
  * @name BraintreeError.PayPal Checkout V6 - Creation Error Codes
@@ -13,7 +13,6 @@
  * @description Errors that occur when loading the PayPal v6 SDK.
  * @property {NETWORK} PAYPAL_CHECKOUT_V6_SDK_SCRIPT_LOAD_FAILED Occurs when the PayPal v6 SDK script fails to load.
  * @property {NETWORK} PAYPAL_CHECKOUT_V6_SDK_INITIALIZATION_FAILED Occurs when the PayPal V6 SDK instance creation fails.
- * @property {MERCHANT} PAYPAL_CHECKOUT_V6_CLIENT_TOKEN_INVALID Occurs when the client token is invalid or expired.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED Occurs when a method is called before loading the PayPal SDK.
  */
 
@@ -21,8 +20,6 @@
  * @name BraintreeError.PayPal Checkout V6 - Session Error Codes
  * @description Errors that occur when creating or starting payment sessions.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_SESSION_CREATION_FAILED Occurs when something goes wrong when initializing the flow.
- * @property {MERCHANT} PAYPAL_CHECKOUT_V6_PAYMENT_START_FAILED Occurs when something goes wrong when starting the flow.
- * @property {CUSTOMER} PAYPAL_CHECKOUT_V6_PAYMENT_CANCELED Occurs when a customer cancels the payment flow.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS Occurs when session options are invalid or missing required fields.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED Occurs when returnUrl or cancelUrl is missing for direct-app-switch mode.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY Occurs when start() is called before the PayPal SDK instance is ready.
@@ -32,7 +29,6 @@
  * @name BraintreeError.PayPal Checkout V6 - Order Error Codes
  * @description Errors that occur when creating PayPal orders.
  * @property {NETWORK} PAYPAL_CHECKOUT_V6_ORDER_CREATION_FAILED Occurs when Braintree backend order creation fails.
- * @property {MERCHANT} PAYPAL_CHECKOUT_V6_INVALID_ORDER_OPTIONS Occurs when order options are invalid or missing required fields.
  */
 
 /**
@@ -54,12 +50,9 @@
  * @description Errors that occur when creating billing agreements for vault flow.
  * @property {NETWORK} PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CREATION_FAILED Occurs when Braintree backend billing agreement creation fails.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_INVALID_BILLING_AGREEMENT_OPTIONS Occurs when billing agreement options are invalid or missing required fields.
- * @property {CUSTOMER} PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CANCELED Occurs when a customer cancels the billing agreement flow.
  */
 
-var BraintreeError = require("../lib/braintree-error");
-
-module.exports = {
+const _default = {
   // Configuration/Setup Errors
   PAYPAL_CHECKOUT_V6_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
@@ -90,11 +83,6 @@ module.exports = {
     code: "PAYPAL_CHECKOUT_V6_SDK_INITIALIZATION_FAILED",
     message: "PayPal V6 SDK instance creation failed.",
   },
-  PAYPAL_CHECKOUT_V6_CLIENT_TOKEN_INVALID: {
-    type: BraintreeError.types.MERCHANT,
-    code: "PAYPAL_CHECKOUT_V6_CLIENT_TOKEN_INVALID",
-    message: "Client token is invalid or expired.",
-  },
   PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED: {
     type: BraintreeError.types.MERCHANT,
     code: "PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED",
@@ -121,20 +109,16 @@ module.exports = {
     code: "PAYPAL_CHECKOUT_V6_SESSION_CREATION_FAILED",
     message: "Failed to create PayPal payment session.",
   },
-  PAYPAL_CHECKOUT_V6_PAYMENT_START_FAILED: {
-    type: BraintreeError.types.MERCHANT,
-    code: "PAYPAL_CHECKOUT_V6_PAYMENT_START_FAILED",
-    message: "Failed to start PayPal payment flow.",
-  },
-  PAYPAL_CHECKOUT_V6_PAYMENT_CANCELED: {
-    type: BraintreeError.types.CUSTOMER,
-    code: "PAYPAL_CHECKOUT_V6_PAYMENT_CANCELED",
-    message: "Customer canceled the PayPal payment.",
-  },
   PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS: {
     type: BraintreeError.types.MERCHANT,
     code: "PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS",
     message: "PayPal session options are invalid or missing required fields.",
+  },
+  PAYPAL_CHECKOUT_V6_SHIPPING_CALLBACK_CONFLICT: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_SHIPPING_CALLBACK_CONFLICT",
+    message:
+      "Cannot use both shippingCallbackUrl and client-side shipping callbacks (onShippingAddressChange/onShippingOptionsChange).",
   },
   PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED: {
     type: BraintreeError.types.MERCHANT,
@@ -155,11 +139,6 @@ module.exports = {
     code: "PAYPAL_CHECKOUT_V6_ORDER_CREATION_FAILED",
     message: "Could not create PayPal order.",
   },
-  PAYPAL_CHECKOUT_V6_INVALID_ORDER_OPTIONS: {
-    type: BraintreeError.types.MERCHANT,
-    code: "PAYPAL_CHECKOUT_V6_INVALID_ORDER_OPTIONS",
-    message: "PayPal order options are invalid or missing required fields.",
-  },
 
   // Tokenization Errors
   PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED: {
@@ -170,7 +149,8 @@ module.exports = {
   PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA: {
     type: BraintreeError.types.MERCHANT,
     code: "PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA",
-    message: "Missing required tokenization data (payerID or orderID).",
+    message:
+      "Missing required tokenization data (payerID and (orderID or paymentID)).",
   },
 
   // Update Payment Errors
@@ -213,9 +193,75 @@ module.exports = {
     message:
       "Billing agreement options are invalid or missing required fields.",
   },
-  PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CANCELED: {
+
+  // Messages Errors
+  PAYPAL_CHECKOUT_V6_MESSAGES_CREATION_FAILED: {
+    type: BraintreeError.types.NETWORK,
+    code: "PAYPAL_CHECKOUT_V6_MESSAGES_CREATION_FAILED",
+    message: "Could not create PayPal Messages instance.",
+  },
+
+  // Edit Saved Payment Errors
+  PAYPAL_CHECKOUT_V6_EDIT_SAVED_PAYMENT_NOT_SUPPORTED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_EDIT_SAVED_PAYMENT_NOT_SUPPORTED",
+    message:
+      "Edit saved payment is not supported. The client token must be generated with a preferredPaymentMethodToken.",
+  },
+
+  // Vault Initiated Checkout Errors
+  PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+    message: "A required vault initiated checkout parameter is missing.",
+  },
+  PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED",
+    message:
+      "PayPal popup failed to open, make sure to initiate in response to a user action.",
+  },
+  PAYPAL_CHECKOUT_V6_VIC_CANCELED: {
     type: BraintreeError.types.CUSTOMER,
-    code: "PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CANCELED",
-    message: "Customer canceled the billing agreement.",
+    code: "PAYPAL_CHECKOUT_V6_VIC_CANCELED",
+    message: "Customer closed PayPal popup before authorizing.",
+  },
+  PAYPAL_CHECKOUT_V6_VIC_IN_PROGRESS: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_VIC_IN_PROGRESS",
+    message: "Vault initiated checkout already in progress.",
   },
 };
+
+export const {
+  PAYPAL_CHECKOUT_V6_NOT_ENABLED,
+  PAYPAL_CHECKOUT_V6_SANDBOX_ACCOUNT_NOT_LINKED,
+  PAYPAL_CHECKOUT_V6_TOKENIZATION_KEY_NOT_SUPPORTED,
+  PAYPAL_CHECKOUT_V6_SDK_SCRIPT_LOAD_FAILED,
+  PAYPAL_CHECKOUT_V6_SDK_INITIALIZATION_FAILED,
+  PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED,
+  PAYPAL_CHECKOUT_V6_ELIGIBILITY_CHECK_FAILED,
+  PAYPAL_CHECKOUT_V6_INVALID_ELIGIBILITY_OPTIONS,
+  PAYPAL_CHECKOUT_V6_SESSION_CREATION_FAILED,
+  PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS,
+  PAYPAL_CHECKOUT_V6_SHIPPING_CALLBACK_CONFLICT,
+  PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED,
+  PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY,
+  PAYPAL_CHECKOUT_V6_ORDER_CREATION_FAILED,
+  PAYPAL_CHECKOUT_V6_TOKENIZATION_FAILED,
+  PAYPAL_CHECKOUT_V6_MISSING_TOKENIZATION_DATA,
+  PAYPAL_CHECKOUT_V6_INVALID_UPDATE_OPTIONS,
+  PAYPAL_CHECKOUT_V6_PAYMENT_NOT_FOUND,
+  PAYPAL_CHECKOUT_V6_CURRENCY_MISMATCH,
+  PAYPAL_CHECKOUT_V6_UPDATE_FAILED,
+  PAYPAL_CHECKOUT_V6_INVALID_LINE_ITEMS,
+  PAYPAL_CHECKOUT_V6_BILLING_AGREEMENT_CREATION_FAILED,
+  PAYPAL_CHECKOUT_V6_INVALID_BILLING_AGREEMENT_OPTIONS,
+  PAYPAL_CHECKOUT_V6_MESSAGES_CREATION_FAILED,
+  PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED,
+  PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED,
+  PAYPAL_CHECKOUT_V6_VIC_CANCELED,
+  PAYPAL_CHECKOUT_V6_VIC_IN_PROGRESS,
+} = _default;
+
+export default _default;

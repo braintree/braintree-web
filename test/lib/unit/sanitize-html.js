@@ -1,7 +1,5 @@
-"use strict";
-
-const sanitize = require("../../../src/lib/sanitize-html");
-const { noop } = require("../../helpers");
+import sanitize from "../../../src/lib/sanitize-html";
+import { noop } from "../../helpers";
 
 describe("sanitizeHtml", () => {
   it("leaves safe strings untouched", () => {

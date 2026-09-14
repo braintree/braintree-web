@@ -1,4 +1,4 @@
-"use strict";
+import BraintreeError from "../../braintree-error";
 
 /**
  * @name BraintreeError.Popup Related Error Codes
@@ -8,9 +8,7 @@
  * @property {INTERNAL} FRAME_SERVICE_FRAME_OPEN_FAILED - Occurs when the popup could not be opened.
  */
 
-var BraintreeError = require("../../braintree-error");
-
-module.exports = {
+const _default = {
   FRAME_SERVICE_FRAME_CLOSED: {
     type: BraintreeError.types.INTERNAL,
     code: "FRAME_SERVICE_FRAME_CLOSED",
@@ -22,3 +20,8 @@ module.exports = {
     message: "Frame failed to open.",
   },
 };
+
+export const { FRAME_SERVICE_FRAME_CLOSED, FRAME_SERVICE_FRAME_OPEN_FAILED } =
+  _default;
+
+export default _default;

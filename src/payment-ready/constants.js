@@ -1,6 +1,5 @@
-"use strict";
-
-module.exports = {
+// @ts-nocheck
+const _default = {
   CREATE_PAYMENT_READY_SESSION_QUERY:
     "mutation CreateCustomerSession($input: CreateCustomerSessionInput!) {\n  createCustomerSession(input: $input) {\n    sessionId\n clientMutationId\n }\n}",
 
@@ -91,3 +90,20 @@ module.exports = {
   REQUIRED_OPTIONS_UPDATE_SESSION: ["sessionId", "customer"],
   REQUIRED_OPTIONS_GET_RECOMMENDATIONS: ["sessionId"],
 };
+
+export const {
+  CREATE_PAYMENT_READY_SESSION_QUERY,
+  BUTTON_ORDER,
+  BUTTON_TYPE,
+  EVENT_BUTTON_PRESENTED,
+  EVENT_BUTTON_SELECTED,
+  EXPERIMENT_TYPE,
+  PAGE_TYPE,
+  UPDATE_PAYMENT_READY_SESSION_QUERY,
+  GENERATE_CUSTOMER_RECOMMENDATIONS_QUERY,
+  REQUIRED_OPTIONS_CREATE_SESSION,
+  REQUIRED_OPTIONS_UPDATE_SESSION,
+  REQUIRED_OPTIONS_GET_RECOMMENDATIONS,
+} = _default;
+
+export default _default;

@@ -1,6 +1,4 @@
-"use strict";
-
-module.exports = {
+const _default = {
   REQUIRED_OPTIONS_FOR_START_PAYMENT: [
     "givenName",
     "surname",
@@ -22,7 +20,6 @@ module.exports = {
     "email",
     "locale",
     "customerServiceInstructions",
-    "correlationId",
     "phone",
     "phoneCountryCode",
     "lineItems",
@@ -58,3 +55,16 @@ module.exports = {
     "aliasKey",
   ],
 };
+
+export const {
+  REQUIRED_OPTIONS_FOR_START_PAYMENT,
+  REQUIRED_OPTIONS_FOR_PAY_UPON_INVOICE_PAYMENT_TYPE,
+  REQUIRED_OPTIONS_FOR_ADDRESS,
+  REQUIRED_OPTIONS_FOR_LINE_ITEMS,
+  REQUIRED_OPTIONS_FOR_BLIK_SEAMLESS_PAYMENT_TYPE,
+  REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_LEVEL_0,
+  REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_ONE_CLICK_FIRST,
+  REQUIRED_OPTIONS_FOR_BLIK_OPTIONS_ONE_CLICK_SUBSEQUENT,
+} = _default;
+
+export default _default;

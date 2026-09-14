@@ -1,5 +1,3 @@
-"use strict";
-
 /**
  * @ignore
  * @static
@@ -24,4 +22,4 @@ function hasMissingOption(options, required) {
   return false;
 }
 
-module.exports = hasMissingOption;
+export default hasMissingOption;

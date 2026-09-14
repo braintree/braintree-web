@@ -1,14 +1,15 @@
-"use strict";
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("../../../src/lib/create-deferred-client");
+vi.mock("../../../src/lib/create-assets-url");
 
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("../../../src/lib/create-deferred-client");
-jest.mock("../../../src/lib/create-assets-url");
+import _e1 from "../../../src/vault-manager";
 
-const create = require("../../../src/vault-manager").create;
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const VaultManager = require("../../../src/vault-manager/vault-manager");
-const { fake } = require("../../helpers");
+const { create } = _e1;
+
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import VaultManager from "../../../src/vault-manager/vault-manager";
+import { fake } from "../../helpers";
 
 describe("vaultManager", () => {
   let fakeClient;
@@ -18,30 +19,16 @@ describe("vaultManager", () => {
   });
 
   describe("create", () => {
-    it("supports callbacks", (done) => {
-      create({ client: fakeClient }, (err, vaultManager) => {
-        expect(err).toBeFalsy();
-
-        expect(vaultManager).toBeInstanceOf(VaultManager);
-
-        done();
+    it("verifies with basicComponentVerification", async () => {
+      await create({
+        client: fakeClient,
       });
-    });
 
-    it("verifies with basicComponentVerification", (done) => {
-      create(
-        {
-          client: fakeClient,
-        },
-        () => {
-          expect(basicComponentVerification.verify).toBeCalledTimes(1);
-          expect(basicComponentVerification.verify).toBeCalledWith({
-            name: "Vault Manager",
-            client: fakeClient,
-          });
-          done();
-        }
-      );
+      expect(basicComponentVerification.verify).toBeCalledTimes(1);
+      expect(basicComponentVerification.verify).toBeCalledWith({
+        name: "Vault Manager",
+        client: fakeClient,
+      });
     });
 
     it("creates a VaultManager instance", () => {

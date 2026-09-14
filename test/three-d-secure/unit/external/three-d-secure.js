@@ -1,14 +1,11 @@
-"use strict";
-
-const EventEmitter = require("@braintree/event-emitter");
-const ThreeDSecure = require("../../../../src/three-d-secure/external/three-d-secure");
-const SongbirdFramework = require("../../../../src/three-d-secure/external/frameworks/songbird");
-const CardinalModalFramework = require("../../../../src/three-d-secure/external/frameworks/cardinal-modal");
-const Bootstrap3ModalFramework = require("../../../../src/three-d-secure/external/frameworks/bootstrap3-modal");
-const InlineIframeFramework = require("../../../../src/three-d-secure/external/frameworks/inline-iframe");
-const methods = require("../../../../src/lib/methods");
-const BraintreeError = require("../../../../src/lib/braintree-error");
-const { fake, noop } = require("../../../helpers");
+import EventEmitter from "@braintree/event-emitter";
+import ThreeDSecure from "../../../../src/three-d-secure/external/three-d-secure";
+import SongbirdFramework from "../../../../src/three-d-secure/external/frameworks/songbird";
+import CardinalModalFramework from "../../../../src/three-d-secure/external/frameworks/cardinal-modal";
+import InlineIframeFramework from "../../../../src/three-d-secure/external/frameworks/inline-iframe";
+import methods from "../../../../src/lib/methods";
+import BraintreeError from "../../../../src/lib/braintree-error";
+import { fake, noop } from "../../../helpers";
 
 describe("ThreeDSecure", () => {
   let testContext;
@@ -23,12 +20,12 @@ describe("ThreeDSecure", () => {
       },
     };
     testContext.client = {
-      request: jest.fn().mockResolvedValue(null),
+      request: vi.fn().mockResolvedValue(null),
       getConfiguration() {
         return testContext.configuration;
       },
     };
-    jest.spyOn(SongbirdFramework.prototype, "setupSongbird");
+    vi.spyOn(SongbirdFramework.prototype, "setupSongbird");
   });
 
   describe("Constructor", () => {
@@ -52,16 +49,6 @@ describe("ThreeDSecure", () => {
       expect(dddS._framework).toBeInstanceOf(CardinalModalFramework);
     });
 
-    it('uses bootstrap3 modal framework when "bootstrap3-modal" is passed in', () => {
-      const options = {
-        client: testContext.client,
-        framework: "bootstrap3-modal",
-      };
-      const dddS = new ThreeDSecure(options);
-
-      expect(dddS._framework).toBeInstanceOf(Bootstrap3ModalFramework);
-    });
-
     it('uses inline iframe framework when "inline-iframe" is passed in', () => {
       const options = {
         client: testContext.client,
@@ -72,33 +59,33 @@ describe("ThreeDSecure", () => {
       expect(dddS._framework).toBeInstanceOf(InlineIframeFramework);
     });
 
-    it("sets up event listeners for the framework", (done) => {
-      const options = {
-        client: testContext.client,
-        framework: "cardinal-modal",
-      };
-      let dddS, handler;
+    it("sets up event listeners for the framework", () =>
+      new Promise((resolve) => {
+        const options = {
+          client: testContext.client,
+          framework: "cardinal-modal",
+        };
+        let dddS, handler;
 
-      jest.spyOn(SongbirdFramework.prototype, "setUpEventListeners");
+        vi.spyOn(SongbirdFramework.prototype, "setUpEventListeners");
 
-      dddS = new ThreeDSecure(options);
+        dddS = new ThreeDSecure(options);
 
-      expect(
-        SongbirdFramework.prototype.setUpEventListeners
-      ).toHaveBeenCalledTimes(1);
+        expect(
+          SongbirdFramework.prototype.setUpEventListeners
+        ).toHaveBeenCalledTimes(1);
 
-      dddS.on("foo", (data, otherData) => {
-        expect(data).toBe("some data");
-        expect(otherData).toBe("other data");
+        dddS.on("foo", (payload) => {
+          expect(payload).toEqual({ someKey: "some data" });
 
-        done();
-      });
+          resolve();
+        });
 
-      handler =
-        SongbirdFramework.prototype.setUpEventListeners.mock.calls[0][0];
+        handler =
+          SongbirdFramework.prototype.setUpEventListeners.mock.calls[0][0];
 
-      handler("foo", "some data", "other data");
-    });
+        handler("foo", { someKey: "some data" });
+      }));
   });
 
   describe("verifyCard", () => {
@@ -109,7 +96,7 @@ describe("ThreeDSecure", () => {
       });
       // const options = { nonce: 'foo', amount: 100, onLookupComplete: noop };
 
-      jest.spyOn(instance._framework, "verifyCard");
+      vi.spyOn(instance._framework, "verifyCard");
 
       expect.assertions(2);
 
@@ -134,7 +121,7 @@ describe("ThreeDSecure", () => {
 
       instance.on("lookup-complete", noop);
 
-      jest.spyOn(instance._framework, "verifyCard");
+      vi.spyOn(instance._framework, "verifyCard");
 
       expect.assertions(2);
 
@@ -183,7 +170,7 @@ describe("ThreeDSecure", () => {
         },
       };
 
-      jest.spyOn(instance._framework, "initializeChallengeWithLookupResponse");
+      vi.spyOn(instance._framework, "initializeChallengeWithLookupResponse");
 
       instance.initializeChallengeWithLookupResponse(options);
 
@@ -225,7 +212,7 @@ describe("ThreeDSecure", () => {
       };
       const stringifiedOptions = JSON.stringify(options);
 
-      jest.spyOn(instance._framework, "initializeChallengeWithLookupResponse");
+      vi.spyOn(instance._framework, "initializeChallengeWithLookupResponse");
 
       instance.initializeChallengeWithLookupResponse(stringifiedOptions);
 
@@ -245,9 +232,9 @@ describe("ThreeDSecure", () => {
         framework: "cardinal-modal",
       });
 
-      jest
-        .spyOn(instance._framework, "prepareLookup")
-        .mockResolvedValue({ foo: "bar" });
+      vi.spyOn(instance._framework, "prepareLookup").mockResolvedValue({
+        foo: "bar",
+      });
 
       instance.prepareLookup();
 
@@ -260,9 +247,9 @@ describe("ThreeDSecure", () => {
         framework: "cardinal-modal",
       });
 
-      jest
-        .spyOn(instance._framework, "prepareLookup")
-        .mockResolvedValue({ foo: "bar" });
+      vi.spyOn(instance._framework, "prepareLookup").mockResolvedValue({
+        foo: "bar",
+      });
 
       return instance.prepareLookup().then((data) => {
         expect(typeof data).toBe("string");
@@ -278,7 +265,7 @@ describe("ThreeDSecure", () => {
         framework: "cardinal-modal",
       });
 
-      jest.spyOn(instance._framework, "cancelVerifyCard");
+      vi.spyOn(instance._framework, "cancelVerifyCard");
 
       expect.assertions(1);
 
@@ -302,7 +289,7 @@ describe("ThreeDSecure", () => {
 
       return instance.teardown().then(() => {
         methods(ThreeDSecure.prototype)
-          .concat("on", "_emit")
+          .concat("on", "emit")
           .forEach((method) => {
             let error;
 
@@ -322,26 +309,29 @@ describe("ThreeDSecure", () => {
       });
     });
 
-    it("calls stategies teardown method", () => {
-      const bootstrapInstance = new ThreeDSecure({
+    it("calls strategies teardown method", () => {
+      const inlineIframeInstance = new ThreeDSecure({
         client: testContext.client,
-        framework: "bootstrap3-modal",
+        framework: "inline-iframe",
       });
       const cardinalModalInstance = new ThreeDSecure({
         client: testContext.client,
         framework: "cardinal-modal",
       });
 
-      jest.spyOn(bootstrapInstance._framework, "teardown").mockResolvedValue();
-      jest
-        .spyOn(cardinalModalInstance._framework, "teardown")
-        .mockResolvedValue();
+      vi.spyOn(inlineIframeInstance._framework, "teardown").mockResolvedValue();
+      vi.spyOn(
+        cardinalModalInstance._framework,
+        "teardown"
+      ).mockResolvedValue();
 
       return Promise.all([
-        bootstrapInstance.teardown(),
+        inlineIframeInstance.teardown(),
         cardinalModalInstance.teardown(),
       ]).then(() => {
-        expect(bootstrapInstance._framework.teardown).toHaveBeenCalledTimes(1);
+        expect(inlineIframeInstance._framework.teardown).toHaveBeenCalledTimes(
+          1
+        );
         expect(cardinalModalInstance._framework.teardown).toHaveBeenCalledTimes(
           1
         );

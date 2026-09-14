@@ -1,8 +1,6 @@
-"use strict";
-
-var BraintreeError = require("./braintree-error");
-var sharedErrors = require("./errors");
-var VERSION = process.env.npm_package_version;
+import BraintreeError from "./braintree-error";
+import sharedErrors from "./errors";
+const VERSION = __SDK_VERSION__;
 
 function basicComponentVerification(options) {
   var client, authorization, name;
@@ -54,6 +52,10 @@ function basicComponentVerification(options) {
   return Promise.resolve();
 }
 
-module.exports = {
+const _default = {
   verify: basicComponentVerification,
 };
+
+export const { verify } = _default;
+
+export default _default;

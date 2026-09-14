@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/html";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
 import "./applePay.css";
+import { IApplePayInstance, IApplePayTokenizePayload } from "../../types";
 
 const meta: Meta = {
   title: "Braintree/Apple Pay",
@@ -140,7 +141,7 @@ const initializeApplePay = (container: HTMLElement): void => {
     "#auto-reload-radio"
   ) as HTMLInputElement;
 
-  let applePayInstance;
+  let applePayInstance: IApplePayInstance;
 
   // Setup recurring payment controls
   recurEnableCheck.addEventListener("change", () => {
@@ -170,7 +171,7 @@ const initializeApplePay = (container: HTMLElement): void => {
     resultDiv.innerHTML = `<strong>Error:</strong> ${message}`;
   };
 
-  const showSuccess = (payload) => {
+  const showSuccess = (payload: IApplePayTokenizePayload) => {
     resultDiv.style.display = "block";
     resultDiv.className =
       "shared-result shared-result--success shared-result--visible";
@@ -187,17 +188,9 @@ const initializeApplePay = (container: HTMLElement): void => {
 
   console.log("ApplePaySession", window.ApplePaySession);
 
-  // Check if Apple Pay is available
-  if (!window.ApplePaySession || !window.ApplePaySession.canMakePayments()) {
-    showError(
-      "Apple Pay is not available on this device/browser. Please use Safari on a compatible device with Apple Pay enabled."
-    );
-    return;
-  }
-
-  console.log("ApplePay supported.");
-
-  // SDK scripts are already loaded by createBraintreeStory helper
+  // No ApplePaySession guard here. In non-Safari browsers create() injects it
+  // (it loads Apple's SDK), so it's not defined yet. applePayCapabilities()
+  // reports availability once the instance exists.
   setupApplePay();
 
   function setupApplePay() {
@@ -211,9 +204,27 @@ const initializeApplePay = (container: HTMLElement): void => {
         });
       })
       .then((applePay) => {
+        if (!applePay) {
+          throw new Error("Apple Pay client instance failed to instantiate");
+        }
         applePayInstance = applePay;
         console.log("Apple Pay instance created successfully");
-        createApplePayButton();
+
+        return applePay.applePayCapabilities().then((result) => {
+          // Show the button when a card is available or Apple can't tell.
+          if (
+            result.paymentCredentialStatus === "paymentCredentialsAvailable" ||
+            result.paymentCredentialStatus === "paymentCredentialStatusUnknown"
+          ) {
+            createApplePayButton();
+          } else {
+            showError(
+              "Apple Pay is not available for this customer (status: " +
+                result.paymentCredentialStatus +
+                ")."
+            );
+          }
+        });
       })
       .catch((error) => {
         console.error("Top level error:", error);
@@ -257,20 +268,21 @@ const initializeApplePay = (container: HTMLElement): void => {
 
       // Add recurring payment requests based on selection
       if (recurEnableCheck.checked && autoreloadPaymentFlag.checked) {
-        const recurPaymentRequest = {
-          paymentDescription: "payment description",
-          managementURL: "https://www.merchant.com/update-payment",
-          automaticReloadBilling: {
-            label: "The paymentLabel",
-            amount: "20.99",
-            type: "final",
-            paymentTiming: "automaticReload",
-            automaticReloadPaymentThresholdAmount: "1.00",
-          },
-        };
+        const recurPaymentRequest: ApplePayJS.ApplePayAutomaticReloadPaymentRequest =
+          {
+            paymentDescription: "payment description",
+            managementURL: "https://www.merchant.com/update-payment",
+            automaticReloadBilling: {
+              label: "The paymentLabel",
+              amount: "20.99",
+              type: "final",
+              paymentTiming: "automaticReload",
+              automaticReloadPaymentThresholdAmount: "1.00",
+            },
+          };
         paymentRequest.automaticReloadPaymentRequest = recurPaymentRequest;
       } else if (recurEnableCheck.checked && deferPaymentFlag.checked) {
-        const recurPaymentRequest = {
+        const recurPaymentRequest: ApplePayJS.ApplePayDeferredPaymentRequest = {
           paymentDescription: "payment description",
           managementURL: "https://www.merchant.com/update-payment",
           deferredBilling: {
@@ -283,19 +295,20 @@ const initializeApplePay = (container: HTMLElement): void => {
         };
         paymentRequest.deferredPaymentRequest = recurPaymentRequest;
       } else if (recurEnableCheck.checked && recurPaymentFlag.checked) {
-        const recurPaymentRequest = {
-          paymentDescription: "payment description",
-          managementURL: "https://www.merchant.com/update-payment",
-          regularBilling: {
-            label: "The paymentLabel",
-            amount: "20.99",
-            type: "final",
-            paymentTiming: "recurring",
-            recurringPaymentStartDate: new Date("2025-02-13T10:15:00"),
-            recurringPaymentIntervalUnit: "month",
-            recurringPaymentIntervalCount: 12,
-          },
-        };
+        const recurPaymentRequest: ApplePayJS.ApplePayRecurringPaymentRequest =
+          {
+            paymentDescription: "payment description",
+            managementURL: "https://www.merchant.com/update-payment",
+            regularBilling: {
+              label: "The paymentLabel",
+              amount: "20.99",
+              type: "final",
+              paymentTiming: "recurring",
+              recurringPaymentStartDate: new Date("2025-02-13T10:15:00"),
+              recurringPaymentIntervalUnit: "month",
+              recurringPaymentIntervalCount: 12,
+            },
+          };
         paymentRequest.recurringPaymentRequest = recurPaymentRequest;
       }
 

@@ -1,7 +1,5 @@
-"use strict";
-
-const BraintreeError = require("../../../../src/lib/braintree-error");
-const attributeValidationError = require("../../../../src/hosted-fields/external/attribute-validation-error");
+import BraintreeError from "../../../../src/lib/braintree-error";
+import attributeValidationError from "../../../../src/hosted-fields/external/attribute-validation-error";
 
 const testCases = {
   stringType: {
@@ -46,21 +44,22 @@ const testCases = {
 };
 
 describe("attributeValidationError", () => {
-  it("returns an error for attributes not in allowed list", (done) => {
-    let err;
+  it("returns an error for attributes not in allowed list", () =>
+    new Promise((resolve) => {
+      let err;
 
-    err = attributeValidationError("garbage", true);
+      err = attributeValidationError("garbage", true);
 
-    expect(err).toBeInstanceOf(BraintreeError);
-    expect(err.type).toBe("MERCHANT");
-    expect(err.code).toBe("HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED");
-    expect(err.message).toBe(
-      'The "garbage" attribute is not supported in Hosted Fields.'
-    );
-    expect(err.details).not.toBeDefined();
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe("MERCHANT");
+      expect(err.code).toBe("HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED");
+      expect(err.message).toBe(
+        'The "garbage" attribute is not supported in Hosted Fields.'
+      );
+      expect(err.details).not.toBeDefined();
 
-    done();
-  });
+      resolve();
+    }));
 
   describe.each([["string"], ["boolean"]])("%s attributes", (type) => {
     describe.each(testCases[`${type}Type`].supportedAttributes)(

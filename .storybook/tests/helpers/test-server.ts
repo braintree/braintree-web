@@ -56,6 +56,7 @@ const getContentType = (filePath: string): string => {
 
   switch (fileExtension) {
     case ".js":
+    case ".mjs":
       return "text/javascript";
     case ".css":
       return "text/css";

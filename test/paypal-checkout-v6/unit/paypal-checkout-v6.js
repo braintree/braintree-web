@@ -1,16 +1,16 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
+vi.mock("../../../src/lib/assets");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/create-deferred-client");
 
-jest.mock("../../../src/lib/analytics");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/lib/create-deferred-client");
-
-const analytics = require("../../../src/lib/analytics");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const PayPalCheckoutV6 = require("../../../src/paypal-checkout-v6/paypal-checkout-v6");
-const frameService = require("../../../src/lib/frame-service/external");
-const fake = require("../../helpers").fake;
-const yieldsAsync = require("../../helpers").yieldsAsync;
+import analytics from "../../../src/lib/analytics";
+import assets from "../../../src/lib/assets";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import BraintreeError from "../../../src/lib/braintree-error";
+import PayPalCheckoutV6 from "../../../src/paypal-checkout-v6/paypal-checkout-v6";
+import frameService from "../../../src/lib/frame-service/external";
+import { fake } from "../../helpers";
+import { yieldsAsync } from "../../helpers";
 
 describe("PayPalCheckoutV6", () => {
   let testContext;
@@ -18,7 +18,6 @@ describe("PayPalCheckoutV6", () => {
   beforeEach(() => {
     testContext = {};
     testContext.configuration = fake.configuration();
-    testContext.configuration.gatewayConfiguration.paypalEnabled = true;
     testContext.configuration.gatewayConfiguration.paypal = {
       clientId: "test-client-id",
       unvettedMerchant: false,
@@ -27,19 +26,19 @@ describe("PayPalCheckoutV6", () => {
       displayName: "Test Merchant",
     };
     testContext.client = {
-      request: jest.fn().mockResolvedValue({
+      request: vi.fn().mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
         agreementSetup: { tokenId: "BA-TEST-TOKEN" },
       }),
-      getConfiguration: jest.fn().mockReturnValue(testContext.configuration),
+      getConfiguration: vi.fn().mockReturnValue(testContext.configuration),
     };
 
     testContext.fakeFrameService = {
-      close: jest.fn(),
-      focus: jest.fn(),
-      open: jest.fn().mockImplementation(
+      close: vi.fn(),
+      focus: vi.fn(),
+      open: vi.fn().mockImplementation(
         yieldsAsync(null, {
           token: "token",
           PayerID: "payer-id",
@@ -47,16 +46,16 @@ describe("PayPalCheckoutV6", () => {
           orderId: "order-id",
         })
       ),
-      redirect: jest.fn(),
+      redirect: vi.fn(),
       _serviceId: "service-id",
     };
 
-    jest
-      .spyOn(frameService, "create")
-      .mockImplementation(yieldsAsync(testContext.fakeFrameService));
-    jest
-      .spyOn(createDeferredClient, "create")
-      .mockResolvedValue(testContext.client);
+    vi.spyOn(frameService, "create").mockImplementation(
+      yieldsAsync(testContext.fakeFrameService)
+    );
+    vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+      testContext.client
+    );
 
     testContext.paypalCheckoutV6 = new PayPalCheckoutV6({});
 
@@ -90,7 +89,7 @@ describe("PayPalCheckoutV6", () => {
     it("rejects if PayPal is not enabled", () => {
       const instance = new PayPalCheckoutV6({});
 
-      testContext.configuration.gatewayConfiguration.paypalEnabled = false;
+      delete testContext.configuration.gatewayConfiguration.paypal;
 
       return instance
         ._initialize({
@@ -157,12 +156,15 @@ describe("PayPalCheckoutV6", () => {
 
       delete window.paypal;
 
+      testContext.fakeScript = document.createElement("script");
+      assets.loadScript.mockResolvedValue(testContext.fakeScript);
+
       return testContext.instance._initialize({
         client: testContext.client,
       });
     });
 
-    it("sends analytics event when SDK loads", (done) => {
+    it("sends analytics event when SDK loads", () =>
       testContext.instance.loadPayPalSDK().then(() => {
         expect(analytics.sendEvent).toHaveBeenCalledWith(
           testContext.client,
@@ -172,55 +174,38 @@ describe("PayPalCheckoutV6", () => {
           testContext.client,
           "paypal-checkout-v6.sdk-load.succeeded"
         );
-        done();
-      });
+      }));
 
-      // Simulate script load on next tick
-      setTimeout(() => {
-        testContext.instance._paypalScript.onload();
-      }, 0);
-    });
+    it("loads the SDK script through the shared loader and keeps the element", () =>
+      testContext.instance.loadPayPalSDK().then((result) => {
+        expect(result).toBe(testContext.instance);
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: expect.stringContaining("sandbox.paypal.com/web-sdk/v6/core"),
+          forceScriptReload: true,
+        });
+        expect(testContext.instance._paypalScript).toBe(testContext.fakeScript);
+      }));
 
-    it("creates and appends script tag", (done) => {
-      testContext.instance.loadPayPalSDK();
-
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript).toBeDefined();
-        expect(testContext.instance._paypalScript.src).toContain(
-          "sandbox.paypal.com/web-sdk/v6/core"
-        );
-        expect(testContext.instance._paypalScript.async).toBe(true);
-        done();
-      }, 0);
-    });
-
-    it("uses production URL for production environment", (done) => {
+    it("uses production URL for production environment", () => {
       testContext.configuration.gatewayConfiguration.environment = "production";
 
-      testContext.instance.loadPayPalSDK();
-
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.paypal.com/web-sdk/v6/core"
-        );
-        done();
-      }, 0);
+      return testContext.instance.loadPayPalSDK().then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      });
     });
 
-    it("uses sandbox URL for sandbox environment", (done) => {
+    it("uses sandbox URL for sandbox environment", () => {
       testContext.configuration.gatewayConfiguration.environment = "sandbox";
 
-      testContext.instance.loadPayPalSDK();
-
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.sandbox.paypal.com/web-sdk/v6/core"
-        );
-        done();
-      }, 0);
+      return testContext.instance.loadPayPalSDK().then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      });
     });
 
     it("resolves immediately if SDK is already loaded", () => {
@@ -232,59 +217,563 @@ describe("PayPalCheckoutV6", () => {
           testContext.client,
           "paypal-checkout-v6.sdk-already-loaded"
         );
+        expect(assets.loadScript).not.toHaveBeenCalled();
       });
     });
 
-    it("uses teBraintree URL when env option is teBraintree", (done) => {
-      testContext.instance.loadPayPalSDK({ env: "teBraintree" });
+    it("reports enriched detail and rejects with a BraintreeError when the SDK script fails to load", () => {
+      const originalError = new Error(
+        "https://www.sandbox.paypal.com/web-sdk/v6/core failed to load."
+      );
 
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.braintree.stage.paypal.com/web-sdk/v6/core"
+      originalError.failureKind = "error";
+      originalError.src = "https://www.sandbox.paypal.com/web-sdk/v6/core";
+      originalError.timing = 12;
+      originalError.onLine = true;
+
+      assets.loadScript.mockRejectedValueOnce(originalError);
+
+      return testContext.instance.loadPayPalSDK().catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.code).toBe("PAYPAL_CHECKOUT_V6_SDK_SCRIPT_LOAD_FAILED");
+        expect(err.details.originalError).toBe(originalError);
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.sdk-load.failed",
+          expect.objectContaining({
+            failure_kind: "error",
+            src: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+          })
         );
-        done();
-      }, 0);
+      });
     });
 
-    it("uses stage URL when env option is stage", (done) => {
-      testContext.instance.loadPayPalSDK({ env: "stage" });
+    it("uses teBraintree URL when env option is teBraintree", () =>
+      testContext.instance.loadPayPalSDK({ env: "teBraintree" }).then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.braintree.stage.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      }));
 
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.msmaster.qa.paypal.com/web-sdk/v6/core"
-        );
-        done();
-      }, 0);
-    });
+    it("uses stage URL when env option is stage", () =>
+      testContext.instance.loadPayPalSDK({ env: "stage" }).then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.msmaster.qa.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      }));
 
-    it("falls back to default URL when env option is unknown", (done) => {
+    it("falls back to default URL when env option is unknown", () => {
       testContext.configuration.gatewayConfiguration.environment = "sandbox";
 
-      testContext.instance.loadPayPalSDK({ env: "unknown-env" });
-
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.sandbox.paypal.com/web-sdk/v6/core"
-        );
-        done();
-      }, 0);
+      return testContext.instance
+        .loadPayPalSDK({ env: "unknown-env" })
+        .then(() => {
+          expect(assets.loadScript).toHaveBeenCalledWith({
+            src: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+            forceScriptReload: true,
+          });
+        });
     });
 
-    it("falls back to default URL when options object is empty", (done) => {
+    it("falls back to default URL when options object is empty", () => {
       testContext.configuration.gatewayConfiguration.environment = "sandbox";
 
-      testContext.instance.loadPayPalSDK({});
+      return testContext.instance.loadPayPalSDK({}).then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://www.sandbox.paypal.com/web-sdk/v6/core",
+          forceScriptReload: true,
+        });
+      });
+    });
+  });
 
-      // Wait for next tick to allow promise to resolve
-      setTimeout(() => {
-        expect(testContext.instance._paypalScript.src).toBe(
-          "https://www.sandbox.paypal.com/web-sdk/v6/core"
+  describe("startVaultInitiatedCheckout", () => {
+    beforeEach(() => {
+      testContext.options = {
+        amount: "100.00",
+        currency: "USD",
+        vaultInitiatedCheckoutPaymentMethodToken: "fake-nonce",
+      };
+      testContext.client.request.mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect",
+        },
+      });
+
+      vi.spyOn(
+        testContext.paypalCheckoutV6,
+        "tokenizePayment"
+      ).mockResolvedValue({
+        nonce: "new-fake-nonce",
+        type: "PayPalAccount",
+      });
+
+      vi.spyOn(
+        testContext.paypalCheckoutV6,
+        "_createPaymentResource"
+      ).mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com/redirect",
+        },
+      });
+    });
+
+    it("rejects if auth is already in progress", async () => {
+      const firstAttempt =
+        testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+          testContext.options
         );
-        done();
-      }, 0);
+
+      await expect(
+        testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+          testContext.options
+        )
+      ).rejects.toMatchObject({
+        code: "PAYPAL_CHECKOUT_V6_VIC_IN_PROGRESS",
+        message: "Vault initiated checkout already in progress.",
+      });
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.error.already-in-progress"
+      );
+
+      await firstAttempt;
+
+      // can run again when auth is completed
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+    });
+
+    it.each(["amount", "currency", "vaultInitiatedCheckoutPaymentMethodToken"])(
+      "rejects with an error if %param is not present",
+      async (param) => {
+        delete testContext.options[param];
+
+        await expect(
+          testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+            testContext.options
+          )
+        ).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+          message: `Required param ${param} is missing.`,
+        });
+      }
+    );
+
+    it.each(["amount", "currency", "vaultInitiatedCheckoutPaymentMethodToken"])(
+      "rejects with an error if %param is null",
+      async (param) => {
+        testContext.options[param] = null;
+
+        await expect(
+          testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+            testContext.options
+          )
+        ).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+          message: `Required param ${param} is missing.`,
+        });
+      }
+    );
+
+    it.each(["amount", "currency", "vaultInitiatedCheckoutPaymentMethodToken"])(
+      "rejects with an error if %param is undefined",
+      async (param) => {
+        testContext.options[param] = undefined;
+
+        await expect(
+          testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+            testContext.options
+          )
+        ).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+          message: `Required param ${param} is missing.`,
+        });
+      }
+    );
+
+    it.each(["amount", "currency", "vaultInitiatedCheckoutPaymentMethodToken"])(
+      "rejects with an error if %param is an empty string",
+      async (param) => {
+        testContext.options[param] = "";
+
+        await expect(
+          testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+            testContext.options
+          )
+        ).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED",
+          message: `Required param ${param} is missing.`,
+        });
+      }
+    );
+
+    it("requests a payment resource with VIC token", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        testContext.paypalCheckoutV6._createPaymentResource
+      ).toHaveBeenCalledTimes(1);
+      expect(
+        testContext.paypalCheckoutV6._createPaymentResource
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amount: "100.00",
+          currency: "USD",
+          vaultInitiatedCheckoutPaymentMethodToken: "fake-nonce",
+          flow: "checkout",
+          returnUrl: expect.stringContaining(
+            "/redirect-frame.min.html?channel=service-id"
+          ),
+          cancelUrl: expect.stringContaining(
+            "/cancel-frame.min.html?channel=service-id"
+          ),
+        })
+      );
+    });
+
+    it("opens frame service and redirects", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(testContext.fakeFrameService.open).toHaveBeenCalledTimes(1);
+      expect(testContext.fakeFrameService.open).toHaveBeenCalledWith(
+        {},
+        expect.any(Function)
+      );
+      expect(testContext.fakeFrameService.redirect).toHaveBeenCalledTimes(2);
+      expect(testContext.fakeFrameService.redirect).toHaveBeenCalledWith(
+        "https://example.com/redirect"
+      );
+      expect(testContext.fakeFrameService.redirect).toHaveBeenCalledWith(
+        expect.stringContaining("/paypal-landing-frame.min.html")
+      );
+    });
+
+    it("tokenizes data from frameservice", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        testContext.paypalCheckoutV6.tokenizePayment
+      ).toHaveBeenCalledTimes(1);
+      expect(testContext.paypalCheckoutV6.tokenizePayment).toHaveBeenCalledWith(
+        {
+          paymentToken: "token",
+          payerID: "payer-id",
+          paymentID: "payment-id",
+          orderID: "order-id",
+        }
+      );
+    });
+
+    it("works when PayPal returns only paymentId (no orderId) for VIC", async () => {
+      // Simulate PayPal VIC response with paymentId but no orderId
+      testContext.fakeFrameService.open.mockImplementation(
+        yieldsAsync(null, {
+          token: "EC-TOKEN123",
+          PayerID: "PAYER123",
+          paymentId: "PAYID-NH6NK6Y4PF14329T4986581G",
+          // orderId is undefined for VIC flows
+        })
+      );
+
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(testContext.paypalCheckoutV6.tokenizePayment).toHaveBeenCalledWith(
+        {
+          paymentToken: "EC-TOKEN123",
+          payerID: "PAYER123",
+          paymentID: "PAYID-NH6NK6Y4PF14329T4986581G",
+          orderID: undefined,
+        }
+      );
+
+      // Verify tokenizePayment was successfully called and resolved
+      expect(
+        testContext.paypalCheckoutV6.tokenizePayment
+      ).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes frame service and resolves data from tokenization", async () => {
+      const data =
+        await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+          testContext.options
+        );
+
+      expect(testContext.fakeFrameService.close).toHaveBeenCalledTimes(1);
+      expect(data.nonce).toBe("new-fake-nonce");
+      expect(data.type).toBe("PayPalAccount");
+    });
+
+    it("sends analytic event for started", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.started"
+      );
+    });
+
+    it("sends analytic event for success", async () => {
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.succeeded"
+      );
+    });
+
+    it("opens a modal backdrop in the background", async () => {
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeTruthy();
+
+      await promise;
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+    });
+
+    it("closes modal when user cancels", async () => {
+      testContext.fakeFrameService.open.mockImplementation(
+        yieldsAsync({
+          code: "FRAME_SERVICE_FRAME_CLOSED",
+        })
+      );
+
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeTruthy();
+
+      await expect(promise).rejects.toMatchObject({
+        code: "PAYPAL_CHECKOUT_V6_VIC_CANCELED",
+        message: "Customer closed PayPal popup before authorizing.",
+      });
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+    });
+
+    it("closes modal when startVaultInitiatedCheckout fails", async () => {
+      testContext.paypalCheckoutV6.tokenizePayment.mockRejectedValue(
+        new Error("tokenization failed")
+      );
+
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeTruthy();
+
+      await expect(promise).rejects.toThrow("tokenization failed");
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+    });
+
+    it("can opt out of the modal", async () => {
+      testContext.options.optOutOfModalBackdrop = true;
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+
+      await promise;
+
+      expect(
+        document.querySelector(
+          "[data-braintree-paypal-vault-initiated-checkout-modal]"
+        )
+      ).toBeFalsy();
+    });
+
+    it("clicking on the modal focuses the PayPal window", async () => {
+      vi.spyOn(
+        testContext.paypalCheckoutV6,
+        "focusVaultInitiatedCheckoutWindow"
+      ).mockImplementation();
+      const promise = testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      const modal = document.querySelector(
+        "[data-braintree-paypal-vault-initiated-checkout-modal]"
+      );
+
+      modal.click();
+
+      expect(
+        testContext.paypalCheckoutV6.focusVaultInitiatedCheckoutWindow
+      ).toHaveBeenCalledTimes(1);
+
+      await promise;
+    });
+
+    it("only creates the modal once", async () => {
+      vi.spyOn(document, "createElement");
+
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(document.createElement).toHaveBeenCalledTimes(1);
+
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(document.createElement).toHaveBeenCalledTimes(1);
+    });
+
+    it("rejects when popup fails to open", async () => {
+      testContext.fakeFrameService.open.mockImplementation(
+        yieldsAsync({
+          code: "FRAME_SERVICE_FRAME_OPEN_FAILED",
+        })
+      );
+
+      await expect(
+        testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+          testContext.options
+        )
+      ).rejects.toMatchObject({
+        code: "PAYPAL_CHECKOUT_V6_VIC_POPUP_OPEN_FAILED",
+        message:
+          "PayPal popup failed to open, make sure to initiate in response to a user action.",
+      });
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.failed.popup-not-opened"
+      );
+    });
+
+    it("passes through additional options", async () => {
+      testContext.options.intent = "authorize";
+      testContext.options.lineItems = [
+        {
+          quantity: "1",
+          unitAmount: "100.00",
+          name: "Item",
+          kind: "debit",
+        },
+      ];
+
+      await testContext.paypalCheckoutV6.startVaultInitiatedCheckout(
+        testContext.options
+      );
+
+      expect(
+        testContext.paypalCheckoutV6._createPaymentResource
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          intent: "authorize",
+          lineItems: [
+            {
+              quantity: "1",
+              unitAmount: "100.00",
+              name: "Item",
+              kind: "debit",
+            },
+          ],
+          returnUrl: expect.stringContaining("/redirect-frame.min.html"),
+          cancelUrl: expect.stringContaining("/cancel-frame.min.html"),
+        })
+      );
+    });
+  });
+
+  describe("closeVaultInitiatedCheckoutWindow", () => {
+    beforeEach(() => {
+      testContext.paypalCheckoutV6._vaultInitiatedCheckoutInProgress = false;
+    });
+
+    it("closes the frame service", async () => {
+      await testContext.paypalCheckoutV6.closeVaultInitiatedCheckoutWindow();
+
+      expect(testContext.fakeFrameService.close).toHaveBeenCalledTimes(1);
+    });
+
+    it("sends analytics event if VIC is in progress", async () => {
+      testContext.paypalCheckoutV6._vaultInitiatedCheckoutInProgress = true;
+
+      await testContext.paypalCheckoutV6.closeVaultInitiatedCheckoutWindow();
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "paypal-checkout-v6.vic.canceled-by-merchant"
+      );
+    });
+  });
+
+  describe("focusVaultInitiatedCheckoutWindow", () => {
+    it("focuses the frame service", async () => {
+      await testContext.paypalCheckoutV6.focusVaultInitiatedCheckoutWindow();
+
+      expect(testContext.fakeFrameService.focus).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("_constructVaultCheckoutUrl", () => {
+    it("constructs redirect frame URL", () => {
+      const url =
+        testContext.paypalCheckoutV6._constructVaultCheckoutUrl(
+          "redirect-frame"
+        );
+
+      expect(url).toContain("/html/redirect-frame.min.html?channel=service-id");
+    });
+
+    it("constructs cancel frame URL", () => {
+      const url =
+        testContext.paypalCheckoutV6._constructVaultCheckoutUrl("cancel-frame");
+
+      expect(url).toContain("/html/cancel-frame.min.html?channel=service-id");
     });
   });
 
@@ -318,21 +807,381 @@ describe("PayPalCheckoutV6", () => {
     });
   });
 
+  describe("_initializePayPalInstance", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      window.paypal = {
+        createInstance: vi.fn().mockResolvedValue({ mockInstance: true }),
+      };
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("creates and caches a promise when instance and promise don't exist", () => {
+      testContext.instance._initializePayPalInstance("checkout");
+
+      expect(testContext.instance._checkoutInstancePromise).toBeDefined();
+      expect(testContext.instance._checkoutInstancePromise).toBeInstanceOf(
+        Promise
+      );
+    });
+
+    it("does nothing when instance already exists", () => {
+      testContext.instance._paypalInstance = { existing: true };
+
+      testContext.instance._initializePayPalInstance("checkout");
+
+      expect(testContext.instance._checkoutInstancePromise).toBeUndefined();
+    });
+
+    it("does nothing when promise already exists", () => {
+      testContext.instance._checkoutInstancePromise = Promise.resolve({
+        existing: true,
+      });
+
+      testContext.instance._initializePayPalInstance("checkout");
+
+      // Should not create a new promise
+      expect(window.paypal.createInstance).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when PayPal SDK is not available", () => {
+      delete window.paypal;
+
+      testContext.instance._initializePayPalInstance("checkout");
+
+      expect(testContext.instance._checkoutInstancePromise).toBeUndefined();
+    });
+
+    it("stores resolved instance in the instance key", () => {
+      testContext.instance._initializePayPalInstance("vault");
+
+      return testContext.instance._vaultInstancePromise.then(() => {
+        expect(testContext.instance._paypalVaultInstance).toEqual({
+          mockInstance: true,
+        });
+      });
+    });
+
+    it("configures correct components for each instance type", () => {
+      testContext.instance._initializePayPalInstance("messages");
+
+      return testContext.instance._messagesInstancePromise.then(() => {
+        expect(window.paypal.createInstance).toHaveBeenCalledWith(
+          expect.objectContaining({
+            components: ["paypal-messages"],
+          })
+        );
+      });
+    });
+
+    it("does not pass clientToken to createInstance for saved-payment-methods type", () => {
+      testContext.instance._billingAgreementJwt = "fake-baid-jwt";
+      testContext.instance._billingAgreementJwtPromise = Promise.resolve();
+      testContext.instance._initializePayPalInstance("saved-payment-methods");
+
+      return testContext.instance._spmInstancePromise.then(() => {
+        const callArgs = window.paypal.createInstance.mock.calls[0][0];
+
+        expect(callArgs).not.toHaveProperty("clientToken");
+        expect(callArgs).toMatchObject({
+          components: ["paypal-saved-payment-methods"],
+        });
+      });
+    });
+
+    it("clears promise cache on rejection to allow retry", () => {
+      var error = new Error("SDK initialization failed");
+
+      window.paypal.createInstance = vi.fn().mockRejectedValue(error);
+
+      testContext.instance._initializePayPalInstance("messages");
+
+      return testContext.instance._messagesInstancePromise.catch(() => {
+        // Promise should be cleared after rejection
+        expect(testContext.instance._messagesInstancePromise).toBeNull();
+
+        // Reset mock to succeed on retry
+        window.paypal.createInstance = vi.fn().mockResolvedValue({
+          mockInstance: true,
+        });
+
+        // Should be able to retry after clearing
+        testContext.instance._initializePayPalInstance("messages");
+
+        expect(testContext.instance._messagesInstancePromise).toBeDefined();
+        expect(testContext.instance._messagesInstancePromise).toBeInstanceOf(
+          Promise
+        );
+      });
+    });
+  });
+
+  describe("createMessages", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      testContext.mockMessagesInstance = {
+        render: vi.fn(),
+      };
+      testContext.mockPayPalInstance = {
+        createPayPalMessages: vi
+          .fn()
+          .mockReturnValue(testContext.mockMessagesInstance),
+      };
+
+      window.paypal = {
+        createInstance: vi
+          .fn()
+          .mockResolvedValue(testContext.mockPayPalInstance),
+      };
+
+      // Clear analytics mock to avoid false positives from earlier tests
+      analytics.sendEvent.mockClear();
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("creates a PayPal instance with paypal-messages component", () => {
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then(() => {
+          expect(window.paypal.createInstance).toHaveBeenCalledWith(
+            expect.objectContaining({
+              components: ["paypal-messages"],
+            })
+          );
+        });
+    });
+
+    it("calls createPayPalMessages on the PayPal SDK instance", () => {
+      const options = {
+        buyerCountry: "US",
+        currencyCode: "USD",
+      };
+
+      return testContext.instance.createMessages(options).then(() => {
+        expect(
+          testContext.mockPayPalInstance.createPayPalMessages
+        ).toHaveBeenCalledWith(options);
+      });
+    });
+
+    it("returns the messages instance from createPayPalMessages", () => {
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then((messagesInstance) => {
+          expect(messagesInstance).toBe(testContext.mockMessagesInstance);
+        });
+    });
+
+    it("reuses PayPal SDK instance on subsequent calls", () => {
+      return testContext.instance
+        .createMessages({ buyerCountry: "US", currencyCode: "USD" })
+        .then(() => {
+          window.paypal.createInstance.mockClear();
+
+          return testContext.instance.createMessages({
+            buyerCountry: "GB",
+            currencyCode: "GBP",
+          });
+        })
+        .then(() => {
+          expect(window.paypal.createInstance).not.toHaveBeenCalled();
+          expect(
+            testContext.mockPayPalInstance.createPayPalMessages
+          ).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    it("deduplicates concurrent calls to createMessages", () => {
+      // Call createMessages twice concurrently without waiting
+      const promise1 = testContext.instance.createMessages({
+        buyerCountry: "US",
+        currencyCode: "USD",
+      });
+      const promise2 = testContext.instance.createMessages({
+        buyerCountry: "GB",
+        currencyCode: "GBP",
+      });
+
+      return Promise.all([promise1, promise2]).then(() => {
+        // Should only create one PayPal SDK instance despite concurrent calls
+        expect(window.paypal.createInstance).toHaveBeenCalledTimes(1);
+        // Should call createPayPalMessages twice (once per createMessages call)
+        expect(
+          testContext.mockPayPalInstance.createPayPalMessages
+        ).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it("allows retry after SDK initialization failure", () => {
+      var error = new Error("Network error");
+      var createInstanceMock = vi
+        .fn()
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce(testContext.mockPayPalInstance);
+
+      // Create a fresh instance for this test
+      var freshInstance = new PayPalCheckoutV6({});
+
+      window.paypal.createInstance = createInstanceMock;
+
+      return freshInstance
+        ._initialize({ client: testContext.client })
+        .then(() => {
+          return freshInstance.createMessages({
+            buyerCountry: "US",
+            currencyCode: "USD",
+          });
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err.message).toContain("PayPal");
+
+          // Verify the promise was cleared
+          expect(freshInstance._messagesInstancePromise).toBeNull();
+
+          // Retry should succeed
+          return freshInstance.createMessages({
+            buyerCountry: "US",
+            currencyCode: "USD",
+          });
+        })
+        .then((messagesInstance) => {
+          expect(messagesInstance).toBe(testContext.mockMessagesInstance);
+          // Should have attempted createInstance twice (once failed, once succeeded)
+          expect(createInstanceMock).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    it("sends analytics events when creating messages", () => {
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.create-messages.started"
+          );
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.create-messages.succeeded"
+          );
+        });
+    });
+
+    it("rejects if PayPal SDK is not loaded", () => {
+      delete window.paypal;
+
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED");
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.create-messages.failed"
+          );
+        });
+    });
+
+    it("rejects if PayPal SDK instance does not support createPayPalMessages", () => {
+      window.paypal.createInstance.mockResolvedValue({});
+
+      return testContext.instance
+        .createMessages({
+          buyerCountry: "US",
+          currencyCode: "USD",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_SDK_NOT_INITIALIZED");
+        });
+    });
+
+    it("rejects with BraintreeError on PayPal SDK error", () => {
+      testContext.mockPayPalInstance.createPayPalMessages.mockImplementation(
+        function () {
+          throw new Error("SDK error");
+        }
+      );
+
+      return testContext.instance
+        .createMessages({
+          amount: 99.99,
+          placement: "product",
+        })
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_MESSAGES_CREATION_FAILED");
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.create-messages.failed"
+          );
+        });
+    });
+
+    it("passes style options to createPayPalMessages", () => {
+      const options = {
+        amount: 99.99,
+        placement: "product",
+        style: {
+          layout: "flex",
+          logo: {
+            type: "inline",
+          },
+        },
+      };
+
+      return testContext.instance.createMessages(options).then(() => {
+        expect(
+          testContext.mockPayPalInstance.createPayPalMessages
+        ).toHaveBeenCalledWith(options);
+      });
+    });
+  });
+
   describe("createOneTimePaymentSession", () => {
     beforeEach(() => {
       testContext.instance = new PayPalCheckoutV6({});
       testContext.paypalInstance = {
-        createPayPalOneTimePaymentSession: jest.fn().mockReturnValue({
-          start: jest.fn().mockResolvedValue(),
+        createPayPalOneTimePaymentSession: vi.fn().mockReturnValue({
+          start: vi.fn().mockResolvedValue(),
         }),
-        createPayPalCreditOneTimePaymentSession: jest.fn().mockReturnValue({
-          start: jest.fn().mockResolvedValue(),
+        createPayPalCreditOneTimePaymentSession: vi.fn().mockReturnValue({
+          start: vi.fn().mockResolvedValue(),
         }),
       };
       testContext.instance._paypalInstance = testContext.paypalInstance;
 
       window.paypal = {
-        createInstance: jest.fn().mockResolvedValue(testContext.paypalInstance),
+        createInstance: vi.fn().mockResolvedValue(testContext.paypalInstance),
       };
 
       return testContext.instance._initialize({
@@ -344,7 +1193,7 @@ describe("PayPalCheckoutV6", () => {
       const session = testContext.instance.createOneTimePaymentSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       expect(typeof session.start).toBe("function");
@@ -354,7 +1203,7 @@ describe("PayPalCheckoutV6", () => {
       expect(() => {
         testContext.instance.createOneTimePaymentSession({
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
       }).toThrow(BraintreeError);
     });
@@ -363,7 +1212,7 @@ describe("PayPalCheckoutV6", () => {
       expect(() => {
         testContext.instance.createOneTimePaymentSession({
           amount: "10.00",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
       }).toThrow(BraintreeError);
     });
@@ -377,11 +1226,60 @@ describe("PayPalCheckoutV6", () => {
       }).toThrow(BraintreeError);
     });
 
+    it("throws error when both shippingCallbackUrl and onShippingAddressChange are provided", () => {
+      expect(() => {
+        testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+          shippingCallbackUrl: "https://example.com/shipping-callback",
+          onShippingAddressChange: vi.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("throws error when both shippingCallbackUrl and onShippingOptionsChange are provided", () => {
+      expect(() => {
+        testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+          shippingCallbackUrl: "https://example.com/shipping-callback",
+          onShippingOptionsChange: vi.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("allows shippingCallbackUrl without client-side shipping callbacks", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createOneTimePaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+        shippingCallbackUrl: "https://example.com/shipping-callback",
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              shippingCallbackUrl: "https://example.com/shipping-callback",
+            }),
+          })
+        );
+      });
+    });
+
     it("sets flow to checkout", () => {
       testContext.instance.createOneTimePaymentSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       expect(testContext.instance._flow).toBe("checkout");
@@ -392,14 +1290,14 @@ describe("PayPalCheckoutV6", () => {
         amount: "10.00",
         currency: "USD",
         offerCredit: true,
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       expect(testContext.instance._sessionType).toBe("paypal-credit");
     });
 
-    it("defaults intent to capture", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("defaults intent to capture", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -408,10 +1306,10 @@ describe("PayPalCheckoutV6", () => {
       const session = testContext.instance.createOneTimePaymentSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -419,12 +1317,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("sends analytics event when session is created", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("sends analytics event when session is created", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -433,19 +1330,15 @@ describe("PayPalCheckoutV6", () => {
       const session = testContext.instance.createOneTimePaymentSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session
-        .start()
-        .then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
-            testContext.client,
-            "paypal-checkout-v6.payment.started"
-          );
-          done();
-        })
-        .catch(done);
+      return session.start().then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.payment.started"
+        );
+      });
     });
 
     describe("direct-app-switch URL validation", () => {
@@ -454,7 +1347,7 @@ describe("PayPalCheckoutV6", () => {
           amount: "10.00",
           currency: "USD",
           cancelUrl: "https://example.com/cancel",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
         return session
@@ -476,7 +1369,7 @@ describe("PayPalCheckoutV6", () => {
           amount: "10.00",
           currency: "USD",
           returnUrl: "https://example.com/return",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
         return session
@@ -497,7 +1390,7 @@ describe("PayPalCheckoutV6", () => {
         const session = testContext.instance.createOneTimePaymentSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
         return session
@@ -513,11 +1406,11 @@ describe("PayPalCheckoutV6", () => {
           });
       });
 
-      it("does not reject for direct-app-switch mode when both URLs are provided", (done) => {
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+      it("does not reject for direct-app-switch mode when both URLs are provided", () => {
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockReturnValue({
-            start: jest
+            start: vi
               .fn()
               .mockResolvedValue({ redirectURL: "https://paypal.com" }),
           });
@@ -527,210 +1420,443 @@ describe("PayPalCheckoutV6", () => {
           currency: "USD",
           returnUrl: "https://example.com/return",
           cancelUrl: "https://example.com/cancel",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "direct-app-switch" })
-          .then(() => {
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "direct-app-switch" });
       });
 
-      it("does not validate URLs for non-app-switch presentation modes", (done) => {
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+      it("does not validate URLs for non-app-switch presentation modes", () => {
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockReturnValue({
-            start: jest.fn().mockResolvedValue({}),
+            start: vi.fn().mockResolvedValue({}),
           });
 
         const session = testContext.instance.createOneTimePaymentSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" });
       });
 
-      it("does not validate URLs for auto presentation mode", (done) => {
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+      it("does not validate URLs for auto presentation mode", () => {
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockReturnValue({
-            start: jest.fn().mockResolvedValue({}),
+            start: vi.fn().mockResolvedValue({}),
           });
 
         const session = testContext.instance.createOneTimePaymentSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start()
-          .then(() => {
-            done();
+        return session.start();
+      });
+    });
+
+    describe("app switch redirect options", () => {
+      it("passes autoRedirect and fullPageOverlay through to the SDK session", () => {
+        const mockSession = {
+          start: vi
+            .fn()
+            .mockResolvedValue({ redirectURL: "https://paypal.com/redirect" }),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          returnUrl: "https://example.com/return",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: vi.fn(),
+        });
+
+        return session
+          .start({
+            presentationMode: "direct-app-switch",
+            autoRedirect: { enabled: false },
+            fullPageOverlay: { enabled: true },
           })
-          .catch(done);
+          .then((result) => {
+            expect(mockSession.start).toHaveBeenCalledWith(
+              {
+                presentationMode: "direct-app-switch",
+                autoRedirect: { enabled: false },
+                fullPageOverlay: { enabled: true },
+              },
+              expect.any(Promise)
+            );
+            expect(result.redirectURL).toBe("https://paypal.com/redirect");
+          });
+      });
+
+      it("passes autoRedirect through for redirect presentation mode too", () => {
+        const mockSession = {
+          start: vi
+            .fn()
+            .mockResolvedValue({ redirectURL: "https://paypal.com/redirect" }),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+
+        return session
+          .start({
+            presentationMode: "redirect",
+            autoRedirect: { enabled: false },
+          })
+          .then(() => {
+            expect(mockSession.start).toHaveBeenCalledWith(
+              {
+                presentationMode: "redirect",
+                autoRedirect: { enabled: false },
+              },
+              expect.any(Promise)
+            );
+          });
+      });
+
+      it("omits autoRedirect and fullPageOverlay when not provided", () => {
+        const mockSession = {
+          start: vi.fn().mockResolvedValue({}),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(mockSession.start).toHaveBeenCalledWith(
+            { presentationMode: "popup" },
+            expect.any(Promise)
+          );
+        });
       });
     });
 
     describe("session callbacks", () => {
-      it("does not include onShippingAddressChange when user does not provide one", (done) => {
+      it("does not include onShippingAddressChange when user does not provide one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createOneTimePaymentSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(capturedCallbacks.onApprove).toBeDefined();
-            expect(capturedCallbacks.onCancel).toBeDefined();
-            expect(
-              Object.prototype.hasOwnProperty.call(
-                capturedCallbacks,
-                "onShippingAddressChange"
-              )
-            ).toBe(false);
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onApprove).toBeDefined();
+          expect(capturedCallbacks.onCancel).toBeDefined();
+          expect(
+            Object.prototype.hasOwnProperty.call(
+              capturedCallbacks,
+              "onShippingAddressChange"
+            )
+          ).toBe(false);
+        });
       });
 
-      it("does not include onError when user does not provide one", (done) => {
+      it("does not include onError when user does not provide one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createOneTimePaymentSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(
-              Object.prototype.hasOwnProperty.call(capturedCallbacks, "onError")
-            ).toBe(false);
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(
+            Object.prototype.hasOwnProperty.call(capturedCallbacks, "onError")
+          ).toBe(false);
+        });
       });
 
-      it("includes onShippingAddressChange when user provides one", (done) => {
+      it("includes onShippingAddressChange when user provides one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createOneTimePaymentSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
-          onShippingAddressChange: jest.fn(),
+          onApprove: vi.fn(),
+          onShippingAddressChange: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(capturedCallbacks.onShippingAddressChange).toBeDefined();
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onShippingAddressChange).toBeDefined();
+        });
       });
 
-      it("includes onError when user provides one", (done) => {
+      it("includes onError when user provides one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createOneTimePaymentSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
-          onError: jest.fn(),
+          onApprove: vi.fn(),
+          onError: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(capturedCallbacks.onError).toBeDefined();
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onError).toBeDefined();
+        });
       });
 
-      it("always includes onCancel for analytics tracking", (done) => {
+      it("does not include onShippingOptionsChange when user does not provide one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createOneTimePaymentSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(capturedCallbacks.onCancel).toBeDefined();
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onApprove).toBeDefined();
+          expect(capturedCallbacks.onCancel).toBeDefined();
+          expect(
+            Object.prototype.hasOwnProperty.call(
+              capturedCallbacks,
+              "onShippingOptionsChange"
+            )
+          ).toBe(false);
+        });
+      });
+
+      it("includes onShippingOptionsChange when user provides one", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+          onShippingOptionsChange: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onShippingOptionsChange).toBeDefined();
+        });
+      });
+
+      it("invokes the user-provided onShippingOptionsChange and passes through return value", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const mockShippingData = {
+          errors: {},
+          orderId: "ORDER123",
+          selectedShippingOption: {
+            id: "express",
+            label: "Express Shipping",
+            amount: { currencyCode: "USD", value: "10.00" },
+            type: "SHIPPING",
+            selected: true,
+          },
+        };
+        const mockReturnValue = Promise.resolve({ success: true });
+        const userCallback = vi.fn().mockReturnValue(mockReturnValue);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+          onShippingOptionsChange: userCallback,
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          const result =
+            capturedCallbacks.onShippingOptionsChange(mockShippingData);
+
+          expect(userCallback).toHaveBeenCalledWith(mockShippingData);
+          expect(result).toBe(mockReturnValue);
+        });
+      });
+
+      it("always includes onCancel for analytics tracking", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onCancel).toBeDefined();
+        });
+      });
+
+      it("defaults commit to true when not specified", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.commit).toBe(true);
+        });
+      });
+
+      it("passes commit: true when explicitly set", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          commit: true,
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.commit).toBe(true);
+        });
+      });
+
+      it("passes commit: false when explicitly set", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          commit: false,
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.commit).toBe(false);
+        });
       });
     });
   });
@@ -739,19 +1865,24 @@ describe("PayPalCheckoutV6", () => {
     beforeEach(() => {
       testContext.instance = new PayPalCheckoutV6({});
       testContext.paypalInstance = {
-        createPayPalOneTimePaymentSession: jest.fn().mockReturnValue({
-          start: jest.fn().mockResolvedValue(),
+        createPayPalOneTimePaymentSession: vi.fn().mockReturnValue({
+          start: vi.fn().mockResolvedValue(),
         }),
-        createPayPalCreditOneTimePaymentSession: jest.fn().mockReturnValue({
-          start: jest.fn().mockResolvedValue(),
+        createPayPalCreditOneTimePaymentSession: vi.fn().mockReturnValue({
+          start: vi.fn().mockResolvedValue(),
         }),
-        createPayPalBillingAgreementWithoutPurchase: jest.fn().mockReturnValue({
-          start: jest.fn().mockResolvedValue(),
+        createPayPalBillingAgreementWithoutPurchase: vi.fn().mockReturnValue({
+          start: vi.fn().mockResolvedValue(),
         }),
+        createPayPalCreditBillingAgreementWithoutPurchase: vi
+          .fn()
+          .mockReturnValue({
+            start: vi.fn().mockResolvedValue(),
+          }),
       };
 
       window.paypal = {
-        createInstance: jest.fn().mockResolvedValue(testContext.paypalInstance),
+        createInstance: vi.fn().mockResolvedValue(testContext.paypalInstance),
       };
 
       return testContext.instance._initialize({
@@ -767,7 +1898,7 @@ describe("PayPalCheckoutV6", () => {
       testContext.instance.createOneTimePaymentSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       // Instance creation should have started since window.paypal exists
@@ -777,7 +1908,7 @@ describe("PayPalCheckoutV6", () => {
     it("creates eager vault instance promise when billing agreement session is created", () => {
       testContext.instance.createBillingAgreementSession({
         billingAgreementDescription: "Monthly subscription",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       // Instance creation should have started since window.paypal exists
@@ -790,7 +1921,7 @@ describe("PayPalCheckoutV6", () => {
       testContext.instance.createOneTimePaymentSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       // Instance creation should not start if SDK isn't loaded
@@ -801,24 +1932,24 @@ describe("PayPalCheckoutV6", () => {
       // Pre-set the instance as ready (simulating SDK already loaded and instance created)
       testContext.instance._paypalInstance = testContext.paypalInstance;
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
       });
 
       var mockSession = {
-        start: jest.fn().mockResolvedValue(),
+        start: vi.fn().mockResolvedValue(),
       };
 
-      testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+      testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
         .fn()
         .mockReturnValue(mockSession);
 
       var session = testContext.instance.createOneTimePaymentSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       // Start the session - this should be synchronous path
@@ -837,20 +1968,20 @@ describe("PayPalCheckoutV6", () => {
       // Pre-set the vault instance as ready
       testContext.instance._paypalVaultInstance = testContext.paypalInstance;
 
-      jest.spyOn(testContext.instance, "createPayment").mockResolvedValue({
+      vi.spyOn(testContext.instance, "createPayment").mockResolvedValue({
         billingToken: "BA-TOKEN-123",
       });
 
       var mockSession = {
-        start: jest.fn().mockResolvedValue(),
+        start: vi.fn().mockResolvedValue(),
       };
 
       testContext.paypalInstance.createPayPalBillingAgreementWithoutPurchase =
-        jest.fn().mockReturnValue(mockSession);
+        vi.fn().mockReturnValue(mockSession);
 
       var session = testContext.instance.createBillingAgreementSession({
         billingAgreementDescription: "Monthly subscription",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       // Start the session - this should be synchronous path
@@ -872,7 +2003,7 @@ describe("PayPalCheckoutV6", () => {
       var session = testContext.instance.createOneTimePaymentSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       // Neither sync path nor async path available
@@ -1228,8 +2359,181 @@ describe("PayPalCheckoutV6", () => {
         });
     });
 
+    it("accepts paymentID as alternative to orderID (for VIC flows)", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerID: "PAYER123",
+          paymentID: "PAYID-123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "PAYID-123",
+                  payerId: "PAYER123",
+                  correlationId: "PAYID-123",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("accepts camelCase paymentId as alternative to orderID", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerId: "PAYER123",
+          paymentId: "PAYID-123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "PAYID-123",
+                  payerId: "PAYER123",
+                  correlationId: "PAYID-123",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("prefers paymentID over orderID when both provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerID: "PAYER123",
+          orderID: "ORDER123",
+          paymentID: "PAYID-123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "PAYID-123",
+                  payerId: "PAYER123",
+                  correlationId: "ORDER123",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("accepts camelCase payerId from onApprove payload", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerId: "PAYER123",
+          orderId: "ORDER123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "ORDER123",
+                  payerId: "PAYER123",
+                  correlationId: "ORDER123",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("prefers uppercase payerID/orderID over camelCase", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerID: "UPPERCASE_PAYER",
+          orderID: "UPPERCASE_ORDER",
+          payerId: "lowercase_payer",
+          orderId: "lowercase_order",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "payment_methods/paypal_accounts",
+              method: "post",
+              data: expect.objectContaining({
+                paypalAccount: expect.objectContaining({
+                  paymentToken: "UPPERCASE_ORDER",
+                  payerId: "UPPERCASE_PAYER",
+                  correlationId: "UPPERCASE_ORDER",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
     it("sends tokenization request to client", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
           {
             nonce: "nonce-123",
@@ -1255,7 +2559,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("sends analytics event on tokenization start", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
           {
             nonce: "nonce-123",
@@ -1281,7 +2585,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("sends analytics event on tokenization success", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
           {
             nonce: "nonce-123",
@@ -1307,7 +2611,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("returns formatted payload with nonce", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
           {
             nonce: "nonce-123",
@@ -1337,7 +2641,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("sends credit.accepted event if creditFinancingOffered present", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
           {
             nonce: "nonce-123",
@@ -1369,7 +2673,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("does not resolve with creditFinancingOffered when not available", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
           {
             nonce: "nonce-123",
@@ -1392,7 +2696,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("resolves with blank account details if unavailable", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
           {
             nonce: "nonce-123",
@@ -1422,7 +2726,7 @@ describe("PayPalCheckoutV6", () => {
         },
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
           {
             nonce: "nonce-123",
@@ -1447,7 +2751,7 @@ describe("PayPalCheckoutV6", () => {
     it("rejects with BraintreeError if non-Braintree error comes back", () => {
       const error = new Error("Network error");
 
-      jest.spyOn(testContext.client, "request").mockRejectedValue(error);
+      vi.spyOn(testContext.client, "request").mockRejectedValue(error);
 
       return testContext.instance
         .tokenizePayment({
@@ -1472,7 +2776,7 @@ describe("PayPalCheckoutV6", () => {
         message: "Some message",
       });
 
-      jest.spyOn(testContext.client, "request").mockRejectedValue(btError);
+      vi.spyOn(testContext.client, "request").mockRejectedValue(btError);
 
       return testContext.instance
         .tokenizePayment({
@@ -1489,7 +2793,7 @@ describe("PayPalCheckoutV6", () => {
 
     describe("vault flow", () => {
       it("tokenizes billing agreement with billing token", () => {
-        jest.spyOn(testContext.client, "request").mockResolvedValue({
+        vi.spyOn(testContext.client, "request").mockResolvedValue({
           paypalAccounts: [
             {
               nonce: "vault-nonce-123",
@@ -1522,13 +2826,14 @@ describe("PayPalCheckoutV6", () => {
       });
 
       it("uses billingAgreementToken when both orderID and billingToken are present", () => {
-        jest.spyOn(testContext.client, "request").mockResolvedValue({
+        vi.spyOn(testContext.client, "request").mockResolvedValue({
           paypalAccounts: [
             {
               nonce: "vault-nonce-456",
               type: "PayPalAccount",
               details: {
                 email: "buyer@example.com",
+                implicitlyVaultedPaymentMethodToken: "IVPMT-TOKEN-123",
               },
             },
           ],
@@ -1548,16 +2853,21 @@ describe("PayPalCheckoutV6", () => {
                 data: expect.objectContaining({
                   paypalAccount: expect.objectContaining({
                     billingAgreementToken: "BA-TOKEN-789",
+                    paymentToken: "ORDER123",
+                    payerId: "PAYER123",
                   }),
                 }),
               })
             );
             expect(payload.nonce).toBe("vault-nonce-456");
+            expect(payload.implicitlyVaultedPaymentMethodToken).toBe(
+              "IVPMT-TOKEN-123"
+            );
           });
       });
 
       it("respects vault: false option for billing agreements", () => {
-        jest.spyOn(testContext.client, "request").mockResolvedValue({
+        vi.spyOn(testContext.client, "request").mockResolvedValue({
           paypalAccounts: [
             {
               nonce: "vault-nonce-no-vault",
@@ -1590,6 +2900,155 @@ describe("PayPalCheckoutV6", () => {
             expect(payload.nonce).toBe("vault-nonce-no-vault");
           });
       });
+
+      it("includes correlationId in billing agreement tokenization when riskCorrelationId was set", () => {
+        // Set riskCorrelationId on instance (as would happen during billing agreement creation)
+        testContext.instance._riskCorrelationId = "risk-correlation-id-789";
+
+        vi.spyOn(testContext.client, "request").mockResolvedValue({
+          paypalAccounts: [
+            {
+              nonce: "vault-nonce-with-risk",
+              type: "PayPalAccount",
+              details: {
+                email: "buyer@example.com",
+              },
+            },
+          ],
+        });
+
+        return testContext.instance
+          .tokenizePayment({
+            billingToken: "BA-TOKEN-WITH-RISK",
+          })
+          .then((payload) => {
+            expect(testContext.client.request).toHaveBeenCalledWith(
+              expect.objectContaining({
+                endpoint: "payment_methods/paypal_accounts",
+                method: "post",
+                data: expect.objectContaining({
+                  paypalAccount: expect.objectContaining({
+                    billingAgreementToken: "BA-TOKEN-WITH-RISK",
+                    correlationId: "risk-correlation-id-789",
+                  }),
+                }),
+              })
+            );
+            expect(payload.nonce).toBe("vault-nonce-with-risk");
+          });
+      });
+
+      it("uses billingToken as fallback for correlationId when riskCorrelationId is not set", () => {
+        vi.spyOn(testContext.client, "request").mockResolvedValue({
+          paypalAccounts: [
+            {
+              nonce: "vault-nonce-fallback",
+              type: "PayPalAccount",
+              details: {
+                email: "buyer@example.com",
+              },
+            },
+          ],
+        });
+
+        return testContext.instance
+          .tokenizePayment({
+            billingToken: "BA-TOKEN-FALLBACK",
+          })
+          .then((payload) => {
+            expect(testContext.client.request).toHaveBeenCalledWith(
+              expect.objectContaining({
+                endpoint: "payment_methods/paypal_accounts",
+                method: "post",
+                data: expect.objectContaining({
+                  paypalAccount: expect.objectContaining({
+                    billingAgreementToken: "BA-TOKEN-FALLBACK",
+                    correlationId: "BA-TOKEN-FALLBACK",
+                  }),
+                }),
+              })
+            );
+            expect(payload.nonce).toBe("vault-nonce-fallback");
+          });
+      });
+    });
+
+    describe("checkout flow", () => {
+      it("includes correlationId in one-time payment tokenization when riskCorrelationId was set", () => {
+        // Set riskCorrelationId on instance (as would happen during payment creation)
+        testContext.instance._riskCorrelationId =
+          "risk-correlation-id-one-time";
+
+        vi.spyOn(testContext.client, "request").mockResolvedValue({
+          paypalAccounts: [
+            {
+              nonce: "checkout-nonce-with-risk",
+              type: "PayPalAccount",
+              details: {
+                email: "buyer@example.com",
+              },
+            },
+          ],
+        });
+
+        return testContext.instance
+          .tokenizePayment({
+            payerID: "PAYER123",
+            orderID: "ORDER-WITH-RISK",
+          })
+          .then((payload) => {
+            expect(testContext.client.request).toHaveBeenCalledWith(
+              expect.objectContaining({
+                endpoint: "payment_methods/paypal_accounts",
+                method: "post",
+                data: expect.objectContaining({
+                  paypalAccount: expect.objectContaining({
+                    paymentToken: "ORDER-WITH-RISK",
+                    payerId: "PAYER123",
+                    correlationId: "risk-correlation-id-one-time",
+                  }),
+                }),
+              })
+            );
+            expect(payload.nonce).toBe("checkout-nonce-with-risk");
+          });
+      });
+
+      it("uses orderID as fallback for correlationId when riskCorrelationId is not set", () => {
+        vi.spyOn(testContext.client, "request").mockResolvedValue({
+          paypalAccounts: [
+            {
+              nonce: "checkout-nonce-fallback",
+              type: "PayPalAccount",
+              details: {
+                email: "buyer@example.com",
+              },
+            },
+          ],
+        });
+
+        return testContext.instance
+          .tokenizePayment({
+            payerID: "PAYER456",
+            orderID: "ORDER-FALLBACK",
+          })
+          .then((payload) => {
+            expect(testContext.client.request).toHaveBeenCalledWith(
+              expect.objectContaining({
+                endpoint: "payment_methods/paypal_accounts",
+                method: "post",
+                data: expect.objectContaining({
+                  paypalAccount: expect.objectContaining({
+                    paymentToken: "ORDER-FALLBACK",
+                    payerId: "PAYER456",
+                    correlationId: "ORDER-FALLBACK",
+                  }),
+                }),
+              })
+            );
+            expect(payload.nonce).toBe("checkout-nonce-fallback");
+          });
+      });
     });
   });
 
@@ -1603,7 +3062,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("sends create order request to backend", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -1632,7 +3091,7 @@ describe("PayPalCheckoutV6", () => {
         currency: "USD",
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -1660,7 +3119,7 @@ describe("PayPalCheckoutV6", () => {
         cancelUrl: "https://example.com/cancel",
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -1681,7 +3140,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("converts capture intent to sale", function () {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -1705,7 +3164,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("includes offerPaypalCredit when offerCredit is true", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -1729,7 +3188,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("uses displayName override when provided", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -1755,7 +3214,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("sends analytics event on order creation", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -1779,7 +3238,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("extracts order ID from redirect URL", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123&foo=bar",
         },
@@ -1792,6 +3251,135 @@ describe("PayPalCheckoutV6", () => {
         })
         .then((result) => {
           expect(result.orderId).toBe("ORDER123");
+        });
+    });
+
+    it("includes shippingCallbackUrl when provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+          shippingCallbackUrl: "https://example.com/shipping-callback",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                shippingCallbackUrl: "https://example.com/shipping-callback",
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes contactPreference when provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+          contactPreference: "UPDATE_CONTACT_INFO",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                contactPreference: "UPDATE_CONTACT_INFO",
+              }),
+            })
+          );
+        });
+    });
+
+    it("spreads shippingAddressOverride properties onto payload", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+          shippingAddressOverride: {
+            recipientName: "Jane Recipient",
+            recipientEmail: "jane@example.com",
+            line1: "456 Gift Lane",
+            city: "Seattle",
+            state: "WA",
+            postalCode: "98101",
+            countryCode: "US",
+          },
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                recipientName: "Jane Recipient",
+                recipientEmail: "jane@example.com",
+                line1: "456 Gift Lane",
+                city: "Seattle",
+                state: "WA",
+                postalCode: "98101",
+                countryCode: "US",
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes editBillingAgreementJwt when provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+          editBillingAgreementJwt: "fake-edit-jwt",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                editBillingAgreementJwt: "fake-edit-jwt",
+              }),
+            })
+          );
+        });
+    });
+
+    it("does not include editBillingAgreementJwt when not provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          const requestData = testContext.client.request.mock.calls[0][0].data;
+
+          expect(requestData).not.toHaveProperty("editBillingAgreementJwt");
         });
     });
   });
@@ -1819,7 +3407,7 @@ describe("PayPalCheckoutV6", () => {
         updates: { success: true },
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue(mockResponse);
+      vi.spyOn(testContext.client, "request").mockResolvedValue(mockResponse);
 
       return testContext.instance
         .updatePayment({
@@ -1884,7 +3472,7 @@ describe("PayPalCheckoutV6", () => {
     it("handles API errors and sends analytics event", function () {
       var mockError = new Error("API Error");
 
-      jest.spyOn(testContext.client, "request").mockRejectedValue(mockError);
+      vi.spyOn(testContext.client, "request").mockRejectedValue(mockError);
 
       return testContext.instance
         .updatePayment({
@@ -1991,26 +3579,30 @@ describe("PayPalCheckoutV6", () => {
 
       beforeEach(() => {
         mockPayPalSession = {
-          start: jest.fn().mockResolvedValue({ success: true }),
+          start: vi.fn().mockResolvedValue({ success: true }),
         };
 
         mockPayPalInstance = {
-          createPayPalBillingAgreementWithoutPurchase: jest
+          createPayPalBillingAgreementWithoutPurchase: vi
+            .fn()
+            .mockReturnValue(mockPayPalSession),
+          createPayPalCreditBillingAgreementWithoutPurchase: vi
             .fn()
             .mockReturnValue(mockPayPalSession),
         };
 
         window.paypal = {
-          createInstance: jest.fn().mockResolvedValue(mockPayPalInstance),
+          createInstance: vi.fn().mockResolvedValue(mockPayPalInstance),
         };
 
-        jest
-          .spyOn(testContext.instance, "createPayment")
-          .mockResolvedValue("BA-TOKEN-123");
+        vi.spyOn(testContext.instance, "createPayment").mockResolvedValue(
+          "BA-TOKEN-123"
+        );
 
-        jest
-          .spyOn(testContext.instance, "_createPayPalInstance")
-          .mockResolvedValue(mockPayPalInstance);
+        vi.spyOn(
+          testContext.instance,
+          "_createPayPalInstance"
+        ).mockResolvedValue(mockPayPalInstance);
       });
 
       afterEach(() => {
@@ -2057,7 +3649,7 @@ describe("PayPalCheckoutV6", () => {
         });
       });
 
-      it("creates PayPal instance with vault flow", () => {
+      it("creates PayPal instance with billing agreements component", () => {
         const session = testContext.instance.createBillingAgreementSession({
           billingAgreementDescription: "Monthly subscription",
           onApprove: () => {},
@@ -2067,7 +3659,7 @@ describe("PayPalCheckoutV6", () => {
           expect(
             testContext.instance._createPayPalInstance
           ).toHaveBeenCalledWith({
-            flow: "vault",
+            components: ["paypal-billing-agreements"],
           });
         });
       });
@@ -2110,7 +3702,10 @@ describe("PayPalCheckoutV6", () => {
         });
 
         return session.start().then(() => {
-          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+          var createPaymentArgs =
+            testContext.instance.createPayment.mock.calls[0][0];
+
+          expect(createPaymentArgs).toEqual(
             expect.objectContaining({
               flow: "vault",
               billingAgreementDescription: "Monthly subscription",
@@ -2118,6 +3713,48 @@ describe("PayPalCheckoutV6", () => {
               amount: "10.00",
               currency: "USD",
               userAction: "SETUP_NOW",
+            })
+          );
+          expect(createPaymentArgs.returnUrl).toBeUndefined();
+          expect(createPaymentArgs.cancelUrl).toBeUndefined();
+        });
+      });
+
+      it("passes returnUrl and cancelUrl to createPayment", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          returnUrl: "https://merchant.com/success",
+          cancelUrl: "https://merchant.com/cancel",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          var createPaymentArgs =
+            testContext.instance.createPayment.mock.calls[0][0];
+
+          expect(createPaymentArgs.returnUrl).toBe(
+            "https://merchant.com/success"
+          );
+          expect(createPaymentArgs.cancelUrl).toBe(
+            "https://merchant.com/cancel"
+          );
+        });
+      });
+
+      it("passes returnUrl and cancelUrl through to createPayment", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          returnUrl: "https://example.com/return",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          // Verify returnUrl and cancelUrl were passed through the chain
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              returnUrl: "https://example.com/return",
+              cancelUrl: "https://example.com/cancel",
             })
           );
         });
@@ -2138,8 +3775,48 @@ describe("PayPalCheckoutV6", () => {
         });
       });
 
+      it("passes autoRedirect and fullPageOverlay through to the SDK session", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          returnUrl: "https://example.com/return",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: () => {},
+        });
+
+        return session
+          .start({
+            presentationMode: "direct-app-switch",
+            autoRedirect: { enabled: false },
+            fullPageOverlay: { enabled: true },
+          })
+          .then(() => {
+            expect(mockPayPalSession.start).toHaveBeenCalledWith(
+              {
+                presentationMode: "direct-app-switch",
+                autoRedirect: { enabled: false },
+                fullPageOverlay: { enabled: true },
+              },
+              expect.any(Promise)
+            );
+          });
+      });
+
+      it("omits autoRedirect and fullPageOverlay when not provided", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          onApprove: () => {},
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(mockPayPalSession.start).toHaveBeenCalledWith(
+            { presentationMode: "popup" },
+            expect.any(Promise)
+          );
+        });
+      });
+
       it("handles onApprove callback", () => {
-        const onApproveMock = jest.fn().mockResolvedValue();
+        const onApproveMock = vi.fn().mockResolvedValue();
         const approveData = { billingToken: "BA-TOKEN-123" };
 
         const session = testContext.instance.createBillingAgreementSession({
@@ -2163,7 +3840,7 @@ describe("PayPalCheckoutV6", () => {
       });
 
       it("handles onCancel callback", () => {
-        const onCancelMock = jest.fn();
+        const onCancelMock = vi.fn();
         const cancelData = { cancelled: true };
 
         const session = testContext.instance.createBillingAgreementSession({
@@ -2188,7 +3865,7 @@ describe("PayPalCheckoutV6", () => {
       });
 
       it("handles onError callback", () => {
-        const onErrorMock = jest.fn();
+        const onErrorMock = vi.fn();
         const error = new Error("Payment failed");
 
         const session = testContext.instance.createBillingAgreementSession({
@@ -2272,6 +3949,40 @@ describe("PayPalCheckoutV6", () => {
         });
       });
 
+      it("calls createPayPalCreditBillingAgreementWithoutPurchase when offerCredit is true", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          offerCredit: true,
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(
+            mockPayPalInstance.createPayPalCreditBillingAgreementWithoutPurchase
+          ).toHaveBeenCalled();
+          expect(
+            mockPayPalInstance.createPayPalBillingAgreementWithoutPurchase
+          ).not.toHaveBeenCalled();
+        });
+      });
+
+      it("calls createPayPalBillingAgreementWithoutPurchase when offerCredit is false", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          offerCredit: false,
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(
+            mockPayPalInstance.createPayPalBillingAgreementWithoutPurchase
+          ).toHaveBeenCalled();
+          expect(
+            mockPayPalInstance.createPayPalCreditBillingAgreementWithoutPurchase
+          ).not.toHaveBeenCalled();
+        });
+      });
+
       it("supports shipping address override", () => {
         const shippingAddress = {
           line1: "123 Main St",
@@ -2291,6 +4002,102 @@ describe("PayPalCheckoutV6", () => {
           expect(testContext.instance.createPayment).toHaveBeenCalledWith(
             expect.objectContaining({
               shippingAddressOverride: shippingAddress,
+            })
+          );
+        });
+      });
+
+      it("supports locale option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          locale: "fr_FR",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              locale: "fr_FR",
+            })
+          );
+        });
+      });
+
+      it("supports landingPageType option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          landingPageType: "login",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              landingPageType: "login",
+            })
+          );
+        });
+      });
+
+      it("supports enableShippingAddress option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          enableShippingAddress: true,
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              enableShippingAddress: true,
+            })
+          );
+        });
+      });
+
+      it("supports shippingAddressEditable option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          shippingAddressEditable: false,
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              shippingAddressEditable: false,
+            })
+          );
+        });
+      });
+
+      it("supports riskCorrelationId option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          riskCorrelationId: "risk-correlation-id-123",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              riskCorrelationId: "risk-correlation-id-123",
+            })
+          );
+        });
+      });
+
+      it("supports displayName option", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          displayName: "Custom Merchant Name",
+          onApprove: () => {},
+        });
+
+        return session.start().then(() => {
+          expect(testContext.instance.createPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+              displayName: "Custom Merchant Name",
             })
           );
         });
@@ -2340,7 +4147,7 @@ describe("PayPalCheckoutV6", () => {
         const session = testContext.instance.createBillingAgreementSession({
           billingAgreementDescription: "Monthly subscription",
           cancelUrl: "https://example.com/cancel",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
         return session
@@ -2361,7 +4168,7 @@ describe("PayPalCheckoutV6", () => {
         const session = testContext.instance.createBillingAgreementSession({
           billingAgreementDescription: "Monthly subscription",
           returnUrl: "https://example.com/return",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
         return session
@@ -2382,7 +4189,7 @@ describe("PayPalCheckoutV6", () => {
         const session = testContext.instance.createBillingAgreementSession({
           billingAgreementDescription: "Monthly subscription",
           presentationMode: "direct-app-switch",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
         return session
@@ -2400,18 +4207,325 @@ describe("PayPalCheckoutV6", () => {
     });
   });
 
-  describe("createCheckoutWithVaultSession", () => {
+  describe("createPayLaterSession", () => {
     beforeEach(() => {
       testContext.instance = new PayPalCheckoutV6({});
       testContext.paypalInstance = {
-        createPayPalOneTimePaymentSession: jest.fn().mockReturnValue({
-          start: jest.fn().mockResolvedValue(),
+        createPayLaterOneTimePaymentSession: vi.fn().mockReturnValue({
+          start: vi.fn().mockResolvedValue(),
         }),
       };
       testContext.instance._paypalInstance = testContext.paypalInstance;
 
       window.paypal = {
-        createInstance: jest.fn().mockResolvedValue(testContext.paypalInstance),
+        createInstance: vi.fn().mockResolvedValue(testContext.paypalInstance),
+      };
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("throws an error if required options are missing", () => {
+      expect(() => {
+        testContext.instance.createPayLaterSession({
+          amount: "100.00",
+          currency: "USD",
+        });
+      }).toThrow(BraintreeError);
+
+      expect(() => {
+        testContext.instance.createPayLaterSession({
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+      }).toThrow(BraintreeError);
+
+      expect(() => {
+        testContext.instance.createPayLaterSession({
+          amount: "100.00",
+          onApprove: vi.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("returns an object with a start method", () => {
+      const session = testContext.instance.createPayLaterSession({
+        amount: "100.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(session).toHaveProperty("start");
+      expect(typeof session.start).toBe("function");
+    });
+
+    it("sets session type to pay-later", () => {
+      testContext.instance.createPayLaterSession({
+        amount: "100.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(testContext.instance._sessionType).toBe("pay-later");
+    });
+
+    it("sets flow to checkout", () => {
+      testContext.instance.createPayLaterSession({
+        amount: "100.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(testContext.instance._flow).toBe("checkout");
+    });
+
+    it("sends analytics event when session is created", () => {
+      testContext.instance.createPayLaterSession({
+        amount: "100.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        "paypal-checkout-v6.session.checkout.created"
+      );
+    });
+
+    it("sends analytics event for Pay Later offered", () => {
+      testContext.instance.createPayLaterSession({
+        amount: "100.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        "paypal-checkout-v6.pay-later.offered"
+      );
+    });
+
+    it("calls createPayLaterOneTimePaymentSession on PayPal instance", () => {
+      const session = testContext.instance.createPayLaterSession({
+        amount: "100.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(
+          testContext.paypalInstance.createPayLaterOneTimePaymentSession
+        ).toHaveBeenCalled();
+      });
+    });
+
+    it("supports line items", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const lineItems = [
+        {
+          quantity: "1",
+          unitAmount: "100.00",
+          name: "Product Name",
+          kind: "debit",
+        },
+      ];
+
+      const session = testContext.instance.createPayLaterSession({
+        amount: "100.00",
+        currency: "USD",
+        lineItems: lineItems,
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              lineItems: lineItems,
+            }),
+          })
+        );
+      });
+    });
+
+    it("supports shipping options", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const shippingOptions = [
+        {
+          id: "SHIP_FRE",
+          label: "Free Shipping",
+          type: "SHIPPING",
+          selected: true,
+          amount: {
+            value: "0.00",
+            currency: "USD",
+          },
+        },
+      ];
+
+      const session = testContext.instance.createPayLaterSession({
+        amount: "100.00",
+        currency: "USD",
+        shippingOptions: shippingOptions,
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              shippingOptions: shippingOptions,
+            }),
+          })
+        );
+      });
+    });
+
+    describe("direct-app-switch URL validation", () => {
+      it("rejects when returnUrl is missing for direct-app-switch mode", () => {
+        const session = testContext.instance.createPayLaterSession({
+          amount: "100.00",
+          currency: "USD",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: vi.fn(),
+        });
+
+        return session
+          .start({ presentationMode: "direct-app-switch" })
+          .then(() => {
+            throw new Error("should not resolve");
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.code).toBe(
+              "PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED"
+            );
+            expect(err.type).toBe("MERCHANT");
+          });
+      });
+
+      it("rejects when cancelUrl is missing for direct-app-switch mode", () => {
+        const session = testContext.instance.createPayLaterSession({
+          amount: "100.00",
+          currency: "USD",
+          returnUrl: "https://example.com/return",
+          onApprove: vi.fn(),
+        });
+
+        return session
+          .start({ presentationMode: "direct-app-switch" })
+          .then(() => {
+            throw new Error("should not resolve");
+          })
+          .catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.code).toBe(
+              "PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED"
+            );
+            expect(err.type).toBe("MERCHANT");
+          });
+      });
+
+      it("does not reject for direct-app-switch mode when both URLs are provided", () => {
+        testContext.paypalInstance.createPayLaterOneTimePaymentSession = vi
+          .fn()
+          .mockReturnValue({
+            start: vi
+              .fn()
+              .mockResolvedValue({ redirectURL: "https://paypal.com" }),
+          });
+
+        const session = testContext.instance.createPayLaterSession({
+          amount: "100.00",
+          currency: "USD",
+          returnUrl: "https://example.com/return",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "direct-app-switch" });
+      });
+
+      it("does not validate URLs for non-app-switch presentation modes", () => {
+        testContext.paypalInstance.createPayLaterOneTimePaymentSession = vi
+          .fn()
+          .mockReturnValue({
+            start: vi.fn().mockResolvedValue({}),
+          });
+
+        const session = testContext.instance.createPayLaterSession({
+          amount: "100.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "auto" });
+      });
+    });
+
+    it("sends pay-later.accepted event when tokenizing with creditFinancingOffered", () => {
+      // Setup Pay Later session
+      testContext.instance.createPayLaterSession({
+        amount: "100.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paypalAccounts: [
+          {
+            nonce: "nonce-123",
+            details: {
+              email: "test@example.com",
+              creditFinancingOffered: {
+                totalCost: {
+                  value: "100.00",
+                  currency: "USD",
+                },
+              },
+            },
+          },
+        ],
+      });
+
+      return testContext.instance
+        .tokenizePayment({
+          payerID: "PAYER123",
+          orderID: "ORDER123",
+        })
+        .then(() => {
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+            testContext.instance._clientPromise,
+            "paypal-checkout-v6.pay-later.accepted",
+            expect.any(Object)
+          );
+        });
+    });
+  });
+
+  describe("createCheckoutWithVaultSession", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      testContext.paypalInstance = {
+        createPayPalOneTimePaymentSession: vi.fn().mockReturnValue({
+          start: vi.fn().mockResolvedValue(),
+        }),
+      };
+      testContext.instance._paypalInstance = testContext.paypalInstance;
+
+      window.paypal = {
+        createInstance: vi.fn().mockResolvedValue(testContext.paypalInstance),
       };
 
       return testContext.instance._initialize({
@@ -2423,7 +4537,7 @@ describe("PayPalCheckoutV6", () => {
       const session = testContext.instance.createCheckoutWithVaultSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
       expect(typeof session.start).toBe("function");
@@ -2433,7 +4547,7 @@ describe("PayPalCheckoutV6", () => {
       expect(() => {
         testContext.instance.createCheckoutWithVaultSession({
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
       }).toThrow(BraintreeError);
     });
@@ -2442,7 +4556,7 @@ describe("PayPalCheckoutV6", () => {
       expect(() => {
         testContext.instance.createCheckoutWithVaultSession({
           amount: "10.00",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
       }).toThrow(BraintreeError);
     });
@@ -2456,8 +4570,8 @@ describe("PayPalCheckoutV6", () => {
       }).toThrow(BraintreeError);
     });
 
-    it("forces requestBillingAgreement to true", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("forces requestBillingAgreement to true", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2466,10 +4580,10 @@ describe("PayPalCheckoutV6", () => {
       const session = testContext.instance.createCheckoutWithVaultSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2477,12 +4591,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("defaults intent to capture", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("defaults intent to capture", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2491,10 +4604,10 @@ describe("PayPalCheckoutV6", () => {
       const session = testContext.instance.createCheckoutWithVaultSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2502,12 +4615,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("sends analytics event when session is created", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("sends analytics event when session is created", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2516,23 +4628,19 @@ describe("PayPalCheckoutV6", () => {
       const session = testContext.instance.createCheckoutWithVaultSession({
         amount: "10.00",
         currency: "USD",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session
-        .start()
-        .then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
-            testContext.client,
-            "paypal-checkout-v6.checkout-with-vault.started"
-          );
-          done();
-        })
-        .catch(done);
+      return session.start().then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.checkout-with-vault.started"
+        );
+      });
     });
 
-    it("supports billingAgreementDetails option", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("supports billingAgreementDetails option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2544,10 +4652,10 @@ describe("PayPalCheckoutV6", () => {
         billingAgreementDetails: {
           description: "Monthly subscription to Totally Real Products!",
         },
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2557,12 +4665,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("supports lineItems option", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("supports lineItems option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2581,10 +4688,10 @@ describe("PayPalCheckoutV6", () => {
         amount: "10.00",
         currency: "USD",
         lineItems: lineItems,
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2592,12 +4699,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("supports shippingOptions option", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("supports shippingOptions option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2620,10 +4726,10 @@ describe("PayPalCheckoutV6", () => {
         amount: "15.00",
         currency: "USD",
         shippingOptions: shippingOptions,
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2631,12 +4737,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("supports amountBreakdown option", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("supports amountBreakdown option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2651,10 +4756,10 @@ describe("PayPalCheckoutV6", () => {
         amount: "15.00",
         currency: "USD",
         amountBreakdown: amountBreakdown,
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2662,12 +4767,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("supports userAuthenticationEmail option", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("supports userAuthenticationEmail option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2677,10 +4781,10 @@ describe("PayPalCheckoutV6", () => {
         amount: "10.00",
         currency: "USD",
         userAuthenticationEmail: "buyer@example.com",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2688,12 +4792,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("supports intent option", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("supports intent option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2703,10 +4806,10 @@ describe("PayPalCheckoutV6", () => {
         amount: "10.00",
         currency: "USD",
         intent: "authorize",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2714,12 +4817,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("converts capture intent to sale", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("converts capture intent to sale", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2729,10 +4831,10 @@ describe("PayPalCheckoutV6", () => {
         amount: "10.00",
         currency: "USD",
         intent: "capture",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2740,12 +4842,11 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
       });
     });
 
-    it("supports displayName option", (done) => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("supports displayName option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com?token=ORDER123",
         },
@@ -2755,10 +4856,10 @@ describe("PayPalCheckoutV6", () => {
         amount: "10.00",
         currency: "USD",
         displayName: "My Custom Store Name",
-        onApprove: jest.fn(),
+        onApprove: vi.fn(),
       });
 
-      session.start().then(() => {
+      return session.start().then(() => {
         expect(testContext.client.request).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({
@@ -2768,7 +4869,292 @@ describe("PayPalCheckoutV6", () => {
             }),
           })
         );
-        done();
+      });
+    });
+
+    it("supports planType option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        planType: "SUBSCRIPTION",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              planType: "SUBSCRIPTION",
+            }),
+          })
+        );
+      });
+    });
+
+    it("supports planMetadata option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const planMetadata = {
+        name: "Premium Plan",
+        currencyIsoCode: "USD",
+        billingCycles: [
+          {
+            billingFrequency: 1,
+            billingFrequencyUnit: "MONTH",
+            numberOfExecutions: 12,
+            sequence: 1,
+            trial: false,
+            pricingScheme: {
+              pricingModel: "FIXED",
+              price: "29.99",
+            },
+          },
+        ],
+      };
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        planType: "SUBSCRIPTION",
+        planMetadata: planMetadata,
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              planType: "SUBSCRIPTION",
+              planMetadata: expect.objectContaining({
+                billingCycles: expect.any(Array),
+              }),
+            }),
+          })
+        );
+      });
+    });
+
+    it("supports locale option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        locale: "fr_FR",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              experienceProfile: expect.objectContaining({
+                localeCode: "fr_FR",
+              }),
+            }),
+          })
+        );
+      });
+    });
+
+    it("supports landingPageType option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        landingPageType: "login",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              experienceProfile: expect.objectContaining({
+                landingPageType: "login",
+              }),
+            }),
+          })
+        );
+      });
+    });
+
+    it("supports userAction option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        userAction: "pay_now",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              experienceProfile: expect.objectContaining({
+                userAction: "pay_now",
+              }),
+            }),
+          })
+        );
+      });
+    });
+
+    it("sets noShipping to false when enableShippingAddress is true", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        enableShippingAddress: true,
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              experienceProfile: expect.objectContaining({
+                noShipping: "false",
+              }),
+            }),
+          })
+        );
+      });
+    });
+
+    it("sets noShipping to true when enableShippingAddress is false", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        enableShippingAddress: false,
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              experienceProfile: expect.objectContaining({
+                noShipping: "true",
+              }),
+            }),
+          })
+        );
+      });
+    });
+
+    it("sets addressOverride to true when shippingAddressEditable is false", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        shippingAddressEditable: false,
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              experienceProfile: expect.objectContaining({
+                addressOverride: true,
+              }),
+            }),
+          })
+        );
+      });
+    });
+
+    it("sets addressOverride to false when shippingAddressEditable is true", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        shippingAddressEditable: true,
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              experienceProfile: expect.objectContaining({
+                addressOverride: false,
+              }),
+            }),
+          })
+        );
+      });
+    });
+
+    it("supports riskCorrelationId option", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      const session = testContext.instance.createCheckoutWithVaultSession({
+        amount: "10.00",
+        currency: "USD",
+        riskCorrelationId: "risk-id-123",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              correlationId: "risk-id-123",
+            }),
+          })
+        );
       });
     });
 
@@ -2778,7 +5164,7 @@ describe("PayPalCheckoutV6", () => {
           amount: "10.00",
           currency: "USD",
           cancelUrl: "https://example.com/cancel",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
         return session
@@ -2800,7 +5186,7 @@ describe("PayPalCheckoutV6", () => {
           amount: "10.00",
           currency: "USD",
           returnUrl: "https://example.com/return",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
         return session
@@ -2821,7 +5207,7 @@ describe("PayPalCheckoutV6", () => {
         const session = testContext.instance.createCheckoutWithVaultSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
         return session
@@ -2837,11 +5223,11 @@ describe("PayPalCheckoutV6", () => {
           });
       });
 
-      it("does not reject for direct-app-switch mode when both URLs are provided", (done) => {
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+      it("does not reject for direct-app-switch mode when both URLs are provided", () => {
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockReturnValue({
-            start: jest
+            start: vi
               .fn()
               .mockResolvedValue({ redirectURL: "https://paypal.com" }),
           });
@@ -2851,211 +5237,1076 @@ describe("PayPalCheckoutV6", () => {
           currency: "USD",
           returnUrl: "https://example.com/return",
           cancelUrl: "https://example.com/cancel",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "direct-app-switch" })
-          .then(() => {
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "direct-app-switch" });
       });
 
-      it("does not validate URLs for non-app-switch presentation modes", (done) => {
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+      it("does not validate URLs for non-app-switch presentation modes", () => {
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockReturnValue({
-            start: jest.fn().mockResolvedValue({}),
+            start: vi.fn().mockResolvedValue({}),
           });
 
         const session = testContext.instance.createCheckoutWithVaultSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" });
       });
 
-      it("does not validate URLs for auto presentation mode", (done) => {
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+      it("does not validate URLs for auto presentation mode", () => {
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockReturnValue({
-            start: jest.fn().mockResolvedValue({}),
+            start: vi.fn().mockResolvedValue({}),
           });
 
         const session = testContext.instance.createCheckoutWithVaultSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start()
-          .then(() => {
-            done();
-          })
-          .catch(done);
+        return session.start();
       });
     });
 
     describe("session callbacks", () => {
-      it("does not include onShippingAddressChange when user does not provide one", (done) => {
+      it("does not include onShippingAddressChange when user does not provide one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createCheckoutWithVaultSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(capturedCallbacks.onApprove).toBeDefined();
-            expect(capturedCallbacks.onCancel).toBeDefined();
-            expect(
-              Object.prototype.hasOwnProperty.call(
-                capturedCallbacks,
-                "onShippingAddressChange"
-              )
-            ).toBe(false);
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onApprove).toBeDefined();
+          expect(capturedCallbacks.onCancel).toBeDefined();
+          expect(
+            Object.prototype.hasOwnProperty.call(
+              capturedCallbacks,
+              "onShippingAddressChange"
+            )
+          ).toBe(false);
+        });
       });
 
-      it("does not include onError when user does not provide one", (done) => {
+      it("does not include onError when user does not provide one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createCheckoutWithVaultSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(
-              Object.prototype.hasOwnProperty.call(capturedCallbacks, "onError")
-            ).toBe(false);
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(
+            Object.prototype.hasOwnProperty.call(capturedCallbacks, "onError")
+          ).toBe(false);
+        });
       });
 
-      it("includes onShippingAddressChange when user provides one", (done) => {
+      it("includes onShippingAddressChange when user provides one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createCheckoutWithVaultSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
-          onShippingAddressChange: jest.fn(),
+          onApprove: vi.fn(),
+          onShippingAddressChange: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(capturedCallbacks.onShippingAddressChange).toBeDefined();
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onShippingAddressChange).toBeDefined();
+        });
       });
 
-      it("includes onError when user provides one", (done) => {
+      it("includes onError when user provides one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createCheckoutWithVaultSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
-          onError: jest.fn(),
+          onApprove: vi.fn(),
+          onError: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(capturedCallbacks.onError).toBeDefined();
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onError).toBeDefined();
+        });
       });
 
-      it("always includes onCancel for analytics tracking", (done) => {
+      it("does not include onShippingOptionsChange when user does not provide one", () => {
         let capturedCallbacks;
 
-        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
           .fn()
           .mockImplementation((callbacks) => {
             capturedCallbacks = callbacks;
             return {
-              start: jest.fn().mockResolvedValue({}),
+              start: vi.fn().mockResolvedValue({}),
             };
           });
 
         const session = testContext.instance.createCheckoutWithVaultSession({
           amount: "10.00",
           currency: "USD",
-          onApprove: jest.fn(),
+          onApprove: vi.fn(),
         });
 
-        session
-          .start({ presentationMode: "popup" })
-          .then(() => {
-            expect(capturedCallbacks).toBeDefined();
-            expect(capturedCallbacks.onCancel).toBeDefined();
-            done();
-          })
-          .catch(done);
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onApprove).toBeDefined();
+          expect(capturedCallbacks.onCancel).toBeDefined();
+          expect(
+            Object.prototype.hasOwnProperty.call(
+              capturedCallbacks,
+              "onShippingOptionsChange"
+            )
+          ).toBe(false);
+        });
       });
+
+      it("includes onShippingOptionsChange when user provides one", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+          onShippingOptionsChange: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onShippingOptionsChange).toBeDefined();
+        });
+      });
+
+      it("invokes the user-provided onShippingOptionsChange and passes through return value", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const mockShippingData = {
+          errors: {},
+          orderId: "ORDER456",
+          selectedShippingOption: {
+            id: "standard",
+            label: "Standard Shipping",
+            amount: { currencyCode: "USD", value: "5.00" },
+            type: "SHIPPING",
+            selected: true,
+          },
+        };
+        const mockReturnValue = Promise.resolve({ success: true });
+        const userCallback = vi.fn().mockReturnValue(mockReturnValue);
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+          onShippingOptionsChange: userCallback,
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          const result =
+            capturedCallbacks.onShippingOptionsChange(mockShippingData);
+
+          expect(userCallback).toHaveBeenCalledWith(mockShippingData);
+          expect(result).toBe(mockReturnValue);
+        });
+      });
+
+      it("always includes onCancel for analytics tracking", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.onCancel).toBeDefined();
+        });
+      });
+
+      it("defaults commit to true when not specified", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.commit).toBe(true);
+        });
+      });
+
+      it("passes commit: true when explicitly set", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          commit: true,
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.commit).toBe(true);
+        });
+      });
+
+      it("passes commit: false when explicitly set", () => {
+        let capturedCallbacks;
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = vi
+          .fn()
+          .mockImplementation((callbacks) => {
+            capturedCallbacks = callbacks;
+            return {
+              start: vi.fn().mockResolvedValue({}),
+            };
+          });
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          commit: false,
+          onApprove: vi.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(capturedCallbacks).toBeDefined();
+          expect(capturedCallbacks.commit).toBe(false);
+        });
+      });
+    });
+  });
+
+  describe("createEditSavedPaymentSession", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      testContext.mockEditSession = {
+        start: vi.fn().mockResolvedValue(),
+      };
+      testContext.paypalSpmInstance = {
+        createBraintreeEditSavedPaymentSession: vi
+          .fn()
+          .mockReturnValue(testContext.mockEditSession),
+      };
+      testContext.instance._paypalSpmInstance = testContext.paypalSpmInstance;
+      testContext.instance._client = testContext.client;
+
+      window.paypal = {
+        createInstance: vi
+          .fn()
+          .mockResolvedValue(testContext.paypalSpmInstance),
+      };
+
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("requires amount option", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("requires currency option", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          amount: "10.00",
+          onApprove: vi.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("requires onApprove callback", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          amount: "10.00",
+          currency: "USD",
+        });
+      }).toThrowError(
+        expect.objectContaining({
+          code: "PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS",
+          type: "MERCHANT",
+        })
+      );
+    });
+
+    it("throws when paymentMethodIdJwt is not in configuration", () => {
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("throws PAYPAL_CHECKOUT_V6_EDIT_SAVED_PAYMENT_NOT_SUPPORTED when paymentMethodIdJwt is missing", () => {
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: vi.fn(),
+        });
+      }).toThrowError(
+        expect.objectContaining({
+          code: "PAYPAL_CHECKOUT_V6_EDIT_SAVED_PAYMENT_NOT_SUPPORTED",
+          type: "MERCHANT",
+        })
+      );
+    });
+
+    it("returns a session object with start() when paymentMethodIdJwt is present", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(typeof session.start).toBe("function");
+    });
+
+    it("sends SESSION_EDIT_FI_CREATED analytics event on creation", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        "paypal-checkout-v6.session.edit-fi.created"
+      );
+    });
+
+    it("does not start the BAID JWT fetch until createEditSavedPaymentSession is called", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      expect(testContext.instance._billingAgreementJwtPromise).toBeUndefined();
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(testContext.instance._billingAgreementJwtPromise).toBeDefined();
+    });
+
+    it("does not re-fetch the BAID JWT when createEditSavedPaymentSession is called multiple times", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      const firstPromise = testContext.instance._billingAgreementJwtPromise;
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "20.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(testContext.instance._billingAgreementJwtPromise).toBe(
+        firstPromise
+      );
+    });
+
+    it("calls createBraintreeEditSavedPaymentSession eagerly at session creation time", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      // Pre-resolve the JWT promise so the eager chain only needs one microtask tick.
+      testContext.instance._billingAgreementJwtPromise = Promise.resolve();
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      // Flush the microtask queue so the eager promise chain resolves
+      return Promise.resolve().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("passes BAID JWT as billingAgreementIdToken to createBraintreeEditSavedPaymentSession", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      testContext.instance._billingAgreementJwt = "fake-baid-jwt";
+      testContext.instance._billingAgreementJwtPromise = Promise.resolve();
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return Promise.resolve().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            billingAgreementIdToken: "fake-baid-jwt",
+          })
+        );
+      });
+    });
+
+    it("waits for _billingAgreementJwtPromise before calling createBraintreeEditSavedPaymentSession", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      var resolveJwt;
+      testContext.instance._billingAgreementJwtPromise = new Promise(
+        function (resolve) {
+          resolveJwt = resolve;
+        }
+      );
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      expect(
+        testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+      ).not.toHaveBeenCalled();
+
+      testContext.instance._billingAgreementJwt = "fake-baid-jwt";
+      resolveJwt();
+
+      return Promise.resolve().then(() => {
+        // Allow the JWT promise chain to resolve
+        return Promise.resolve().then(() => {
+          expect(
+            testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+          ).toHaveBeenCalledTimes(1);
+        });
+      });
+    });
+
+    it("passes editBillingAgreementJwt to create_payment_resource", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              editBillingAgreementJwt: "fake-payment-method-jwt",
+            }),
+          })
+        );
+      });
+    });
+
+    it("defaults intent to authorize", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              intent: "authorize",
+            }),
+          })
+        );
+      });
+    });
+
+    it("maps intent: capture to intent: sale for create_payment_resource", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        intent: "capture",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              intent: "sale",
+            }),
+          })
+        );
+      });
+    });
+
+    it("defaults commit to false", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            commit: false,
+          })
+        );
+      });
+    });
+
+    it("respects explicit commit: true option", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        commit: true,
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            commit: true,
+          })
+        );
+      });
+    });
+
+    it("sends EDIT_FI_STARTED analytics event when start() is called", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.edit-fi.started"
+        );
+      });
+    });
+
+    it("calls onApprove and sends EDIT_FI_APPROVED analytics event on approval", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      const onApprove = vi.fn();
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove,
+      });
+
+      return session.start().then(() => {
+        const capturedCallbacks =
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+            .mock.calls[0][0];
+
+        capturedCallbacks.onApprove({ orderId: "ORDER123" });
+
+        expect(onApprove).toHaveBeenCalledWith({ orderId: "ORDER123" });
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.edit-fi.approved"
+        );
+      });
+    });
+
+    it("calls onCancel and sends EDIT_FI_CANCELED analytics event on cancellation", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      const onCancel = vi.fn();
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+        onCancel,
+      });
+
+      return session.start().then(() => {
+        const capturedCallbacks =
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+            .mock.calls[0][0];
+
+        capturedCallbacks.onCancel({ orderId: "ORDER123" });
+
+        expect(onCancel).toHaveBeenCalledWith({ orderId: "ORDER123" });
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.edit-fi.canceled"
+        );
+      });
+    });
+
+    it("calls onError and sends EDIT_FI_FAILED analytics event on error", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      const onError = vi.fn();
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+        onError,
+      });
+
+      return session.start().then(() => {
+        const capturedCallbacks =
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+            .mock.calls[0][0];
+        const err = new Error("something went wrong");
+
+        capturedCallbacks.onError(err);
+
+        expect(onError).toHaveBeenCalledWith(err);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.edit-fi.failed"
+        );
+      });
+    });
+
+    it("rejects with INSTANCE_NOT_READY if no instance and no promise", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      // Clear the instance set by beforeEach and remove window.paypal so that
+      // _initializePayPalInstance is a no-op (no SDK → returns early), leaving
+      // both _paypalSpmInstance and _spmInstancePromise falsy.
+      testContext.instance._paypalSpmInstance = null;
+      delete window.paypal;
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      // The rejection is baked into editSessionPromise at creation time;
+      // start() surfaces it.
+      return session
+        .start()
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY");
+        });
+    });
+
+    it("waits for spmInstancePromise when instance is not yet ready", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      testContext.instance._paypalSpmInstance = null;
+      testContext.instance._spmInstancePromise = Promise.resolve(
+        testContext.paypalSpmInstance
+      );
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("passes presentationMode through to the SDK session", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return session.start({ presentationMode: "modal" }).then(() => {
+        expect(testContext.mockEditSession.start).toHaveBeenCalledWith(
+          { presentationMode: "modal" },
+          expect.any(Promise)
+        );
+      });
+    });
+
+    it("defaults presentationMode to auto", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.mockEditSession.start).toHaveBeenCalledWith(
+          { presentationMode: "auto" },
+          expect.any(Promise)
+        );
+      });
+    });
+
+    it("passes autoRedirect and fullPageOverlay through to the SDK session", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: vi.fn(),
+      });
+
+      return session
+        .start({
+          presentationMode: "direct-app-switch",
+          autoRedirect: { enabled: false },
+          fullPageOverlay: { enabled: true },
+        })
+        .then(() => {
+          expect(testContext.mockEditSession.start).toHaveBeenCalledWith(
+            {
+              presentationMode: "direct-app-switch",
+              autoRedirect: { enabled: false },
+              fullPageOverlay: { enabled: true },
+            },
+            expect.any(Promise)
+          );
+        });
+    });
+  });
+
+  describe("_createBillingAgreementJwt", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("resolves immediately when paymentMethodIdJwt is not in configuration", () => {
+      return testContext.instance
+        ._createBillingAgreementJwt(testContext.client)
+        .then(() => {
+          expect(testContext.client.request).not.toHaveBeenCalled();
+          expect(testContext.instance._billingAgreementJwt).toBeUndefined();
+        });
+    });
+
+    it("calls createBillingAgreementJwt mutation with paymentMethodIdJwt", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        data: {
+          createBillingAgreementJwt: { jwt: "fake-baid-jwt" },
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementJwt(testContext.client)
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              api: "graphQLApi",
+              data: expect.objectContaining({
+                variables: {
+                  input: { paymentMethodJwt: "fake-payment-method-jwt" },
+                },
+              }),
+            })
+          );
+        });
+    });
+
+    it("stores the returned jwt as _billingAgreementJwt", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        data: {
+          createBillingAgreementJwt: { jwt: "fake-baid-jwt" },
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementJwt(testContext.client)
+        .then(() => {
+          expect(testContext.instance._billingAgreementJwt).toBe(
+            "fake-baid-jwt"
+          );
+        });
+    });
+
+    it("resolves (does not reject) when the GraphQL call fails", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      vi.spyOn(testContext.client, "request").mockRejectedValue(
+        new Error("network error")
+      );
+
+      return testContext.instance
+        ._createBillingAgreementJwt(testContext.client)
+        .then(() => {
+          expect(testContext.instance._billingAgreementJwt).toBeUndefined();
+        });
+    });
+  });
+
+  describe("_buildBillingAgreementRequest", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("does not include planType when not provided", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({
+        billingAgreementDescription: "Monthly subscription",
+      });
+
+      expect(result.planType).toBeUndefined();
+    });
+
+    it("includes planType when provided", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({
+        billingAgreementDescription: "Monthly subscription",
+        planType: "RECURRING",
+      });
+
+      expect(result.planType).toBe("RECURRING");
+    });
+
+    it("includes description when billingAgreementDescription is provided", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({
+        billingAgreementDescription: "Monthly subscription",
+      });
+
+      expect(result.description).toBe("Monthly subscription");
+    });
+
+    it("includes planMetadata when provided", () => {
+      var planMetadata = {
+        name: "Premium Plan",
+        currencyIsoCode: "USD",
+        billingCycles: [
+          {
+            billingFrequency: 1,
+            billingFrequencyUnit: "MONTH",
+            numberOfExecutions: 12,
+            sequence: 1,
+            trial: false,
+            pricingScheme: {
+              pricingModel: "FIXED",
+              price: "10.00",
+            },
+          },
+        ],
+      };
+      var result = testContext.instance._buildBillingAgreementRequest({
+        planType: "SUBSCRIPTION",
+        planMetadata: planMetadata,
+      });
+
+      expect(result.planMetadata).toBeDefined();
+      expect(result.planMetadata.name).toBe("Premium Plan");
+      expect(result.planMetadata.currencyIsoCode).toBe("USD");
+      expect(result.planMetadata.billingCycles).toHaveLength(1);
+      expect(result.planMetadata.billingCycles[0].billingFrequency).toBe(1);
+      expect(result.planMetadata.billingCycles[0].billingFrequencyUnit).toBe(
+        "MONTH"
+      );
+      expect(result.planMetadata.billingCycles[0].numberOfExecutions).toBe(12);
+      expect(result.planMetadata.billingCycles[0].sequence).toBe(1);
+      expect(result.planMetadata.billingCycles[0].trial).toBe(false);
+      expect(result.planMetadata.billingCycles[0].pricingScheme).toEqual({
+        pricingModel: "FIXED",
+        price: "10.00",
+      });
+    });
+
+    it("includes amount and currency when provided", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({
+        amount: "10.00",
+        currency: "USD",
+      });
+
+      expect(result.amount).toBe("10.00");
+      expect(result.currency).toBe("USD");
+    });
+
+    it("builds a minimal request with no optional fields", () => {
+      var result = testContext.instance._buildBillingAgreementRequest({});
+
+      expect(result).toEqual({});
     });
   });
 
@@ -3069,7 +6320,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("makes request to setup_billing_agreement endpoint", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         agreementSetup: {
           tokenId: "BA-TEST-TOKEN",
           approvalUrl: "https://paypal.com/approve",
@@ -3078,7 +6329,7 @@ describe("PayPalCheckoutV6", () => {
 
       return testContext.instance
         ._createBillingAgreementToken({
-          billingAgreementDescription: "Monthly subscription",
+          description: "Monthly subscription",
         })
         .then(() => {
           expect(testContext.client.request).toHaveBeenCalledWith(
@@ -3091,7 +6342,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("returns approval token ID", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         agreementSetup: {
           tokenId: "BA-TEST-TOKEN",
           approvalUrl: "https://paypal.com/approve",
@@ -3100,7 +6351,7 @@ describe("PayPalCheckoutV6", () => {
 
       return testContext.instance
         ._createBillingAgreementToken({
-          billingAgreementDescription: "Monthly subscription",
+          description: "Monthly subscription",
         })
         .then((result) => {
           expect(result.approvalTokenId).toBe("BA-TEST-TOKEN");
@@ -3109,7 +6360,7 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("sends analytics event on success", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         agreementSetup: {
           tokenId: "BA-TEST-TOKEN",
           approvalUrl: "https://paypal.com/approve",
@@ -3118,7 +6369,7 @@ describe("PayPalCheckoutV6", () => {
 
       return testContext.instance
         ._createBillingAgreementToken({
-          billingAgreementDescription: "Monthly subscription",
+          description: "Monthly subscription",
         })
         .then(() => {
           expect(analytics.sendEvent).toHaveBeenCalledWith(
@@ -3131,11 +6382,11 @@ describe("PayPalCheckoutV6", () => {
     it("sends analytics event on failure", () => {
       const error = new Error("API error");
 
-      jest.spyOn(testContext.client, "request").mockRejectedValue(error);
+      vi.spyOn(testContext.client, "request").mockRejectedValue(error);
 
       return testContext.instance
         ._createBillingAgreementToken({
-          billingAgreementDescription: "Monthly subscription",
+          description: "Monthly subscription",
         })
         .catch((err) => {
           expect(err).toBeInstanceOf(BraintreeError);
@@ -3147,7 +6398,27 @@ describe("PayPalCheckoutV6", () => {
     });
 
     it("does not send planType and planMetadata if they do not exist", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          description: "Monthly subscription",
+        })
+        .then(() => {
+          const requestData = testContext.client.request.mock.calls[0][0].data;
+
+          expect(requestData.planType).toBeUndefined();
+          expect(requestData.planMetadata).toBeUndefined();
+        });
+    });
+
+    it("includes description in request when billingAgreementDescription is provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         agreementSetup: {
           tokenId: "BA-TEST-TOKEN",
           approvalUrl: "https://paypal.com/approve",
@@ -3161,15 +6432,12 @@ describe("PayPalCheckoutV6", () => {
         .then(() => {
           const requestData = testContext.client.request.mock.calls[0][0].data;
 
-          expect(requestData.planType).toBeUndefined();
-          expect(requestData.planMetadata).toBeUndefined();
+          expect(requestData.description).toBe("Monthly subscription");
         });
     });
 
-    it("does not send planMetadata if it does not exist", () => {
-      const planType = "RECURRING";
-
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("includes description in request when description property is provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         agreementSetup: {
           tokenId: "BA-TEST-TOKEN",
           approvalUrl: "https://paypal.com/approve",
@@ -3178,7 +6446,28 @@ describe("PayPalCheckoutV6", () => {
 
       return testContext.instance
         ._createBillingAgreementToken({
-          billingAgreementDescription: "Monthly subscription",
+          description: "Premium subscription plan",
+        })
+        .then(() => {
+          const requestData = testContext.client.request.mock.calls[0][0].data;
+
+          expect(requestData.description).toBe("Premium subscription plan");
+        });
+    });
+
+    it("does not send planMetadata if it does not exist", () => {
+      const planType = "RECURRING";
+
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          description: "Monthly subscription",
           planType: planType,
         })
         .then(() => {
@@ -3209,7 +6498,7 @@ describe("PayPalCheckoutV6", () => {
         ],
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         agreementSetup: {
           tokenId: "BA-TEST-TOKEN",
           approvalUrl: "https://paypal.com/approve",
@@ -3218,7 +6507,7 @@ describe("PayPalCheckoutV6", () => {
 
       return testContext.instance
         ._createBillingAgreementToken({
-          billingAgreementDescription: "Monthly subscription",
+          description: "Monthly subscription",
           planType: planType,
           planMetadata: planMetadata,
         })
@@ -3243,7 +6532,31 @@ describe("PayPalCheckoutV6", () => {
         recipientName: "John Doe",
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          description: "Monthly subscription",
+          shippingAddressOverride: shippingAddress,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                shippingAddress: shippingAddress,
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes offerPaypalCredit: false when offerCredit is explicitly set to false", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         agreementSetup: {
           tokenId: "BA-TEST-TOKEN",
           approvalUrl: "https://paypal.com/approve",
@@ -3253,13 +6566,13 @@ describe("PayPalCheckoutV6", () => {
       return testContext.instance
         ._createBillingAgreementToken({
           billingAgreementDescription: "Monthly subscription",
-          shippingAddressOverride: shippingAddress,
+          offerCredit: false,
         })
         .then(() => {
           expect(testContext.client.request).toHaveBeenCalledWith(
             expect.objectContaining({
               data: expect.objectContaining({
-                shippingAddress: shippingAddress,
+                offerPaypalCredit: false,
               }),
             })
           );
@@ -3285,7 +6598,7 @@ describe("PayPalCheckoutV6", () => {
         ],
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         agreementSetup: {
           tokenId: "BA-TEST-TOKEN",
           approvalUrl: "https://paypal.com/approve",
@@ -3294,7 +6607,7 @@ describe("PayPalCheckoutV6", () => {
 
       return testContext.instance
         ._createBillingAgreementToken({
-          billingAgreementDescription: "Monthly subscription",
+          description: "Monthly subscription",
           planType: "SUBSCRIPTION",
           planMetadata: planMetadata,
         })
@@ -3312,8 +6625,8 @@ describe("PayPalCheckoutV6", () => {
         });
     });
 
-    it("uses displayName override when provided", () => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+    it("includes locale in request when provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         agreementSetup: {
           tokenId: "BA-TEST-TOKEN",
           approvalUrl: "https://paypal.com/approve",
@@ -3323,6 +6636,252 @@ describe("PayPalCheckoutV6", () => {
       return testContext.instance
         ._createBillingAgreementToken({
           billingAgreementDescription: "Monthly subscription",
+          locale: "fr_FR",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  localeCode: "fr_FR",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes landingPageType in experienceProfile when provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          landingPageType: "login",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  landingPageType: "login",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("sets experienceProfile.noShipping to false when enableShippingAddress is true", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          enableShippingAddress: true,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  noShipping: "false",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("sets experienceProfile.noShipping to true when enableShippingAddress is false", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          enableShippingAddress: false,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  noShipping: "true",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("sets experienceProfile.addressOverride to true when shippingAddressEditable is false", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          shippingAddressEditable: false,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  addressOverride: true,
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("sets experienceProfile.addressOverride to false when shippingAddressEditable is true", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          shippingAddressEditable: true,
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  addressOverride: false,
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes correlationId in request when riskCorrelationId is provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          riskCorrelationId: "risk-id-123",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                correlationId: "risk-id-123",
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes displayName in experienceProfile.brandName when provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          displayName: "Custom Merchant Name",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                experienceProfile: expect.objectContaining({
+                  brandName: "Custom Merchant Name",
+                }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("stores riskCorrelationId on instance for later use in tokenization", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          riskCorrelationId: "risk-id-456",
+        })
+        .then(() => {
+          expect(testContext.instance._riskCorrelationId).toBe("risk-id-456");
+        });
+    });
+
+    it("resets riskCorrelationId to undefined when not provided to prevent stale values", () => {
+      // Set initial riskCorrelationId
+      testContext.instance._riskCorrelationId = "old-risk-id";
+
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          billingAgreementDescription: "Monthly subscription",
+          // riskCorrelationId intentionally not provided
+        })
+        .then(() => {
+          // Should be reset to undefined to prevent using stale value in tokenization
+          expect(testContext.instance._riskCorrelationId).toBeUndefined();
+        });
+    });
+
+    it("uses displayName override when provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          description: "Monthly subscription",
           displayName: "OVERRIDE NAME",
         })
         .then(() => {
@@ -3332,6 +6891,34 @@ describe("PayPalCheckoutV6", () => {
                 experienceProfile: expect.objectContaining({
                   brandName: "OVERRIDE NAME",
                 }),
+              }),
+            })
+          );
+        });
+    });
+
+    it("includes returnUrl and cancelUrl in backend request when provided", () => {
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
+        agreementSetup: {
+          tokenId: "BA-TEST-TOKEN",
+          approvalUrl: "https://paypal.com/approve",
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementToken({
+          description: "Monthly subscription",
+          returnUrl: "https://merchant.com/success",
+          cancelUrl: "https://merchant.com/cancel",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              endpoint: "paypal_hermes/setup_billing_agreement",
+              method: "post",
+              data: expect.objectContaining({
+                returnUrl: "https://merchant.com/success",
+                cancelUrl: "https://merchant.com/cancel",
               }),
             })
           );
@@ -3453,7 +7040,7 @@ describe("PayPalCheckoutV6", () => {
     beforeEach(() => {
       testContext.instance = new PayPalCheckoutV6({});
       mockPayPalInstance = {
-        findEligibleMethods: jest.fn().mockResolvedValue({
+        findEligibleMethods: vi.fn().mockResolvedValue({
           paypal: true,
           paylater: true,
           credit: true,
@@ -3461,7 +7048,7 @@ describe("PayPalCheckoutV6", () => {
       };
 
       window.paypal = {
-        createInstance: jest.fn().mockResolvedValue(mockPayPalInstance),
+        createInstance: vi.fn().mockResolvedValue(mockPayPalInstance),
         version: "6.0.0",
       };
 
@@ -3490,7 +7077,7 @@ describe("PayPalCheckoutV6", () => {
 
     it("rejects if findEligibleMethods is not available on instance", () => {
       window.paypal = {
-        createInstance: jest.fn().mockResolvedValue({
+        createInstance: vi.fn().mockResolvedValue({
           // No findEligibleMethods method
           version: "6.0.0",
         }),
@@ -3579,7 +7166,7 @@ describe("PayPalCheckoutV6", () => {
 
     it("returns eligibility result using isEligible method when available", () => {
       mockPayPalInstance.findEligibleMethods.mockResolvedValue({
-        isEligible: jest.fn().mockImplementation((method) => {
+        isEligible: vi.fn().mockImplementation((method) => {
           if (method === "paypal") return true;
           if (method === "paylater") return false;
           if (method === "credit") return true;
@@ -3732,6 +7319,126 @@ describe("PayPalCheckoutV6", () => {
             currencyCode: "USD",
             amount: "10.00",
           });
+        });
+    });
+
+    it("passes countryCode to PayPal SDK when provided", () => {
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "10.00",
+          currency: "USD",
+          countryCode: "US",
+        })
+        .then(() => {
+          expect(mockPayPalInstance.findEligibleMethods).toHaveBeenCalledWith({
+            currencyCode: "USD",
+            amount: "10.00",
+            countryCode: "US",
+          });
+        });
+    });
+
+    it("passes paymentFlow to PayPal SDK when provided", () => {
+      return testContext.instance
+        .findEligibleMethods({
+          currency: "USD",
+          paymentFlow: "ONE_TIME_PAYMENT",
+        })
+        .then(() => {
+          expect(mockPayPalInstance.findEligibleMethods).toHaveBeenCalledWith({
+            currencyCode: "USD",
+            paymentFlow: "ONE_TIME_PAYMENT",
+          });
+        });
+    });
+
+    it("passes both countryCode and paymentFlow when provided", () => {
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "50.00",
+          currency: "USD",
+          countryCode: "US",
+          paymentFlow: "VAULT_WITH_PAYMENT",
+        })
+        .then(() => {
+          expect(mockPayPalInstance.findEligibleMethods).toHaveBeenCalledWith({
+            currencyCode: "USD",
+            amount: "50.00",
+            countryCode: "US",
+            paymentFlow: "VAULT_WITH_PAYMENT",
+          });
+        });
+    });
+
+    it("includes getDetails method from SDK", () => {
+      var mockDetails = {
+        productCode: "PAY_IN_4",
+        countryCode: "US",
+      };
+      var mockGetDetails = vi.fn().mockReturnValue(mockDetails);
+
+      mockPayPalInstance.findEligibleMethods.mockResolvedValue({
+        isEligible: vi.fn().mockReturnValue(true),
+        getDetails: mockGetDetails,
+      });
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "100.00",
+          currency: "USD",
+          countryCode: "US",
+        })
+        .then((result) => {
+          expect(typeof result.getDetails).toBe("function");
+
+          var details = result.getDetails("paylater");
+
+          expect(mockGetDetails).toHaveBeenCalledWith("paylater");
+          expect(details).toEqual(mockDetails);
+        });
+    });
+
+    it("calls through to SDK getDetails method", () => {
+      var mockGetDetails = vi.fn().mockReturnValue({ test: "data" });
+
+      mockPayPalInstance.findEligibleMethods.mockResolvedValue({
+        isEligible: vi.fn().mockReturnValue(true),
+        getDetails: mockGetDetails,
+      });
+
+      return testContext.instance
+        .findEligibleMethods({
+          currency: "USD",
+        })
+        .then((result) => {
+          expect(typeof result.getDetails).toBe("function");
+          var details = result.getDetails("paypal");
+          expect(mockGetDetails).toHaveBeenCalledWith("paypal");
+          expect(details).toEqual({ test: "data" });
+        });
+    });
+
+    it("getDetails returns correct data for different payment methods", () => {
+      var paylaterDetails = { productCode: "PAY_IN_4", countryCode: "US" };
+      var creditDetails = { countryCode: "US" };
+
+      mockPayPalInstance.findEligibleMethods.mockResolvedValue({
+        isEligible: vi.fn().mockReturnValue(true),
+        getDetails: vi.fn().mockImplementation((method) => {
+          if (method === "paylater") return paylaterDetails;
+          if (method === "credit") return creditDetails;
+          return null;
+        }),
+      });
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "100.00",
+          currency: "USD",
+        })
+        .then((result) => {
+          expect(result.getDetails("paylater")).toEqual(paylaterDetails);
+          expect(result.getDetails("credit")).toEqual(creditDetails);
         });
     });
   });

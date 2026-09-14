@@ -1,6 +1,4 @@
-"use strict";
-
-var composeOptions = require("./compose-options");
+import composeOptions from "./compose-options";
 
 function noop() {}
 
@@ -38,4 +36,4 @@ Popup.prototype.redirect = function (redirectUrl) {
   this._frame.location.href = redirectUrl;
 };
 
-module.exports = Popup;
+export default Popup;

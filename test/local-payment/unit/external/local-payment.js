@@ -1,18 +1,18 @@
-"use strict";
+vi.mock("../../../../src/lib/frame-service/external");
+vi.mock("../../../../src/local-payment/shared/browser-detection");
+vi.mock("../../../../src/local-payment/external/inject-qr-code");
 
-jest.mock("../../../../src/lib/frame-service/external");
-jest.mock("../../../../src/local-payment/shared/browser-detection");
-jest.mock("../../../../src/local-payment/external/inject-qr-code");
-
-const { version: VERSION } = require("../../../../package.json");
-const LocalPayment = require("../../../../src/local-payment/external/local-payment");
-const constants = require("../../../../src/local-payment/external/constants");
-const analytics = require("../../../../src/lib/analytics");
-const frameService = require("../../../../src/lib/frame-service/external");
-const methods = require("../../../../src/lib/methods");
-const BraintreeError = require("../../../../src/lib/braintree-error");
-const querystring = require("../../../../src/lib/querystring");
-const { yields, yieldsAsync } = require("../../../helpers");
+import { version as VERSION } from "../../../../package.json";
+import LocalPayment from "../../../../src/local-payment/external/local-payment";
+import constants from "../../../../src/local-payment/external/constants";
+import analytics from "../../../../src/lib/analytics";
+import frameService from "../../../../src/lib/frame-service/external";
+import methods from "../../../../src/lib/methods";
+import BraintreeError from "../../../../src/lib/braintree-error";
+import querystring from "../../../../src/lib/querystring";
+import { yields, yieldsAsync } from "../../../helpers";
+import isMobileDevice from "../../../../src/local-payment/shared/browser-detection";
+import injectQrCode from "../../../../src/local-payment/external/inject-qr-code";
 
 describe("LocalPayment", () => {
   let testContext;
@@ -28,6 +28,9 @@ describe("LocalPayment", () => {
         },
       },
       authorizationType: "CLIENT_TOKEN",
+      analyticsMetadata: {
+        sessionId: "fake-session-id",
+      },
     };
     testContext.client = {
       request: () => Promise.resolve(),
@@ -68,7 +71,7 @@ describe("LocalPayment", () => {
 
   describe("_initialize", () => {
     beforeEach(() => {
-      jest.spyOn(frameService, "create");
+      vi.spyOn(frameService, "create");
     });
 
     it("instantiates FrameService", () => {
@@ -135,7 +138,7 @@ describe("LocalPayment", () => {
     });
 
     it("calls analytics with timed-out when failing to initialize", () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       frameService.create.mockReturnValue(false);
 
       let localPayment;
@@ -143,19 +146,19 @@ describe("LocalPayment", () => {
       localPayment = new LocalPayment({ client: testContext.client });
       localPayment._initialize();
 
-      jest.advanceTimersByTime(59999);
+      vi.advanceTimersByTime(59999);
       expect(analytics.sendEvent).not.toHaveBeenCalledWith(
         testContext.client,
         "local-payment.load.timed-out"
       );
 
-      jest.advanceTimersByTime(1);
+      vi.advanceTimersByTime(1);
       expect(analytics.sendEvent).toHaveBeenCalledWith(
         testContext.client,
         "local-payment.load.timed-out"
       );
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 
@@ -171,9 +174,9 @@ describe("LocalPayment", () => {
 
       testContext.frameServiceInstance = {
         _serviceId: "service-id",
-        close: jest.fn(),
-        open: jest.fn(),
-        redirect: jest.fn(),
+        close: vi.fn(),
+        open: vi.fn(),
+        redirect: vi.fn(),
       };
 
       testContext.options = {
@@ -202,16 +205,16 @@ describe("LocalPayment", () => {
         },
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: null,
           paymentToken: "payment-token",
         },
       });
 
-      jest
-        .spyOn(frameService, "create")
-        .mockImplementation(yields(testContext.frameServiceInstance));
+      vi.spyOn(frameService, "create").mockImplementation(
+        yields(testContext.frameServiceInstance)
+      );
 
       Object.defineProperty(window, "location", {
         configurable: true,
@@ -252,7 +255,7 @@ describe("LocalPayment", () => {
         testContext.options.paymentTypeCountryCode = countryCode;
         testContext.options.currencyCode = currencyCode;
 
-        expect(
+        return expect(
           testContext.localPayment.startPayment(testContext.options)
         ).resolves.toBeUndefined();
       }
@@ -264,20 +267,20 @@ describe("LocalPayment", () => {
       testContext.options.paymentType = "ideal";
       testContext.options.paymentTypeCountryCode = "NL";
       testContext.options.currencyCode = "EUR";
-      testContext.options.onPaymentStart = jest.fn((data, start) => {
+      testContext.options.onPaymentStart = vi.fn((data, start) => {
         paymentIdFromOnPaymentStart = data.paymentId;
 
         start();
       });
 
-      testContext.frameServiceInstance.open = jest.fn(
+      testContext.frameServiceInstance.open = vi.fn(
         yieldsAsync(null, {
           token: "token",
           paymentId: "payment-id",
           PayerID: "PayerId",
         })
       );
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com/redirect-url",
           paymentToken: "payment-token",
@@ -303,26 +306,26 @@ describe("LocalPayment", () => {
       testContext.options.paymentType = "ideal";
       testContext.options.paymentTypeCountryCode = "NL";
       testContext.options.currencyCode = "EUR";
-      testContext.options.onPaymentStart = jest.fn((data, start) => {
+      testContext.options.onPaymentStart = vi.fn((data, start) => {
         return new Promise((resolve) => setTimeout(resolve, 10)).then(() => {
           start();
         });
       });
 
-      testContext.frameServiceInstance.open = jest.fn(
+      testContext.frameServiceInstance.open = vi.fn(
         yieldsAsync(null, {
           token: "token",
           paymentId: "payment-id",
           PayerID: "PayerId",
         })
       );
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com/redirect-url",
           paymentToken: "payment-token",
         },
       });
-      jest.spyOn(testContext.localPayment, "_redirectToPaymentResource");
+      vi.spyOn(testContext.localPayment, "_redirectToPaymentResource");
 
       await testContext.localPayment.startPayment(testContext.options);
 
@@ -348,13 +351,13 @@ describe("LocalPayment", () => {
 
       testContext.frameServiceInstance = {
         _serviceId: "service-id",
-        close: jest.fn(),
-        open: jest.fn(),
-        redirect: jest.fn(),
+        close: vi.fn(),
+        open: vi.fn(),
+        redirect: vi.fn(),
       };
 
       testContext.options = {
-        onPaymentStart: jest.fn(),
+        onPaymentStart: vi.fn(),
         paymentType: "blik",
         paymentTypeCountryCode: "PL",
         amount: "10.00",
@@ -380,16 +383,16 @@ describe("LocalPayment", () => {
         },
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: null,
           paymentToken: "payment-token",
         },
       });
 
-      jest
-        .spyOn(frameService, "create")
-        .mockImplementation(yields(testContext.frameServiceInstance));
+      vi.spyOn(frameService, "create").mockImplementation(
+        yields(testContext.frameServiceInstance)
+      );
 
       return testContext.localPayment._initialize();
     });
@@ -400,16 +403,14 @@ describe("LocalPayment", () => {
       ])
     )(
       "errors when no blikOptions.level_0.%s param is provided",
-      (requiredParam) => {
+      async (requiredParam) => {
         delete testContext.options.blikOptions.level_0[requiredParam];
 
-        return testContext.localPayment
-          .startPayment(testContext.options)
-          .catch(({ code }) => {
-            expect(code).toBe(
-              "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-            );
-          });
+        await expect(
+          testContext.localPayment.startPayment(testContext.options)
+        ).rejects.toMatchObject({
+          code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+        });
       }
     );
 
@@ -430,16 +431,14 @@ describe("LocalPayment", () => {
         )
       )(
         "errors when no blikOptions.oneClick.%s param is provided",
-        (requiredParam) => {
+        async (requiredParam) => {
           delete testContext.options.blikOptions.oneClick[requiredParam];
 
-          return testContext.localPayment
-            .startPayment(testContext.options)
-            .catch(({ code }) => {
-              expect(code).toBe(
-                "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-              );
-            });
+          await expect(
+            testContext.localPayment.startPayment(testContext.options)
+          ).rejects.toMatchObject({
+            code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+          });
         }
       );
     });
@@ -454,24 +453,22 @@ describe("LocalPayment", () => {
         };
       });
 
-      it("errors when no blikOptions.oneClick.consumerReference param is provided", () => {
+      it("errors when no blikOptions.oneClick.consumerReference param is provided", async () => {
         delete testContext.options.blikOptions.oneClick.consumerReference;
 
-        return testContext.localPayment
-          .startPayment(testContext.options)
-          .catch(({ code }) => {
-            expect(code).toBe(
-              "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-            );
-          });
+        await expect(
+          testContext.localPayment.startPayment(testContext.options)
+        ).rejects.toMatchObject({
+          code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+        });
       });
     });
 
-    it("errors when options are missing", () => {
-      return testContext.localPayment.startPayment().catch(({ code }) => {
-        expect(code).toBe(
-          "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-        );
+    it("errors when options are missing", async () => {
+      await expect(
+        testContext.localPayment.startPayment()
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
       });
     });
 
@@ -479,101 +476,92 @@ describe("LocalPayment", () => {
       constants.REQUIRED_OPTIONS_FOR_BLIK_SEAMLESS_PAYMENT_TYPE.map((param) => [
         param,
       ])
-    )("errors when no %s param is provided", (requiredParam) => {
+    )("errors when no %s param is provided", async (requiredParam) => {
       delete testContext.options[requiredParam];
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(code).toBe(
-            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-          );
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+      });
     });
 
-    it("creates a payment resource", () => {
+    it("creates a payment resource", async () => {
       const client = testContext.client;
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .then(() => {
-          expect(client.request).toHaveBeenCalledWith({
-            method: "post",
-            endpoint: "local_payments/create",
-            data: {
-              cancelUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=undefined&t=undefined&c=1`,
-              returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=undefined&t=undefined`,
-              fundingSource: "blik",
-              paymentTypeCountryCode: "PL",
-              amount: "10.00",
-              intent: "sale",
-              recurrent: undefined,
-              merchantOrPartnerCustomerId: undefined,
-              billingAddress: {
-                line1: undefined,
-                line2: undefined,
-                city: undefined,
-                state: undefined,
-                postalCode: undefined,
-                countryCode: undefined,
-              },
-              birthDate: undefined,
-              correlationId: undefined,
-              discountAmount: undefined,
-              experienceProfile: {
-                brandName: "My Brand!",
-                noShipping: false,
-                customerServiceInstructions: undefined,
-                locale: undefined,
-              },
-              currencyIsoCode: "PLN",
-              firstName: "First",
-              lastName: "Last",
-              payerEmail: "email@example.com",
-              phone: "1234",
-              line1: "123 Address",
-              line2: "Unit 1",
-              city: "Chicago",
-              state: "IL",
-              postalCode: "60654",
-              countryCode: "US",
-              lineItems: undefined,
-              phoneCountryCode: undefined,
-              shippingAmount: undefined,
-              merchantAccountId: "merchant-account-id",
-              blikOptions: {
-                level_0: {
-                  authCode: "123456",
-                },
-              },
+      await testContext.localPayment.startPayment(testContext.options);
+      expect(client.request).toHaveBeenCalledWith({
+        method: "post",
+        endpoint: "local_payments/create",
+        data: {
+          cancelUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=undefined&t=undefined&c=1`,
+          returnUrl: `https://example.com:9292/web/${VERSION}/html/local-payment-redirect-frame.min.html?channel=service-id&r=undefined&t=undefined`,
+          fundingSource: "blik",
+          paymentTypeCountryCode: "PL",
+          amount: "10.00",
+          intent: "sale",
+          recurrent: undefined,
+          merchantOrPartnerCustomerId: undefined,
+          billingAddress: {
+            line1: undefined,
+            line2: undefined,
+            city: undefined,
+            state: undefined,
+            postalCode: undefined,
+            countryCode: undefined,
+          },
+          birthDate: undefined,
+          correlationId: undefined,
+          riskCorrelationId: "fake-session-id",
+          discountAmount: undefined,
+          experienceProfile: {
+            brandName: "My Brand!",
+            noShipping: false,
+            customerServiceInstructions: undefined,
+            locale: undefined,
+          },
+          currencyIsoCode: "PLN",
+          firstName: "First",
+          lastName: "Last",
+          payerEmail: "email@example.com",
+          phone: "1234",
+          line1: "123 Address",
+          line2: "Unit 1",
+          city: "Chicago",
+          state: "IL",
+          postalCode: "60654",
+          countryCode: "US",
+          lineItems: undefined,
+          phoneCountryCode: undefined,
+          shippingAmount: undefined,
+          merchantAccountId: "merchant-account-id",
+          blikOptions: {
+            level_0: {
+              authCode: "123456",
             },
-          });
-        });
+          },
+        },
+      });
     });
 
-    it("No redirects occur for payment source creation", () => {
+    it("No redirects occur for payment source creation", async () => {
       const frame = testContext.frameServiceInstance;
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .then(() => {
-          expect(frame.redirect).toHaveBeenCalledTimes(0);
-        });
+      await testContext.localPayment.startPayment(testContext.options);
+      expect(frame.redirect).toHaveBeenCalledTimes(0);
     });
 
-    it("Does not open a window for payment processing", () => {
+    it("Does not open a window for payment processing", async () => {
       const frame = testContext.frameServiceInstance;
 
       frame.open.mockImplementation(yields(null, { foo: "bar" }));
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .then(() => {
-          expect(frame.open).toHaveBeenCalledTimes(0);
-        });
+      await testContext.localPayment.startPayment(testContext.options);
+
+      expect(frame.open).toHaveBeenCalledTimes(0);
     });
 
-    it("errors when payment resource call fails", () => {
+    it("errors when payment resource call fails", async () => {
       const requestError = {
         message: "Failed",
         details: {
@@ -585,15 +573,15 @@ describe("LocalPayment", () => {
       testContext.client.request.mockClear();
       testContext.client.request.mockRejectedValueOnce(requestError);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
-          expect(details.originalError.message).toBe("Failed");
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_FAILED",
+        details: { originalError: { message: "Failed" } },
+      });
     });
 
-    it("errors when payment resource returns redirectUrl for deferred payment", () => {
+    it("errors when payment resource returns redirectUrl for deferred payment", async () => {
       const responseWithRedirectUrl = {
         paymentResource: {
           redirectUrl: "https://example.com/redirect-url",
@@ -604,17 +592,15 @@ describe("LocalPayment", () => {
       testContext.client.request.mockClear();
       testContext.client.request.mockResolvedValue(responseWithRedirectUrl);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(code).toBe(
-            "LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED"
-          );
-          expect(testContext.localPayment._authorizationInProgress).toBe(false);
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED",
+      });
+      expect(testContext.localPayment._authorizationInProgress).toBe(false);
     });
 
-    it("errors with validation error when create payment resource fails with 422", () => {
+    it("errors with validation error when create payment resource fails with 422", async () => {
       const requestError = {
         message: "Failed",
         details: {
@@ -625,12 +611,12 @@ describe("LocalPayment", () => {
       testContext.frameServiceInstance.open.mockClear();
       testContext.client.request.mockRejectedValue(requestError);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_INVALID_PAYMENT_OPTION");
-          expect(details.originalError.message).toBe("Failed");
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_INVALID_PAYMENT_OPTION",
+        details: { originalError: { message: "Failed" } },
+      });
     });
   });
 
@@ -642,13 +628,13 @@ describe("LocalPayment", () => {
       });
       testContext.frameServiceInstance = {
         _serviceId: "service-id",
-        close: jest.fn(),
-        open: jest.fn(),
-        redirect: jest.fn(),
+        close: vi.fn(),
+        open: vi.fn(),
+        redirect: vi.fn(),
       };
 
       testContext.options = {
-        onPaymentStart: jest.fn(),
+        onPaymentStart: vi.fn(),
         paymentType: "pay_upon_invoice",
         paymentTypeCountryCode: "NL",
         amount: "10.00",
@@ -680,6 +666,7 @@ describe("LocalPayment", () => {
         locale: "en-DE",
         birthDate: "1990-01-01",
         correlationId: "bt-correlationId",
+        riskCorrelationId: "bt-correlationId",
         lineItems: [
           {
             category: "PHYSICAL_GOODS",
@@ -694,16 +681,16 @@ describe("LocalPayment", () => {
         customerServiceInstructions: "pleasefollow",
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: null,
           paymentToken: "payment-token",
         },
       });
 
-      jest
-        .spyOn(frameService, "create")
-        .mockImplementation(yields(testContext.frameServiceInstance));
+      vi.spyOn(frameService, "create").mockImplementation(
+        yields(testContext.frameServiceInstance)
+      );
 
       return testContext.localPayment._initialize();
     });
@@ -712,54 +699,48 @@ describe("LocalPayment", () => {
       constants.REQUIRED_OPTIONS_FOR_PAY_UPON_INVOICE_PAYMENT_TYPE.map(
         (param) => [param]
       )
-    )("errors when no %s param is provided", (requiredParam) => {
+    )("errors when no %s param is provided", async (requiredParam) => {
       delete testContext.options[requiredParam];
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(code).toBe(
-            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-          );
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+      });
     });
 
     it.each(constants.REQUIRED_OPTIONS_FOR_ADDRESS.map((param) => [param]))(
       "errors when billingAddress.%s param is missing",
-      (requiredParam) => {
+      async (requiredParam) => {
         delete testContext.options.billingAddress[requiredParam];
 
-        return testContext.localPayment
-          .startPayment(testContext.options)
-          .catch(({ code }) => {
-            expect(code).toBe(
-              "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-            );
-          });
+        await expect(
+          testContext.localPayment.startPayment(testContext.options)
+        ).rejects.toMatchObject({
+          code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+        });
       }
     );
 
     it.each(constants.REQUIRED_OPTIONS_FOR_LINE_ITEMS.map((param) => [param]))(
       "errors when lineItems.%s param is missing",
-      (requiredParam) => {
-        delete testContext.options.lineItems[requiredParam];
+      async (requiredParam) => {
+        delete testContext.options.lineItems[0][requiredParam];
 
-        return testContext.localPayment
-          .startPayment(testContext.options)
-          .catch(({ code, details }) => {
-            expect(code).toBe(
-              "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-            );
-            expect(details).toContain(requiredParam);
-          });
+        await expect(
+          testContext.localPayment.startPayment(testContext.options)
+        ).rejects.toMatchObject({
+          code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+          details: expect.stringContaining(requiredParam),
+        });
       }
     );
 
-    it("errors when options are missing", () => {
-      return testContext.localPayment.startPayment().catch(({ code }) => {
-        expect(code).toBe(
-          "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-        );
+    it("errors when options are missing", async () => {
+      await expect(
+        testContext.localPayment.startPayment()
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
       });
     });
 
@@ -792,6 +773,7 @@ describe("LocalPayment", () => {
               },
               birthDate: "1990-01-01",
               correlationId: "bt-correlationId",
+              riskCorrelationId: "bt-correlationId",
               discountAmount: undefined,
               experienceProfile: {
                 brandName: "My Brand!",
@@ -858,6 +840,7 @@ describe("LocalPayment", () => {
               },
               birthDate: "1990-01-01",
               correlationId: "bt-correlationId",
+              riskCorrelationId: "bt-correlationId",
               discountAmount: undefined,
               experienceProfile: {
                 brandName: "My Brand!",
@@ -893,6 +876,48 @@ describe("LocalPayment", () => {
         });
     });
 
+    it("uses correlationId for riskCorrelationId when correlationId is provided", () => {
+      const client = testContext.client;
+
+      delete testContext.options["riskCorrelationId"];
+      testContext.options.correlationId = "bt-correlationId";
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              method: "post",
+              endpoint: "local_payments/create",
+              data: expect.objectContaining({
+                riskCorrelationId: "bt-correlationId",
+              }),
+            })
+          );
+        });
+    });
+
+    it("falls back to the client's session id for riskCorrelationId when neither riskCorrelationId nor correlationId is provided", () => {
+      const client = testContext.client;
+
+      delete testContext.options["riskCorrelationId"];
+      delete testContext.options.correlationId;
+
+      return testContext.localPayment
+        .startPayment(testContext.options)
+        .then(() => {
+          expect(client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              method: "post",
+              endpoint: "local_payments/create",
+              data: expect.objectContaining({
+                riskCorrelationId: "fake-session-id",
+              }),
+            })
+          );
+        });
+    });
+
     it("No redirects occur for payment source creation", () => {
       const frame = testContext.frameServiceInstance;
 
@@ -915,7 +940,7 @@ describe("LocalPayment", () => {
         });
     });
 
-    it("errors when payment resource call fails", () => {
+    it("errors when payment resource call fails", async () => {
       const requestError = {
         message: "Failed",
         details: {
@@ -927,15 +952,15 @@ describe("LocalPayment", () => {
       testContext.client.request.mockClear();
       testContext.client.request.mockRejectedValueOnce(requestError);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
-          expect(details.originalError.message).toBe("Failed");
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_FAILED",
+        details: { originalError: { message: "Failed" } },
+      });
     });
 
-    it("errors when payment resource returns redirectUrl for deferred payment", () => {
+    it("errors when payment resource returns redirectUrl for deferred payment", async () => {
       const responseWithRedirectUrl = {
         paymentResource: {
           redirectUrl: "https://example.com/redirect-url",
@@ -946,17 +971,15 @@ describe("LocalPayment", () => {
       testContext.client.request.mockClear();
       testContext.client.request.mockResolvedValue(responseWithRedirectUrl);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(code).toBe(
-            "LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED"
-          );
-          expect(testContext.localPayment._authorizationInProgress).toBe(false);
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED",
+      });
+      expect(testContext.localPayment._authorizationInProgress).toBe(false);
     });
 
-    it("errors with validation error when create payment resource fails with 422", () => {
+    it("errors with validation error when create payment resource fails with 422", async () => {
       const requestError = {
         message: "Failed",
         details: {
@@ -967,15 +990,15 @@ describe("LocalPayment", () => {
       testContext.frameServiceInstance.open.mockClear();
       testContext.client.request.mockRejectedValue(requestError);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_INVALID_PAYMENT_OPTION");
-          expect(details.originalError.message).toBe("Failed");
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_INVALID_PAYMENT_OPTION",
+        details: { originalError: { message: "Failed" } },
+      });
     });
 
-    it("cleans up state when payment resource request fails", () => {
+    it("cleans up state when payment resource request fails", async () => {
       const requestError = {
         message: "Failed",
         details: {
@@ -986,14 +1009,12 @@ describe("LocalPayment", () => {
       testContext.frameServiceInstance.open.mockClear();
       testContext.client.request.mockRejectedValue(requestError);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(() => {
-          expect(testContext.frameServiceInstance.close).toHaveBeenCalledTimes(
-            1
-          );
-          expect(testContext.localPayment._authorizationInProgress).toBe(false);
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toBeDefined();
+
+      expect(testContext.frameServiceInstance.close).toHaveBeenCalledTimes(1);
+      expect(testContext.localPayment._authorizationInProgress).toBe(false);
     });
 
     it("authorizationProgress resets when createPayment resolves", () => {
@@ -1019,13 +1040,13 @@ describe("LocalPayment", () => {
         });
         testContext.frameServiceInstance = {
           _serviceId: "service-id",
-          close: jest.fn(),
-          open: jest.fn(),
-          redirect: jest.fn(),
+          close: vi.fn(),
+          open: vi.fn(),
+          redirect: vi.fn(),
         };
 
         testContext.options = {
-          onPaymentStart: jest.fn(),
+          onPaymentStart: vi.fn(),
           paymentType: paymentType,
           paymentTypeCountryCode: "IT",
           amount: "10.00",
@@ -1050,16 +1071,16 @@ describe("LocalPayment", () => {
           },
         };
 
-        jest.spyOn(testContext.client, "request").mockResolvedValue({
+        vi.spyOn(testContext.client, "request").mockResolvedValue({
           paymentResource: {
             redirectUrl: null,
             paymentToken: "payment-token",
           },
         });
 
-        jest
-          .spyOn(frameService, "create")
-          .mockImplementation(yields(testContext.frameServiceInstance));
+        vi.spyOn(frameService, "create").mockImplementation(
+          yields(testContext.frameServiceInstance)
+        );
 
         return testContext.localPayment._initialize();
       });
@@ -1087,6 +1108,8 @@ describe("LocalPayment", () => {
       });
 
       it("errors when payment resource returns redirectUrl for deferred payment", () => {
+        expect.assertions(2);
+
         const responseWithRedirectUrl = {
           paymentResource: {
             redirectUrl: "https://example.com/redirect-url",
@@ -1119,15 +1142,15 @@ describe("LocalPayment", () => {
       });
       testContext.frameServiceInstance = {
         _serviceId: "service-id",
-        close: jest.fn(),
-        open: jest.fn(
+        close: vi.fn(),
+        open: vi.fn(
           yieldsAsync(null, {
             token: "token",
             paymentId: "payment-id",
             PayerID: "PayerId",
           })
         ),
-        redirect: jest.fn(),
+        redirect: vi.fn(),
       };
 
       testContext.options = {
@@ -1158,13 +1181,13 @@ describe("LocalPayment", () => {
         },
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com/redirect-url",
           paymentToken: "payment-token",
         },
       });
-      jest.spyOn(testContext.localPayment, "tokenize").mockResolvedValue({
+      vi.spyOn(testContext.localPayment, "tokenize").mockResolvedValue({
         nonce: "a-nonce",
         type: "PayPalAccount",
         details: {
@@ -1173,72 +1196,149 @@ describe("LocalPayment", () => {
         },
       });
 
-      jest
-        .spyOn(frameService, "create")
-        .mockImplementation(yields(testContext.frameServiceInstance));
+      vi.spyOn(frameService, "create").mockImplementation(
+        yields(testContext.frameServiceInstance)
+      );
 
       return testContext.localPayment._initialize();
     });
 
+    it("emits a suspended event when the popup is backgrounded", async () => {
+      let openOptions;
+
+      testContext.frameServiceInstance.open = vi.fn((options, cb) => {
+        openOptions = options;
+        cb(null, {
+          token: "token",
+          paymentId: "payment-id",
+          PayerID: "PayerId",
+        });
+      });
+
+      await testContext.localPayment.startPayment(testContext.options);
+
+      openOptions.onSuspend();
+
+      expect(analytics.sendEvent).toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.suspended"
+      );
+    });
+
+    it("emits a resumed event when the app returns", async () => {
+      let openOptions;
+
+      testContext.frameServiceInstance.open = vi.fn((options, cb) => {
+        openOptions = options;
+        cb(null, {
+          token: "token",
+          paymentId: "payment-id",
+          PayerID: "PayerId",
+        });
+      });
+
+      await testContext.localPayment.startPayment(testContext.options);
+
+      openOptions.onResume();
+
+      expect(analytics.sendEvent).toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.resumed"
+      );
+    });
+
+    it("emits a recovered event when the popup returns after a resume", async () => {
+      testContext.frameServiceInstance.open = vi.fn((options, cb) => {
+        options.onResume();
+        cb(null, {
+          token: "token",
+          paymentId: "payment-id",
+          PayerID: "PayerId",
+        });
+      });
+
+      await testContext.localPayment.startPayment(testContext.options);
+
+      expect(analytics.sendEvent).toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.recovered"
+      );
+    });
+
+    it("does not emit a recovered event when the popup completes without a resume", async () => {
+      await testContext.localPayment.startPayment(testContext.options);
+
+      expect(analytics.sendEvent).not.toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.recovered"
+      );
+    });
+
+    it("does not emit a recovered event when the popup is closed after a resume", async () => {
+      testContext.frameServiceInstance.open = vi.fn((options, cb) => {
+        options.onResume();
+        cb({ code: "FRAME_SERVICE_FRAME_CLOSED" });
+      });
+
+      await testContext.localPayment
+        .startPayment(testContext.options)
+        .catch(() => {});
+
+      expect(analytics.sendEvent).not.toBeCalledWith(
+        expect.anything(),
+        "ideal.local-payment.popup.recovered"
+      );
+    });
+
     it.each([["onPaymentStart"], ["paymentType"], ["amount"], ["fallback"]])(
       "errors when no %s param is provided",
-      (requiredParam) => {
+      async (requiredParam) => {
         delete testContext.options[requiredParam];
 
-        return testContext.localPayment
-          .startPayment(testContext.options)
-          .catch(({ code }) => {
-            expect(code).toBe(
-              "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-            );
-          });
+        await expect(
+          testContext.localPayment.startPayment(testContext.options)
+        ).rejects.toMatchObject({
+          code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+        });
       }
     );
 
-    it("errors when no fallback.url param is provided", () => {
+    it("errors when no fallback.url param is provided", async () => {
       delete testContext.options.fallback.url;
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(code).toBe(
-            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-          );
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+      });
     });
 
-    it("errors when no fallback.buttonText param is provided", () => {
+    it("errors when no fallback.buttonText param is provided", async () => {
       delete testContext.options.fallback.buttonText;
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(code).toBe(
-            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-          );
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+      });
     });
 
-    it("errors when no customerId param provided for recurrent payment", () => {
+    it("errors when no customerId param provided for recurrent payment", async () => {
       testContext.options.recurrent = true;
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(code).toBe(
-            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-          );
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+      });
     });
 
-    it("errors when authorization is already in progress", () => {
+    it("errors when authorization is already in progress", async () => {
       testContext.localPayment._authorizationInProgress = true;
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(code).toBe("LOCAL_PAYMENT_ALREADY_IN_PROGRESS");
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({ code: "LOCAL_PAYMENT_ALREADY_IN_PROGRESS" });
     });
 
     it("creates a payment resource", () => {
@@ -1273,6 +1373,7 @@ describe("LocalPayment", () => {
               },
               birthDate: undefined,
               correlationId: undefined,
+              riskCorrelationId: "fake-session-id",
               discountAmount: undefined,
               experienceProfile: {
                 brandName: "My Brand!",
@@ -1335,6 +1436,7 @@ describe("LocalPayment", () => {
               },
               birthDate: undefined,
               correlationId: undefined,
+              riskCorrelationId: "fake-session-id",
               discountAmount: undefined,
               experienceProfile: {
                 brandName: "My Brand!",
@@ -1403,6 +1505,7 @@ describe("LocalPayment", () => {
               },
               birthDate: undefined,
               correlationId: undefined,
+              riskCorrelationId: "fake-session-id",
               discountAmount: undefined,
               lineItems: undefined,
               phoneCountryCode: undefined,
@@ -1450,6 +1553,8 @@ describe("LocalPayment", () => {
             {
               width: 1282,
               height: 720,
+              onSuspend: expect.any(Function),
+              onResume: expect.any(Function),
             },
             expect.any(Function)
           );
@@ -1472,13 +1577,15 @@ describe("LocalPayment", () => {
             {
               width: 90,
               height: 50,
+              onSuspend: expect.any(Function),
+              onResume: expect.any(Function),
             },
             expect.any(Function)
           );
         });
     });
 
-    it("errors when payment resource call fails", () => {
+    it("errors when payment resource call fails", async () => {
       const requestError = {
         message: "Failed",
         details: {
@@ -1487,18 +1594,19 @@ describe("LocalPayment", () => {
       };
 
       testContext.frameServiceInstance.open.mockClear();
+      testContext.frameServiceInstance.open.mockImplementation(() => {});
       testContext.client.request.mockClear();
       testContext.client.request.mockRejectedValueOnce(requestError);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
-          expect(details.originalError.message).toBe("Failed");
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_FAILED",
+        details: { originalError: { message: "Failed" } },
+      });
     });
 
-    it("errors with validation error when create payment resource fails with 422", () => {
+    it("errors with validation error when create payment resource fails with 422", async () => {
       const requestError = {
         message: "Failed",
         details: {
@@ -1507,17 +1615,18 @@ describe("LocalPayment", () => {
       };
 
       testContext.frameServiceInstance.open.mockClear();
+      testContext.frameServiceInstance.open.mockImplementation(() => {});
       testContext.client.request.mockRejectedValue(requestError);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_INVALID_PAYMENT_OPTION");
-          expect(details.originalError.message).toBe("Failed");
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_INVALID_PAYMENT_OPTION",
+        details: { originalError: { message: "Failed" } },
+      });
     });
 
-    it("cleans up state when payment resource request fails", () => {
+    it("cleans up state when payment resource request fails", async () => {
       const requestError = {
         message: "Failed",
         details: {
@@ -1526,19 +1635,18 @@ describe("LocalPayment", () => {
       };
 
       testContext.frameServiceInstance.open.mockClear();
+      testContext.frameServiceInstance.open.mockImplementation(() => {});
       testContext.client.request.mockRejectedValue(requestError);
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(() => {
-          expect(testContext.frameServiceInstance.close).toHaveBeenCalledTimes(
-            1
-          );
-          expect(testContext.localPayment._authorizationInProgress).toBe(false);
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toBeDefined();
+
+      expect(testContext.frameServiceInstance.close).toHaveBeenCalledTimes(1);
+      expect(testContext.localPayment._authorizationInProgress).toBe(false);
     });
 
-    it("errors when frame service is closed", () => {
+    it("errors when frame service is closed", async () => {
       const frameError = {
         code: "FRAME_SERVICE_FRAME_CLOSED",
       };
@@ -1547,15 +1655,13 @@ describe("LocalPayment", () => {
         yieldsAsync(frameError)
       );
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(testContext.localPayment._authorizationInProgress).toBe(false);
-          expect(code).toBe("LOCAL_PAYMENT_WINDOW_CLOSED");
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({ code: "LOCAL_PAYMENT_WINDOW_CLOSED" });
+      expect(testContext.localPayment._authorizationInProgress).toBe(false);
     });
 
-    it('errors with payment failed error when frame service is closed and includes "processing_error" in the errocode param', () => {
+    it('errors with payment failed error when frame service is closed and includes "processing_error" in the errorcode param', async () => {
       const frameError = {
         code: "FRAME_SERVICE_FRAME_CLOSED",
       };
@@ -1567,19 +1673,17 @@ describe("LocalPayment", () => {
         })
       );
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(testContext.localPayment._authorizationInProgress).toBe(false);
-          expect(code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
-          expect(analytics.sendEvent).toBeCalledWith(
-            expect.anything(),
-            expect.stringContaining(".local-payment.failed-in-window")
-          );
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({ code: "LOCAL_PAYMENT_START_PAYMENT_FAILED" });
+      expect(testContext.localPayment._authorizationInProgress).toBe(false);
+      expect(analytics.sendEvent).toBeCalledWith(
+        expect.anything(),
+        expect.stringContaining(".local-payment.failed-in-window")
+      );
     });
 
-    it("errors when frame service fails to open", () => {
+    it("errors when frame service fails to open", async () => {
       const frameError = {
         code: "FRAME_SERVICE_FRAME_OPEN_FAILED_ABC",
       };
@@ -1588,12 +1692,10 @@ describe("LocalPayment", () => {
         yieldsAsync(frameError)
       );
 
-      return testContext.localPayment
-        .startPayment(testContext.options)
-        .catch(({ code }) => {
-          expect(testContext.localPayment._authorizationInProgress).toBe(false);
-          expect(code).toBe("LOCAL_PAYMENT_WINDOW_OPEN_FAILED");
-        });
+      await expect(
+        testContext.localPayment.startPayment(testContext.options)
+      ).rejects.toMatchObject({ code: "LOCAL_PAYMENT_WINDOW_OPEN_FAILED" });
+      expect(testContext.localPayment._authorizationInProgress).toBe(false);
     });
 
     it("tokenizes when frame service give params back", () => {
@@ -1624,7 +1726,7 @@ describe("LocalPayment", () => {
 
   describe("tokenize", () => {
     beforeEach(() => {
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paypalAccounts: [
           {
             nonce: "a-nonce",
@@ -1709,7 +1811,7 @@ describe("LocalPayment", () => {
         });
     });
 
-    it("uses queryItems as params when available (for iOS): CANCELED Payment", () => {
+    it("uses queryItems as params when available (for iOS): CANCELED Payment", async () => {
       const options = {
         queryItems: {
           btLpToken: "token",
@@ -1718,13 +1820,14 @@ describe("LocalPayment", () => {
         },
       };
 
-      return testContext.localPayment
-        .tokenize(options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_CANCELED");
-          expect(details.originalError.errorcode).toBe("payment_error");
-          expect(details.originalError.token).toBe("token");
-        });
+      await expect(
+        testContext.localPayment.tokenize(options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_CANCELED",
+        details: {
+          originalError: { errorcode: "payment_error", token: "token" },
+        },
+      });
     });
 
     it("uses queryItems as params when available (for iOS): Successful Payment", () => {
@@ -1747,7 +1850,7 @@ describe("LocalPayment", () => {
     });
 
     it("uses query params when no params are sent in", () => {
-      jest.spyOn(querystring, "parse").mockReturnValue({
+      vi.spyOn(querystring, "parse").mockReturnValue({
         btLpToken: "token",
         btLpPaymentId: "payment-token",
         btLpPayerId: "payer-id",
@@ -1763,61 +1866,58 @@ describe("LocalPayment", () => {
       });
     });
 
-    it("rejects when c is present in params", () => {
-      expect.assertions(3);
-
+    it("rejects when c is present in params", async () => {
       testContext.options.c = 1;
       testContext.options.errorcode = "payment_error";
 
-      return testContext.localPayment
-        .tokenize(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_CANCELED");
-          expect(details.originalError.errorcode).toBe("payment_error");
-          expect(details.originalError.token).toBe("token");
-        });
+      await expect(
+        testContext.localPayment.tokenize(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_CANCELED",
+        details: {
+          originalError: { errorcode: "payment_error", token: "token" },
+        },
+      });
     });
 
-    it("rejects when wasCanceled is present in params", () => {
-      expect.assertions(3);
-
+    it("rejects when wasCanceled is present in params", async () => {
       testContext.options.wasCanceled = "true";
       testContext.options.errorcode = "payment_error";
 
-      return testContext.localPayment
-        .tokenize(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_CANCELED");
-          expect(details.originalError.errorcode).toBe("payment_error");
-          expect(details.originalError.token).toBe("token");
-        });
+      await expect(
+        testContext.localPayment.tokenize(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_CANCELED",
+        details: {
+          originalError: { errorcode: "payment_error", token: "token" },
+        },
+      });
     });
 
-    it("rejects when errorcode is present in params", () => {
-      expect.assertions(3);
-
+    it("rejects when errorcode is present in params", async () => {
       testContext.options.errorcode = "payment_error";
 
-      return testContext.localPayment
-        .tokenize(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
-          expect(details.originalError.errorcode).toBe("payment_error");
-          expect(details.originalError.token).toBe("token");
-        });
+      await expect(
+        testContext.localPayment.tokenize(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_START_PAYMENT_FAILED",
+        details: {
+          originalError: { errorcode: "payment_error", token: "token" },
+        },
+      });
     });
 
-    it("rejects when tokenization fails", () => {
+    it("rejects when tokenization fails", async () => {
       const error = new Error("failed");
 
       testContext.client.request.mockRejectedValue(error);
 
-      return testContext.localPayment
-        .tokenize(testContext.options)
-        .catch(({ code, details }) => {
-          expect(code).toBe("LOCAL_PAYMENT_TOKENIZATION_FAILED");
-          expect(details.originalError.message).toBe("failed");
-        });
+      await expect(
+        testContext.localPayment.tokenize(testContext.options)
+      ).rejects.toMatchObject({
+        code: "LOCAL_PAYMENT_TOKENIZATION_FAILED",
+        details: { originalError: { message: "failed" } },
+      });
     });
 
     it("sends analytics event for successful tokenizations", () =>
@@ -1843,24 +1943,26 @@ describe("LocalPayment", () => {
       });
     });
 
-    it("sends analytics event for failed tokenizations", () => {
+    it("sends analytics event for failed tokenizations", async () => {
+      expect.assertions(3);
+
       testContext.client.request.mockRejectedValue(new Error("failed"));
 
-      return testContext.localPayment
-        .tokenize(testContext.options)
-        .catch(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
-            testContext.client,
-            "ideal.local-payment.tokenization.failed"
-          );
-        });
+      await expect(
+        testContext.localPayment.tokenize(testContext.options)
+      ).rejects.toBeDefined();
+
+      expect(analytics.sendEvent).toHaveBeenCalledTimes(1);
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        testContext.client,
+        "ideal.local-payment.tokenization.failed"
+      );
     });
   });
 
   describe("hasTokenizationParams", () => {
     beforeEach(() => {
-      jest.spyOn(querystring, "parse");
+      vi.spyOn(querystring, "parse");
       testContext.localPayment = new LocalPayment({
         client: testContext.client,
       });
@@ -1918,16 +2020,16 @@ describe("LocalPayment", () => {
 
   describe("teardown", () => {
     beforeEach(() => {
-      const frameServiceInstance = { teardown: jest.fn() };
+      const frameServiceInstance = { teardown: vi.fn() };
 
       testContext.localPayment = new LocalPayment({
         client: testContext.client,
       });
       testContext.frameServiceInstance = frameServiceInstance;
 
-      jest
-        .spyOn(frameService, "create")
-        .mockImplementation(yields(frameServiceInstance));
+      vi.spyOn(frameService, "create").mockImplementation(
+        yields(frameServiceInstance)
+      );
     });
 
     it("tears down the frame service", () => {
@@ -1958,34 +2060,31 @@ describe("LocalPayment", () => {
       const localPayment = testContext.localPayment;
 
       return localPayment._initialize().then(() => {
-        expect(localPayment.teardown()).resolves.toBeUndefined();
+        return expect(localPayment.teardown()).resolves.toBeUndefined();
       });
     });
 
-    it("replaces all methods so error is thrown when methods are invoked", (done) => {
+    it("replaces all methods so error is thrown when methods are invoked", async () => {
       const localPayment = testContext.localPayment;
 
-      localPayment._initialize().then(() => {
-        localPayment.teardown(() => {
-          methods(LocalPayment.prototype).forEach((method) => {
-            let error;
+      await localPayment._initialize();
+      await localPayment.teardown();
 
-            try {
-              localPayment[method]();
-            } catch (err) {
-              error = err;
-            }
+      methods(LocalPayment.prototype).forEach((method) => {
+        let error;
 
-            expect(error).toBeInstanceOf(BraintreeError);
-            expect(error.type).toBe(BraintreeError.types.MERCHANT);
-            expect(error.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
-            expect(error.message).toBe(
-              `${method} cannot be called after teardown.`
-            );
-          });
+        try {
+          localPayment[method]();
+        } catch (err) {
+          error = err;
+        }
 
-          done();
-        });
+        expect(error).toBeInstanceOf(BraintreeError);
+        expect(error.type).toBe(BraintreeError.types.MERCHANT);
+        expect(error.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
+        expect(error.message).toBe(
+          `${method} cannot be called after teardown.`
+        );
       });
     });
   });
@@ -1998,68 +2097,80 @@ describe("LocalPayment", () => {
       });
       testContext.frameServiceInstance = {
         _serviceId: "service-id",
-        close: jest.fn(),
-        open: jest.fn(
+        close: vi.fn(),
+        open: vi.fn(
           yieldsAsync(null, {
             token: "token",
             paymentId: "payment-id",
             PayerID: "PayerId",
           })
         ),
-        redirect: jest.fn(),
+        redirect: vi.fn(),
       };
 
       testContext.baseCryptoOptions = {
         paymentType: "crypto",
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com/redirect-url",
           paymentToken: "payment-token",
         },
       });
 
-      jest
-        .spyOn(frameService, "create")
-        .mockImplementation(yields(testContext.frameServiceInstance));
+      vi.spyOn(frameService, "create").mockImplementation(
+        yields(testContext.frameServiceInstance)
+      );
 
       return testContext.localPayment._initialize();
     });
 
-    it("errors when cryptoOptions.approvalUrl is missing", () => {
+    it("errors when cryptoOptions.approvalUrl is missing", async () => {
       const options = {
         ...testContext.baseCryptoOptions,
         cryptoOptions: {},
       };
 
-      return testContext.localPayment.startPayment(options).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe(BraintreeError.types.MERCHANT);
-        expect(err.code).toBe(
-          "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-        );
-        expect(err.message).toContain(
-          "Missing required option for startPayment."
-        );
-      });
+      let err;
+
+      try {
+        await testContext.localPayment.startPayment(options);
+      } catch (e) {
+        err = e;
+      }
+
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe(BraintreeError.types.MERCHANT);
+      expect(err.code).toBe(
+        "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+      );
+      expect(err.message).toContain(
+        "Missing required option for startPayment."
+      );
     });
 
-    it("errors when cryptoOptions is missing", () => {
+    it("errors when cryptoOptions is missing", async () => {
       const options = {
         ...testContext.baseCryptoOptions,
       };
 
-      return testContext.localPayment.startPayment(options).catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe(BraintreeError.types.MERCHANT);
-        expect(err.code).toBe(
-          "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-        );
-        expect(err.message).toContain(
-          "Missing required option for startPayment."
-        );
-      });
+      let err;
+
+      try {
+        await testContext.localPayment.startPayment(options);
+      } catch (e) {
+        err = e;
+      }
+
+      expect(err).toBeInstanceOf(BraintreeError);
+      expect(err.type).toBe(BraintreeError.types.MERCHANT);
+      expect(err.code).toBe(
+        "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+      );
+      expect(err.message).toContain(
+        "Missing required option for startPayment."
+      );
     });
 
     it("should redirect to the approvalUrl", async () => {
@@ -2070,7 +2181,7 @@ describe("LocalPayment", () => {
         },
       };
 
-      jest.spyOn(testContext.localPayment, "_redirectToPaymentResource");
+      vi.spyOn(testContext.localPayment, "_redirectToPaymentResource");
 
       await testContext.localPayment.startPayment(options);
 
@@ -2088,15 +2199,15 @@ describe("LocalPayment", () => {
       });
       testContext.frameServiceInstance = {
         _serviceId: "service-id",
-        close: jest.fn(),
-        open: jest.fn(
+        close: vi.fn(),
+        open: vi.fn(
           yieldsAsync(null, {
             token: "token",
             paymentId: "payment-id",
             PayerID: "PayerId",
           })
         ),
-        redirect: jest.fn(),
+        redirect: vi.fn(),
       };
 
       testContext.baseSwishOptions = {
@@ -2110,29 +2221,25 @@ describe("LocalPayment", () => {
         phone: "1234567890",
       };
 
-      jest.spyOn(testContext.client, "request").mockResolvedValue({
+      vi.spyOn(testContext.client, "request").mockResolvedValue({
         paymentResource: {
           redirectUrl: "https://example.com/redirect-url",
           paymentToken: "payment-token",
         },
       });
 
-      jest
-        .spyOn(frameService, "create")
-        .mockImplementation(yields(testContext.frameServiceInstance));
+      vi.spyOn(frameService, "create").mockImplementation(
+        yields(testContext.frameServiceInstance)
+      );
     });
 
     describe("QR code flow", () => {
       beforeEach(() => {
         // Mock mobile device detection to return false (desktop)
-        const isMobileDevice = require("../../../../src/local-payment/shared/browser-detection");
-        jest.mocked(isMobileDevice.isMobileDevice).mockReturnValue(false);
+        vi.mocked(isMobileDevice.isMobileDevice).mockReturnValue(false);
 
         // Mock QR code injection
-        const injectQrCode = require("../../../../src/local-payment/external/inject-qr-code");
-        jest
-          .mocked(injectQrCode)
-          .mockReturnValue(document.createElement("img"));
+        vi.mocked(injectQrCode).mockReturnValue(document.createElement("img"));
 
         document.body.innerHTML = '<div id="qr-container"></div>';
 
@@ -2143,10 +2250,10 @@ describe("LocalPayment", () => {
         document.body.innerHTML = "";
       });
 
-      it("includes throws when using QR Code flow on mobile", () => {
+      it("includes throws when using QR Code flow on mobile", async () => {
         // Mock mobile device detection to return true (mobile)
-        const isMobileDevice = require("../../../../src/local-payment/shared/browser-detection");
-        jest.mocked(isMobileDevice.isMobileDevice).mockReturnValue(true);
+
+        vi.mocked(isMobileDevice.isMobileDevice).mockReturnValue(true);
 
         const options = {
           ...testContext.baseSwishOptions,
@@ -2163,17 +2270,25 @@ describe("LocalPayment", () => {
           },
         };
 
-        return testContext.localPayment.startPayment(options).catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe(BraintreeError.types.MERCHANT);
-          expect(err.code).toBe("LOCAL_PAYMENT_QR_CODE_NOT_SUPPORTED");
-          expect(err.message).toContain(
-            "QR code is only supported on desktop devices."
-          );
-        });
+        let err;
+
+        try {
+          await testContext.localPayment.startPayment(options);
+        } catch (e) {
+          err = e;
+        }
+
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.MERCHANT);
+        expect(err.code).toBe("LOCAL_PAYMENT_QR_CODE_NOT_SUPPORTED");
+        expect(err.message).toContain(
+          "QR code is only supported on desktop devices."
+        );
       });
 
-      it("validates that qrContainer is provided when requestQrCode is true", () => {
+      it("validates that qrContainer is provided when requestQrCode is true", async () => {
+        expect.assertions(4);
+
         const options = {
           ...testContext.baseSwishOptions,
           swishOptions: {
@@ -2182,14 +2297,20 @@ describe("LocalPayment", () => {
           },
         };
 
-        return testContext.localPayment.startPayment(options).catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe(BraintreeError.types.MERCHANT);
-          expect(err.code).toBe(
-            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-          );
-          expect(err.details).toContain("swishOptions.qrContainer");
-        });
+        let err;
+
+        try {
+          await testContext.localPayment.startPayment(options);
+        } catch (e) {
+          err = e;
+        }
+
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe(BraintreeError.types.MERCHANT);
+        expect(err.code).toBe(
+          "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
+        );
+        expect(err.details).toContain("swishOptions.qrContainer");
       });
 
       it("allows QR code flow when qrContainer is provided", () => {
@@ -2199,7 +2320,7 @@ describe("LocalPayment", () => {
             requestQrCode: true,
             qrContainer: "#qr-container",
           },
-          onPaymentStart: jest.fn(),
+          onPaymentStart: vi.fn(),
         };
 
         testContext.client.request.mockResolvedValue({
@@ -2211,10 +2332,7 @@ describe("LocalPayment", () => {
           },
         });
 
-        const injectQrCode = require("../../../../src/local-payment/external/inject-qr-code");
-        jest
-          .mocked(injectQrCode)
-          .mockReturnValue(document.createElement("img"));
+        vi.mocked(injectQrCode).mockReturnValue(document.createElement("img"));
 
         return testContext.localPayment.startPayment(options).then(() => {
           expect(testContext.client.request).toHaveBeenCalledWith({
@@ -2234,7 +2352,7 @@ describe("LocalPayment", () => {
         });
       });
 
-      it("handles QR code injection errors gracefully", () => {
+      it("handles QR code injection errors gracefully", async () => {
         const options = {
           ...testContext.baseSwishOptions,
           swishOptions: {
@@ -2252,33 +2370,32 @@ describe("LocalPayment", () => {
           },
         });
 
-        const injectQrCode = require("../../../../src/local-payment/external/inject-qr-code");
         const injectionError = new BraintreeError({
           type: BraintreeError.types.MERCHANT,
           code: "LOCAL_PAYMENT_QR_CODE_CONTAINER_NOT_FOUND",
           message: "Container not found",
         });
-        jest.mocked(injectQrCode).mockImplementation(() => {
+
+        vi.mocked(injectQrCode).mockImplementation(() => {
           throw injectionError;
         });
 
-        return testContext.localPayment.startPayment(options).catch((err) => {
-          expect(err).toBe(injectionError);
-        });
+        await expect(
+          testContext.localPayment.startPayment(options)
+        ).rejects.toBe(injectionError);
       });
     });
 
     describe("mobile redirect flow", () => {
       beforeEach(() => {
         // Mock mobile device detection to return true (mobile)
-        const isMobileDevice = require("../../../../src/local-payment/shared/browser-detection");
-        jest.mocked(isMobileDevice.isMobileDevice).mockReturnValue(true);
+        vi.mocked(isMobileDevice.isMobileDevice).mockReturnValue(true);
 
         return testContext.localPayment._initialize();
       });
 
       afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
       });
 
       it("sets redirectToApp parameter for mobile devices", () => {
@@ -2312,14 +2429,13 @@ describe("LocalPayment", () => {
     describe("desktop redirect flow", () => {
       beforeEach(() => {
         // Mock mobile device detection to return false (desktop)
-        const isMobileDevice = require("../../../../src/local-payment/shared/browser-detection");
-        jest.mocked(isMobileDevice.isMobileDevice).mockReturnValue(false);
+        vi.mocked(isMobileDevice.isMobileDevice).mockReturnValue(false);
 
         return testContext.localPayment._initialize();
       });
 
       afterEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
       });
 
       it("does not set redirectToApp parameter for desktop devices", () => {
@@ -2431,6 +2547,7 @@ describe("LocalPayment", () => {
       beforeEach(() => {
         return testContext.localPayment._initialize();
       });
+
       it("sends proper analytics events for Swish payments", () => {
         const options = {
           ...testContext.baseSwishOptions,
@@ -2454,7 +2571,7 @@ describe("LocalPayment", () => {
         });
       });
 
-      it("handles API errors for Swish payments", () => {
+      it("handles API errors for Swish payments", async () => {
         const options = {
           ...testContext.baseSwishOptions,
           swishOptions: {
@@ -2470,11 +2587,13 @@ describe("LocalPayment", () => {
         };
 
         const apiError = new Error("API Error");
+
         testContext.client.request.mockRejectedValue(apiError);
 
-        return testContext.localPayment.startPayment(options).catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.code).toBe("LOCAL_PAYMENT_START_PAYMENT_FAILED");
+        await expect(
+          testContext.localPayment.startPayment(options)
+        ).rejects.toMatchObject({
+          code: "LOCAL_PAYMENT_START_PAYMENT_FAILED",
         });
       });
 
@@ -2486,7 +2605,11 @@ describe("LocalPayment", () => {
         "amount",
         "swishOptions.returnUrl",
         "swishOptions.qrContainer",
-      ])("handles missing options on Swish payments", (option) => {
+      ])("handles missing options on Swish payments", async (option) => {
+        if (option === "swishOptions.returnUrl") {
+          vi.mocked(isMobileDevice.isMobileDevice).mockReturnValue(true);
+        }
+
         const swishOptions = {
           requestQrCode: option === "swishOptions.returnUrl" ? undefined : true,
           qrContainer:
@@ -2497,6 +2620,7 @@ describe("LocalPayment", () => {
               : undefined,
         };
         const baseOptions = { ...testContext.baseSwishOptions };
+
         delete baseOptions[option];
 
         const options = {
@@ -2511,13 +2635,12 @@ describe("LocalPayment", () => {
           },
         };
 
-        return testContext.localPayment.startPayment(options).catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe(BraintreeError.types.MERCHANT);
-          expect(err.code).toBe(
-            "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION"
-          );
-          expect(err.details).toContain(option);
+        await expect(
+          testContext.localPayment.startPayment(options)
+        ).rejects.toMatchObject({
+          code: "LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION",
+          type: BraintreeError.types.MERCHANT,
+          details: expect.stringContaining(option),
         });
       });
     });

@@ -1,6 +1,4 @@
-"use strict";
-
-var once = require("./once");
+import once from "./once";
 
 function call(fn, callback) {
   var isSync = fn.length === 0;
@@ -13,7 +11,7 @@ function call(fn, callback) {
   }
 }
 
-module.exports = function (functions, cb) {
+export default function (functions, cb) {
   var i;
   var length = functions.length;
   var remaining = length;
@@ -41,4 +39,4 @@ module.exports = function (functions, cb) {
   for (i = 0; i < length; i++) {
     call(functions[i], finish);
   }
-};
+}

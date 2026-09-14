@@ -1,5 +1,3 @@
-"use strict";
-
 /**
  * @name BraintreeError.Shared Internal Error Codes
  * @ignore
@@ -22,32 +20,39 @@
  * @property {MERCHANT} METHOD_CALLED_AFTER_TEARDOWN Occurs when a method is called on a component instance after it has been torn down.
  */
 
-var BraintreeError = require("./braintree-error");
+import BraintreeError from "./braintree-error";
 
-module.exports = {
-  INVALID_USE_OF_INTERNAL_FUNCTION: {
-    type: BraintreeError.types.INTERNAL,
-    code: "INVALID_USE_OF_INTERNAL_FUNCTION",
-  },
-  INSTANTIATION_OPTION_REQUIRED: {
-    type: BraintreeError.types.MERCHANT,
-    code: "INSTANTIATION_OPTION_REQUIRED",
-  },
-  INCOMPATIBLE_VERSIONS: {
-    type: BraintreeError.types.MERCHANT,
-    code: "INCOMPATIBLE_VERSIONS",
-  },
-  CLIENT_SCRIPT_FAILED_TO_LOAD: {
-    type: BraintreeError.types.NETWORK,
-    code: "CLIENT_SCRIPT_FAILED_TO_LOAD",
-    message: "Braintree client script could not be loaded.",
-  },
-  METHOD_CALLED_AFTER_TEARDOWN: {
-    type: BraintreeError.types.MERCHANT,
-    code: "METHOD_CALLED_AFTER_TEARDOWN",
-  },
-  INSTANTIATION_OPTION_INVALID: {
-    type: BraintreeError.types.MERCHANT,
-    code: "INSTANTIATION_OPTION_INVALID",
-  },
+export const INVALID_USE_OF_INTERNAL_FUNCTION = {
+  type: BraintreeError.types.INTERNAL,
+  code: "INVALID_USE_OF_INTERNAL_FUNCTION",
+};
+export const INSTANTIATION_OPTION_REQUIRED = {
+  type: BraintreeError.types.MERCHANT,
+  code: "INSTANTIATION_OPTION_REQUIRED",
+};
+export const INCOMPATIBLE_VERSIONS = {
+  type: BraintreeError.types.MERCHANT,
+  code: "INCOMPATIBLE_VERSIONS",
+};
+export const CLIENT_SCRIPT_FAILED_TO_LOAD = {
+  type: BraintreeError.types.NETWORK,
+  code: "CLIENT_SCRIPT_FAILED_TO_LOAD",
+  message: "Braintree client script could not be loaded.",
+};
+export const METHOD_CALLED_AFTER_TEARDOWN = {
+  type: BraintreeError.types.MERCHANT,
+  code: "METHOD_CALLED_AFTER_TEARDOWN",
+};
+export const INSTANTIATION_OPTION_INVALID = {
+  type: BraintreeError.types.MERCHANT,
+  code: "INSTANTIATION_OPTION_INVALID",
+};
+
+export default {
+  INVALID_USE_OF_INTERNAL_FUNCTION,
+  INSTANTIATION_OPTION_REQUIRED,
+  INCOMPATIBLE_VERSIONS,
+  CLIENT_SCRIPT_FAILED_TO_LOAD,
+  METHOD_CALLED_AFTER_TEARDOWN,
+  INSTANTIATION_OPTION_INVALID,
 };

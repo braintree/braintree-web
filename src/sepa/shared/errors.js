@@ -1,6 +1,4 @@
-"use strict";
-
-var BraintreeError = require("../../lib/braintree-error");
+import BraintreeError from "../../lib/braintree-error";
 
 /**
  * @name BraintreeError.SEPA - tokenize Error Codes
@@ -13,8 +11,7 @@ var BraintreeError = require("../../lib/braintree-error");
  * @property {UNKNOWN} SEPA_TRANSACTION_FAILED Occurs when final tokenization fails.
  */
 
-// Those with a "details" property are used in specific locations and this prop serves to identify where in the imlpementation the error originates.
-module.exports = {
+const _default = {
   SEPA_CREATE_MANDATE_FAILED: {
     type: BraintreeError.types.MERCHANT,
     code: "SEPA_CREATE_MANDATE_FAILED",
@@ -50,3 +47,14 @@ module.exports = {
     details: "handle-approval",
   },
 };
+
+export const {
+  SEPA_CREATE_MANDATE_FAILED,
+  SEPA_CUSTOMER_CANCELED,
+  SEPA_INVALID_MANDATE_TYPE,
+  SEPA_TOKENIZATION_FAILED,
+  SEPA_TOKENIZE_MISSING_REQUIRED_OPTION,
+  SEPA_TRANSACTION_FAILED,
+} = _default;
+
+export default _default;

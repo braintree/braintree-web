@@ -1,7 +1,5 @@
-"use strict";
-
-const injectQrCode = require("../../../../src/local-payment/external/inject-qr-code");
-const BraintreeError = require("../../../../src/lib/braintree-error");
+import injectQrCode from "../../../../src/local-payment/external/inject-qr-code";
+import BraintreeError from "../../../../src/lib/braintree-error";
 
 describe("injectQrCode", () => {
   let container;

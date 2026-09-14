@@ -1,15 +1,16 @@
-"use strict";
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("../../../src/lib/create-deferred-client");
 
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("../../../src/lib/create-deferred-client");
+import analytics from "../../../src/lib/analytics";
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import _e4 from "../../../src/local-payment";
 
-const analytics = require("../../../src/lib/analytics");
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const { create } = require("../../../src/local-payment");
-const { fake } = require("../../helpers");
-const LocalPayment = require("../../../src/local-payment/external/local-payment");
-const BraintreeError = require("../../../src/lib/braintree-error");
+const { create } = _e4;
+
+import { fake } from "../../helpers";
+import LocalPayment from "../../../src/local-payment/external/local-payment";
+import BraintreeError from "../../../src/lib/braintree-error";
 
 describe("local payment", () => {
   let testContext;
@@ -25,18 +26,19 @@ describe("local payment", () => {
   describe("create", () => {
     beforeEach(() => {
       testContext.configuration = fake.configuration();
-      testContext.configuration.gatewayConfiguration.paypalEnabled = true;
       testContext.client = fake.client({
         configuration: testContext.configuration,
       });
-      jest
-        .spyOn(createDeferredClient, "create")
-        .mockResolvedValue(testContext.client);
-      jest.spyOn(LocalPayment.prototype, "_initialize").mockResolvedValue(null);
+      vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+        testContext.client
+      );
+      vi.spyOn(LocalPayment.prototype, "_initialize").mockResolvedValue(null);
     });
 
     it("returns a promise", () => {
-      expect(create({ client: testContext.client })).resolves.toBeDefined();
+      return expect(
+        create({ client: testContext.client })
+      ).resolves.toBeDefined();
     });
 
     it("verifies with basicComponentVerification", () =>
@@ -72,7 +74,7 @@ describe("local payment", () => {
       }));
 
     it("rejects with an error if LocalPayment is not enabled for the merchant", () => {
-      testContext.configuration.gatewayConfiguration.paypalEnabled = false;
+      delete testContext.configuration.gatewayConfiguration.paypal;
 
       return create({ client: testContext.client }).catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
@@ -121,7 +123,7 @@ describe("local payment", () => {
           },
         });
 
-        LocalPayment.prototype.tokenize = jest.fn();
+        LocalPayment.prototype.tokenize = vi.fn();
         LocalPayment.prototype.tokenize.mockImplementation(() =>
           Promise.resolve()
         );
@@ -147,7 +149,7 @@ describe("local payment", () => {
           },
         });
 
-        LocalPayment.prototype.tokenize = jest.fn();
+        LocalPayment.prototype.tokenize = vi.fn();
         LocalPayment.prototype.tokenize.mockImplementation(() =>
           Promise.resolve()
         );

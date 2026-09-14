@@ -1,6 +1,4 @@
-"use strict";
-
-const findRootNode = require("../../../src/lib/find-root-node");
+import findRootNode from "../../../src/lib/find-root-node";
 
 describe("findRootNode", () => {
   it("returns the element when it is the root node", () => {

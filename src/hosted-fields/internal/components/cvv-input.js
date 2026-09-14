@@ -1,6 +1,5 @@
-"use strict";
-
-var BaseInput = require("./base-input").BaseInput;
+// @ts-nocheck
+import { BaseInput } from "./base-input";
 
 var DEFAULT_MAX_LENGTH = 4;
 var PATTERN_CACHE = {};
@@ -37,9 +36,9 @@ function CVVInput() {
   } else {
     this.model.on(
       "change:possibleCardTypes",
-      function (possibleCardTypes) {
+      function (payload) {
         this.maxLength =
-          possibleCardTypes.reduce(function (accum, cardType) {
+          payload.value.reduce(function (accum, cardType) {
             return Math.max(accum, cardType.code.size);
           }, 0) || DEFAULT_MAX_LENGTH;
 
@@ -64,6 +63,8 @@ function CVVInput() {
 CVVInput.prototype = Object.create(BaseInput.prototype);
 CVVInput.prototype.constructor = CVVInput;
 
-module.exports = {
-  CVVInput: CVVInput,
+export { CVVInput };
+
+export default {
+  CVVInput,
 };

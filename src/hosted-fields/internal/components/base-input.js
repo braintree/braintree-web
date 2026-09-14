@@ -1,10 +1,9 @@
-"use strict";
-
-var attributeValidationError = require("../../external/attribute-validation-error");
-var constants = require("../../shared/constants");
-var supportsPassiveEventListener = require("../../../lib/supports-passive-event-listener");
-var browserDetection = require("../../shared/browser-detection");
-var createRestrictedInput = require("../../../lib/create-restricted-input");
+// @ts-nocheck
+import attributeValidationError from "../../external/attribute-validation-error";
+import constants from "../../shared/constants";
+import supportsPassiveEventListener from "../../../lib/supports-passive-event-listener";
+import browserDetection from "../../shared/browser-detection";
+import createRestrictedInput from "../../../lib/create-restricted-input";
 var events = constants.events;
 var allowedFields = constants.allowedFields;
 var ENTER_KEY_CODE = 13;
@@ -313,9 +312,9 @@ BaseInput.prototype.applySafariFocusFix = function () {
     return;
   }
 
-  // Safari (both iOS and Desktop) has an unconvential behavior,
+  // Safari (both iOS and Desktop) has an unconventional behavior,
   // where it won't let an iframe that includes an input get
-  // focus programatically from outisde of the input.
+  // focus programmatically from outside of the input.
   // Big props to the devs at Stripe that figured out
   // you run this selection range hack to force the focus back
   // onto the input.
@@ -457,6 +456,8 @@ BaseInput.prototype._resetPlaceholder = function () {
   }
 };
 
-module.exports = {
-  BaseInput: BaseInput,
+export { BaseInput };
+
+export default {
+  BaseInput,
 };

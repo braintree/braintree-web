@@ -1,9 +1,7 @@
-"use strict";
-
-var BraintreeError = require("../../braintree-error");
-var frameService = require("./");
-var frameServiceErrors = require("../shared/errors");
-var querystring = require("../../querystring");
+import BraintreeError from "../../braintree-error";
+import frameService from "./";
+import frameServiceErrors from "../shared/errors";
+import querystring from "../../querystring";
 
 function start() {
   frameService.report(
@@ -14,6 +12,6 @@ function start() {
   frameService.asyncClose();
 }
 
-module.exports = {
-  start: start,
+export default {
+  start,
 };

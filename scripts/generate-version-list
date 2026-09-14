@@ -16,11 +16,19 @@ BETA_VERSIONS=$(git tag --sort=-version:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0
 VERSIONS=$(echo -e "$RELEASE_VERSIONS\n$BETA_VERSIONS" | sort -V -r | uniq)
 
 # Create JSON array with all versions
-{
-  echo '['
-  echo "  \"dev\","
-  echo "$VERSIONS" | sed 's/.*/"&"/' | sed '$!s/$/,/' | sed 's/^/  /'
-  echo ']'
-} > "$OUTPUT_FILE"
+if [ "${CI}" = "true" ]; then
+  {
+    echo '['
+    echo "$VERSIONS" | sed 's/.*/"&"/' | sed '$!s/$/,/' | sed 's/^/  /'
+    echo ']'
+  } > "$OUTPUT_FILE"
+else
+  {
+    echo '['
+    echo "  \"dev\","
+    echo "$VERSIONS" | sed 's/.*/"&"/' | sed '$!s/$/,/' | sed 's/^/  /'
+    echo ']'
+  } > "$OUTPUT_FILE"
+fi
 
 echo "Saved $(echo "$VERSIONS" | wc -l | tr -d ' ') versions to $OUTPUT_FILE"

@@ -1,7 +1,5 @@
-"use strict";
-
-var BraintreeError = require("../../lib/braintree-error");
-var errors = require("../shared/errors");
+import BraintreeError from "../../lib/braintree-error";
+import errors from "../shared/errors";
 
 /**
  * Injects a QR code image into a specified container element.
@@ -53,4 +51,4 @@ function injectQrCode(base64Data, container) {
   return imageElement;
 }
 
-module.exports = injectQrCode;
+export default injectQrCode;

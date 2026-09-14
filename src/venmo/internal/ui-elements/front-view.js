@@ -1,4 +1,4 @@
-"use strict";
+// @ts-nocheck
 var __extends =
   (this && this.__extends) ||
   (function () {
@@ -30,29 +30,23 @@ var __extends =
           : ((__.prototype = b.prototype), new __());
     };
   })();
-var __importDefault =
-  (this && this.__importDefault) ||
-  function (mod) {
-    return mod && mod.__esModule ? mod : { default: mod };
-  };
-Object.defineProperty(exports, "__esModule", { value: true });
-var base_1 = __importDefault(require("./base"));
-var qr_code_view_1 = __importDefault(require("./qr-code-view"));
-var error_view_1 = __importDefault(require("./error-view"));
+import base from "./base";
+import qrCodeView from "./qr-code-view";
+import errorView from "./error-view";
 var FrontView = /** @class */ (function (_super) {
   __extends(FrontView, _super);
   function FrontView(options) {
     var _this = _super.call(this, options) || this;
-    _this.errorView = error_view_1.default.create({
+    _this.errorView = errorView.create({
       container: _this.element,
       onClick: function () {
         _this.displayQRCodeView();
         if (options.onRequestNewQrCode) {
-          options.onRequestNewQrCode();
+          options.onRequestNewQrCode("error-view");
         }
       },
     });
-    _this.qrCodeView = qr_code_view_1.default.create({
+    _this.qrCodeView = qrCodeView.create({
       container: _this.element,
     });
     return _this;
@@ -81,8 +75,16 @@ var FrontView = /** @class */ (function (_super) {
     return container;
   };
   FrontView.prototype.getStyleConfig = function () {
-    return "\n      #front-view {\n        z-index: 2;\n        transform: rotateY(0deg);\n      }\n\n      #view-boxes.is-flipped #front-view {\n        transform: rotateY(180deg);\n        position: absolute;\n      }\n    ";
+    return [
+      "#front-view {",
+      "  z-index: 2;",
+      "  transform: rotateY(0deg);",
+      "}",
+      "#view-boxes.is-flipped #front-view {",
+      "  transform: rotateY(180deg);",
+      "}",
+    ].join("\n");
   };
   return FrontView;
-})(base_1.default);
-exports.default = FrontView;
+})(base);
+export default FrontView;

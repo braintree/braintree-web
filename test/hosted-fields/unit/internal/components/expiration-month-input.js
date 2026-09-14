@@ -1,20 +1,10 @@
-"use strict";
-
-const {
-  BaseInput,
-} = require("../../../../../src/hosted-fields/internal/components/base-input");
-const {
-  ExpirationSplitInput,
-} = require("../../../../../src/hosted-fields/internal/components/expiration-split-input");
-const {
-  ExpirationMonthInput,
-} = require("../../../../../src/hosted-fields/internal/components/expiration-month-input");
-const {
-  CreditCardForm,
-} = require("../../../../../src/hosted-fields/internal/models/credit-card-form");
-const { events } = require("../../../../../src/hosted-fields/shared/constants");
-const { createInput } = require("../../helpers");
-const { findFirstEventCallback } = require("../../../../helpers");
+import { BaseInput } from "../../../../../src/hosted-fields/internal/components/base-input";
+import { ExpirationSplitInput } from "../../../../../src/hosted-fields/internal/components/expiration-split-input";
+import { ExpirationMonthInput } from "../../../../../src/hosted-fields/internal/components/expiration-month-input";
+import { CreditCardForm } from "../../../../../src/hosted-fields/internal/models/credit-card-form";
+import { events } from "../../../../../src/hosted-fields/shared/constants";
+import { createInput } from "../../helpers";
+import { findFirstEventCallback } from "../../../../helpers";
 
 describe("Expiration Month Input", () => {
   let testContext;
@@ -102,7 +92,7 @@ describe("Expiration Month Input", () => {
 
     describe("with a `select` option", () => {
       it("select: false calls BaseInput's constructElement", () => {
-        jest.spyOn(BaseInput.prototype, "constructElement");
+        vi.spyOn(BaseInput.prototype, "constructElement");
 
         new ExpirationMonthInput({
           type: "expirationMonth",
@@ -402,7 +392,7 @@ describe("Expiration Month Input", () => {
 
   describe("addBusEventListeners", () => {
     beforeEach(() => {
-      jest.spyOn(ExpirationSplitInput.prototype, "addBusEventListeners");
+      vi.spyOn(ExpirationSplitInput.prototype, "addBusEventListeners");
     });
 
     it("calls parent class method", () => {
@@ -456,272 +446,276 @@ describe("Expiration Month Input", () => {
       expect(window.bus.on).not.toHaveBeenCalledWith(events.SET_MONTH_OPTIONS);
     });
 
-    it("renames the options when SET_MONTH_OPTIONS is emitted", (done) => {
-      let callback;
-      const input = new ExpirationMonthInput({
-        type: "expirationMonth",
-        model: new CreditCardForm({
-          fields: {
-            expirationMonth: {
-              selector: "#expiration-month",
-              select: {
-                options: [
-                  "January",
-                  "February",
-                  "March",
-                  "April",
-                  "May",
-                  "June",
-                  "July",
-                  "August",
-                  "September",
-                  "October",
-                  "November",
-                  "December",
-                ],
+    it("renames the options when SET_MONTH_OPTIONS is emitted", () =>
+      new Promise((resolve) => {
+        let callback;
+        const input = new ExpirationMonthInput({
+          type: "expirationMonth",
+          model: new CreditCardForm({
+            fields: {
+              expirationMonth: {
+                selector: "#expiration-month",
+                select: {
+                  options: [
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                  ],
+                },
               },
             },
-          },
-        }),
-      });
+          }),
+        });
 
-      document.body.appendChild(input.element);
-      expect(input.element.querySelectorAll("option")[0].textContent).toMatch(
-        "January"
-      );
-      expect(input.element.querySelectorAll("option")[11].textContent).toMatch(
-        "December"
-      );
-
-      callback = findFirstEventCallback(
-        events.SET_MONTH_OPTIONS,
-        window.bus.on.mock.calls
-      );
-
-      callback(
-        [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "June",
-          "July",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ],
-        () => {
-          expect(
-            input.element.querySelectorAll("option")[0].textContent
-          ).toMatch("Jan");
-          expect(
-            input.element.querySelectorAll("option")[11].textContent
-          ).toMatch("Dec");
-
-          done();
-        }
-      );
-    });
-
-    it("defaults to existing value if passed options are less than the options", (done) => {
-      let callback;
-      const input = new ExpirationMonthInput({
-        type: "expirationMonth",
-        model: new CreditCardForm({
-          fields: {
-            expirationMonth: {
-              selector: "#expiration-month",
-              select: {
-                options: [
-                  "January",
-                  "February",
-                  "March",
-                  "April",
-                  "May",
-                  "June",
-                  "July",
-                  "August",
-                  "September",
-                  "October",
-                  "November",
-                  "December",
-                ],
-              },
-            },
-          },
-        }),
-      });
-
-      callback = findFirstEventCallback(
-        events.SET_MONTH_OPTIONS,
-        window.bus.on.mock.calls
-      );
-
-      callback(["Jan"], () => {
+        document.body.appendChild(input.element);
         expect(input.element.querySelectorAll("option")[0].textContent).toMatch(
-          "Jan"
-        );
-        expect(input.element.querySelectorAll("option")[1].textContent).toMatch(
-          "February"
+          "January"
         );
         expect(
           input.element.querySelectorAll("option")[11].textContent
         ).toMatch("December");
 
-        done();
-      });
-    });
+        callback = findFirstEventCallback(
+          events.SET_MONTH_OPTIONS,
+          window.bus.on.mock.calls
+        );
 
-    it("ignores options beyond the 12th", (done) => {
-      let callback;
-      const input = new ExpirationMonthInput({
-        type: "expirationMonth",
-        model: new CreditCardForm({
-          fields: {
-            expirationMonth: {
-              selector: "#expiration-month",
-              select: {
-                options: [
-                  "January",
-                  "February",
-                  "March",
-                  "April",
-                  "May",
-                  "June",
-                  "July",
-                  "August",
-                  "September",
-                  "October",
-                  "November",
-                  "December",
-                ],
+        callback(
+          [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "June",
+            "July",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ],
+          () => {
+            expect(
+              input.element.querySelectorAll("option")[0].textContent
+            ).toMatch("Jan");
+            expect(
+              input.element.querySelectorAll("option")[11].textContent
+            ).toMatch("Dec");
+
+            resolve();
+          }
+        );
+      }));
+
+    it("defaults to existing value if passed options are less than the options", () =>
+      new Promise((resolve) => {
+        let callback;
+        const input = new ExpirationMonthInput({
+          type: "expirationMonth",
+          model: new CreditCardForm({
+            fields: {
+              expirationMonth: {
+                selector: "#expiration-month",
+                select: {
+                  options: [
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                  ],
+                },
               },
             },
-          },
-        }),
-      });
+          }),
+        });
 
-      expect(input.element.querySelectorAll("option")[0].textContent).toMatch(
-        "January"
-      );
-      expect(input.element.querySelectorAll("option")[11].textContent).toMatch(
-        "December"
-      );
+        callback = findFirstEventCallback(
+          events.SET_MONTH_OPTIONS,
+          window.bus.on.mock.calls
+        );
 
-      callback = findFirstEventCallback(
-        events.SET_MONTH_OPTIONS,
-        window.bus.on.mock.calls
-      );
-
-      callback(
-        [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "June",
-          "July",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-          "foo",
-          "bar",
-          "baz",
-        ],
-        () => {
+        callback(["Jan"], () => {
           expect(
             input.element.querySelectorAll("option")[0].textContent
           ).toMatch("Jan");
-          expect(
-            input.element.querySelectorAll("option")[11].textContent
-          ).toMatch("Dec");
-          expect(input.element.querySelectorAll("option")[12]).toBeFalsy();
-
-          done();
-        }
-      );
-    });
-
-    it("does not override the placeholder if set", (done) => {
-      let callback;
-      const input = new ExpirationMonthInput({
-        type: "expirationMonth",
-        model: new CreditCardForm({
-          fields: {
-            expirationMonth: {
-              selector: "#expiration-month",
-              placeholder: "Month",
-              select: {
-                options: [
-                  "January",
-                  "February",
-                  "March",
-                  "April",
-                  "May",
-                  "June",
-                  "July",
-                  "August",
-                  "September",
-                  "October",
-                  "November",
-                  "December",
-                ],
-              },
-            },
-          },
-        }),
-      });
-
-      expect(input.element.querySelectorAll("option")[0].textContent).toMatch(
-        "Month"
-      );
-      expect(input.element.querySelectorAll("option")[1].textContent).toMatch(
-        "January"
-      );
-      expect(input.element.querySelectorAll("option")[12].textContent).toMatch(
-        "December"
-      );
-
-      callback = findFirstEventCallback(
-        events.SET_MONTH_OPTIONS,
-        window.bus.on.mock.calls
-      );
-
-      callback(
-        [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "June",
-          "July",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ],
-        () => {
-          expect(
-            input.element.querySelectorAll("option")[0].textContent
-          ).toMatch("Month");
           expect(
             input.element.querySelectorAll("option")[1].textContent
-          ).toMatch("Jan");
+          ).toMatch("February");
           expect(
-            input.element.querySelectorAll("option")[12].textContent
-          ).toMatch("Dec");
+            input.element.querySelectorAll("option")[11].textContent
+          ).toMatch("December");
 
-          done();
-        }
-      );
-    });
+          resolve();
+        });
+      }));
+
+    it("ignores options beyond the 12th", () =>
+      new Promise((resolve) => {
+        let callback;
+        const input = new ExpirationMonthInput({
+          type: "expirationMonth",
+          model: new CreditCardForm({
+            fields: {
+              expirationMonth: {
+                selector: "#expiration-month",
+                select: {
+                  options: [
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                  ],
+                },
+              },
+            },
+          }),
+        });
+
+        expect(input.element.querySelectorAll("option")[0].textContent).toMatch(
+          "January"
+        );
+        expect(
+          input.element.querySelectorAll("option")[11].textContent
+        ).toMatch("December");
+
+        callback = findFirstEventCallback(
+          events.SET_MONTH_OPTIONS,
+          window.bus.on.mock.calls
+        );
+
+        callback(
+          [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "June",
+            "July",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+            "foo",
+            "bar",
+            "baz",
+          ],
+          () => {
+            expect(
+              input.element.querySelectorAll("option")[0].textContent
+            ).toMatch("Jan");
+            expect(
+              input.element.querySelectorAll("option")[11].textContent
+            ).toMatch("Dec");
+            expect(input.element.querySelectorAll("option")[12]).toBeFalsy();
+
+            resolve();
+          }
+        );
+      }));
+
+    it("does not override the placeholder if set", () =>
+      new Promise((resolve) => {
+        let callback;
+        const input = new ExpirationMonthInput({
+          type: "expirationMonth",
+          model: new CreditCardForm({
+            fields: {
+              expirationMonth: {
+                selector: "#expiration-month",
+                placeholder: "Month",
+                select: {
+                  options: [
+                    "January",
+                    "February",
+                    "March",
+                    "April",
+                    "May",
+                    "June",
+                    "July",
+                    "August",
+                    "September",
+                    "October",
+                    "November",
+                    "December",
+                  ],
+                },
+              },
+            },
+          }),
+        });
+
+        expect(input.element.querySelectorAll("option")[0].textContent).toMatch(
+          "Month"
+        );
+        expect(input.element.querySelectorAll("option")[1].textContent).toMatch(
+          "January"
+        );
+        expect(
+          input.element.querySelectorAll("option")[12].textContent
+        ).toMatch("December");
+
+        callback = findFirstEventCallback(
+          events.SET_MONTH_OPTIONS,
+          window.bus.on.mock.calls
+        );
+
+        callback(
+          [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "June",
+            "July",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ],
+          () => {
+            expect(
+              input.element.querySelectorAll("option")[0].textContent
+            ).toMatch("Month");
+            expect(
+              input.element.querySelectorAll("option")[1].textContent
+            ).toMatch("Jan");
+            expect(
+              input.element.querySelectorAll("option")[12].textContent
+            ).toMatch("Dec");
+
+            resolve();
+          }
+        );
+      }));
   });
 });

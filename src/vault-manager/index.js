@@ -1,15 +1,14 @@
-"use strict";
+// @ts-nocheck
 /**
  * @module braintree-web/vault-manager
  * @description Manages customer's payment methods.
  */
 
-var basicComponentVerification = require("../lib/basic-component-verification");
-var createDeferredClient = require("../lib/create-deferred-client");
-var createAssetsUrl = require("../lib/create-assets-url");
-var VaultManager = require("./vault-manager");
-var VERSION = process.env.npm_package_version;
-var wrapPromise = require("@braintree/wrap-promise");
+import basicComponentVerification from "../lib/basic-component-verification";
+import createDeferredClient from "../lib/create-deferred-client";
+import createAssetsUrl from "../lib/create-assets-url";
+import VaultManager from "./vault-manager";
+const VERSION = __SDK_VERSION__;
 
 /**
  * @static
@@ -17,8 +16,7 @@ var wrapPromise = require("@braintree/wrap-promise");
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {callback} callback The second argument, `data`, is the {@link VaultManager} instance.
- * @returns {void}
+ * @returns {Promise} Returns a promise that resolves with the {@link VaultManager} instance.
  */
 function create(options) {
   var name = "Vault Manager";
@@ -42,11 +40,11 @@ function create(options) {
     });
 }
 
-module.exports = {
-  create: wrapPromise(create),
+export default {
+  create,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION,
+  VERSION,
 };

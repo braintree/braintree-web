@@ -1,11 +1,6 @@
-"use strict";
-const {
-  BaseInput,
-} = require("../../../../../src/hosted-fields/internal/components/base-input");
-const {
-  CreditCardInput,
-} = require("../../../../../src/hosted-fields/internal/components/credit-card-input");
-const { createInput } = require("../../helpers");
+import { BaseInput } from "../../../../../src/hosted-fields/internal/components/base-input";
+import { CreditCardInput } from "../../../../../src/hosted-fields/internal/components/credit-card-input";
+import { createInput } from "../../helpers";
 
 describe("Credit Card Input", () => {
   let testContext;
@@ -135,7 +130,7 @@ describe("Credit Card Input", () => {
     });
 
     it("calls mask value on BaseInput", () => {
-      jest.spyOn(BaseInput.prototype, "maskValue");
+      vi.spyOn(BaseInput.prototype, "maskValue");
 
       testContext.input.maskValue("1234");
 
@@ -144,7 +139,7 @@ describe("Credit Card Input", () => {
     });
 
     it("reveals last four in element value if card is valid and unmaskLastFour is set", () => {
-      jest.spyOn(testContext.input.model, "get").mockReturnValue({
+      vi.spyOn(testContext.input.model, "get").mockReturnValue({
         isValid: true,
       });
       testContext.input.unmaskLastFour = true;
@@ -154,7 +149,7 @@ describe("Credit Card Input", () => {
     });
 
     it("does not reveal last four in element value if card is not valid and unmaskLastFour is set", () => {
-      jest.spyOn(testContext.input.model, "get").mockReturnValue({
+      vi.spyOn(testContext.input.model, "get").mockReturnValue({
         isValid: false,
       });
       testContext.input.unmaskLastFour = true;
@@ -164,7 +159,7 @@ describe("Credit Card Input", () => {
     });
 
     it("does not reveal last four in element value if card is not valid and unmaskLastFour is set", () => {
-      jest.spyOn(testContext.input.model, "get").mockReturnValue({
+      vi.spyOn(testContext.input.model, "get").mockReturnValue({
         isValid: true,
       });
       testContext.input.unmaskLastFour = false;
@@ -176,9 +171,7 @@ describe("Credit Card Input", () => {
 
   describe("setPattern", () => {
     beforeEach(() => {
-      jest
-        .spyOn(testContext.input.formatter, "setPattern")
-        .mockImplementation();
+      vi.spyOn(testContext.input.formatter, "setPattern").mockImplementation();
     });
 
     afterEach(() => {
@@ -217,7 +210,7 @@ describe("Credit Card Input", () => {
     });
 
     it("sets pattern with card object with custom max length", () => {
-      jest.spyOn(testContext.input, "getConfiguration").mockReturnValue({
+      vi.spyOn(testContext.input, "getConfiguration").mockReturnValue({
         maxCardLength: 8,
       });
 

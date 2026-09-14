@@ -1,5 +1,3 @@
-"use strict";
-
 function comparePossibleCardTypes(a, b) {
   var aHash;
 
@@ -18,4 +16,4 @@ function comparePossibleCardTypes(a, b) {
   });
 }
 
-module.exports = comparePossibleCardTypes;
+export default comparePossibleCardTypes;

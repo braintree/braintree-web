@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/html";
+import { isIntegrationCoverageRun } from "../../utils/integration-coverage";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
+import { getBraintree } from "../../utils/braintree-globals";
 import { TEST_CARDS } from "../../utils/test-data";
 import { SUCCESS_MESSAGES } from "../../constants";
 
@@ -55,19 +57,20 @@ const createCvvOnlyForm = (): HTMLElement => {
 };
 
 const setupBraintreeHostedFields = (
-  container,
+  container: HTMLElement,
   args?: Record<string, string>
 ) => {
   const authorization = getAuthorizationToken();
 
-  window.braintree.client
-    .create({
+  getBraintree()
+    .client.create({
       authorization: authorization,
+      ...(isIntegrationCoverageRun() && { debug: true }),
     })
     .then((clientInstance) => {
       const fields = {
         cvv: {
-          selector: "#cvv",
+          container: "#cvv",
           placeholder: args?.cardType === "amex" ? "1234" : "123",
           minLength: args?.cardType === "amex" ? 4 : 3,
           prefill: args?.autoFillTestData
@@ -75,7 +78,7 @@ const setupBraintreeHostedFields = (
             : "",
         },
       };
-      return window.braintree.hostedFields.create({
+      return getBraintree().hostedFields.create({
         client: clientInstance,
         styles: {
           input: {
@@ -103,13 +106,15 @@ const setupBraintreeHostedFields = (
       const resultDiv = container.querySelector("#result") as HTMLElement;
 
       hostedFieldsInstance.on("validityChange", (event) => {
-        let allFieldsValid = Object.keys(event.fields).every((key) => {
-          return event.fields[key].isValid;
+        let allFieldsValid = (
+          Object.keys(event.fields) as Array<keyof typeof event.fields>
+        ).every((key) => {
+          return event.fields[key]?.isValid;
         });
         // Handle special case for Amex cards - validate 4 digits
         if (args?.cardType === "amex") {
           const cvvField = event.fields.cvv;
-          if (cvvField.isValid) {
+          if (cvvField?.isValid) {
             allFieldsValid = true;
           }
         }
@@ -172,7 +177,7 @@ const setupBraintreeHostedFields = (
 export const CvvOnlyVerification: StoryObj = {
   render: createSimpleBraintreeStory(
     (container, args) => {
-      const formContainer = createCvvOnlyForm(args);
+      const formContainer = createCvvOnlyForm();
       container.appendChild(formContainer);
       setupBraintreeHostedFields(formContainer, args);
     },

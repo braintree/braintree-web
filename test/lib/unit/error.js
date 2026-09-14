@@ -1,6 +1,4 @@
-"use strict";
-
-const BraintreeError = require("../../../src/lib/braintree-error");
+import BraintreeError from "../../../src/lib/braintree-error";
 
 describe("BraintreeError", () => {
   it("returns a properly formatted error", () => {

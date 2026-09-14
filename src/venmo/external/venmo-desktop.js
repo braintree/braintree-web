@@ -1,4 +1,4 @@
-"use strict";
+// @ts-nocheck
 var __assign =
   (this && this.__assign) ||
   function () {
@@ -14,31 +14,27 @@ var __assign =
       };
     return __assign.apply(this, arguments);
   };
-var __importDefault =
-  (this && this.__importDefault) ||
-  function (mod) {
-    return mod && mod.__esModule ? mod : { default: mod };
-  };
-Object.defineProperty(exports, "__esModule", { value: true });
-var framebus_1 = __importDefault(require("framebus"));
-var iframer_1 = __importDefault(require("@braintree/iframer"));
-var uuid_1 = __importDefault(require("@braintree/uuid"));
-var events_1 = require("../shared/events");
-var queries_1 = require("./queries");
+import framebus from "framebus";
+import iframer from "@braintree/iframer";
+import uuid from "@braintree/uuid";
+import * as events_1 from "../shared/events";
+import * as queries_1 from "./queries";
 var VENMO_DESKTOP_POLLING_INTERVAL = 1000; // 1 second
 var VISUAL_DELAY_BEFORE_SIGNALLING_COMPLETION = 2000; // 2 seconds
 var VenmoDesktop = /** @class */ (function () {
   function VenmoDesktop(options) {
     this.isHidden = true;
     this.env = options.environment;
-    this.id = uuid_1.default();
+    this.id = uuid();
     this.profileId = options.profileId;
     this.displayName = options.displayName;
     this.paymentMethodUsage = options.paymentMethodUsage;
     this.riskCorrelationId = options.riskCorrelationId;
-    this.shouldUseLegacyQRCodeMutation = !this.paymentMethodUsage;
+    this.collectCustomerBillingAddress = options.collectCustomerBillingAddress;
+    this.collectCustomerShippingAddress =
+      options.collectCustomerShippingAddress;
     var frameUrl = options.url + "#" + this.env + "_" + this.id;
-    this.bus = new framebus_1.default({
+    this.bus = new framebus({
       channel: this.id,
       verifyDomain: options.verifyDomain,
       targetFrames: [],
@@ -55,7 +51,7 @@ var VenmoDesktop = /** @class */ (function () {
     this.alertBox.style.width = "1px";
     this.alertBox.style.overflow = "hidden";
     this.alertBox.style.zIndex = "0";
-    this.iframe = iframer_1.default({
+    this.iframe = iframer({
       src: frameUrl,
       name: "venmo-desktop-iframe",
       style: {
@@ -79,9 +75,25 @@ var VenmoDesktop = /** @class */ (function () {
       _this.bus.on(events_1.VENMO_DESKTOP_IFRAME_READY, function () {
         resolve(_this);
       });
-      _this.bus.on(events_1.VENMO_DESKTOP_REQUEST_NEW_QR_CODE, function () {
-        _this.sendEvent("venmo.tokenize.desktop.restarted-from-error-view");
-        _this.startPolling();
+      _this.bus.on(
+        events_1.VENMO_DESKTOP_REQUEST_NEW_QR_CODE,
+        function (payload) {
+          var eventName =
+            payload && payload.source === "rescan"
+              ? "venmo.tokenize.desktop.restarted-from-rescan"
+              : "venmo.tokenize.desktop.restarted-from-error-view";
+          _this.sendEvent(eventName, {
+            payment_method_usage: _this.paymentMethodUsage,
+          });
+          _this.startPolling();
+        }
+      );
+      _this.bus.on(events_1.VENMO_DESKTOP_ANALYTICS_EVENT, function (payload) {
+        var metadata = __assign(
+          { payment_method_usage: _this.paymentMethodUsage },
+          payload.metadata || {}
+        );
+        _this.sendEvent(payload.eventName, metadata);
       });
       document.body.appendChild(_this.iframe);
       document.body.appendChild(_this.alertBox);
@@ -106,7 +118,9 @@ var VenmoDesktop = /** @class */ (function () {
       };
       var unknownErrorHandler = function (err) {
         removeListeners();
-        _this.sendEvent("venmo.tokenize.desktop.unknown-error");
+        _this.sendEvent("venmo.tokenize.desktop.unknown-error", {
+          payment_method_usage: _this.paymentMethodUsage,
+        });
         reject({
           allowUIToHandleError: false,
           reason: "UNKNOWN_ERROR",
@@ -117,7 +131,10 @@ var VenmoDesktop = /** @class */ (function () {
         removeListeners();
         _this.updateVenmoDesktopPaymentContext("CANCELED");
         _this.sendEvent(
-          "venmo.tokenize.desktop.status-change.canceled-from-modal"
+          "venmo.tokenize.desktop.status-change.canceled-from-modal",
+          {
+            payment_method_usage: _this.paymentMethodUsage,
+          }
         );
         reject({
           allowUIToHandleError: false,
@@ -190,6 +207,10 @@ var VenmoDesktop = /** @class */ (function () {
       id: id,
       merchantId: merchantId,
     });
+    this.sendEvent("venmo.desktop-qr.display-qr-code.status.presented", {
+      context_id: this.venmoContextId,
+      payment_method_usage: this.paymentMethodUsage,
+    });
     this.setAlert("To scan the QR code, open your Venmo app");
   };
   VenmoDesktop.prototype.authorize = function () {
@@ -204,6 +225,10 @@ var VenmoDesktop = /** @class */ (function () {
       return;
     }
     this.bus.emit(events_1.VENMO_DESKTOP_AUTHORIZING);
+    this.sendEvent("venmo.desktop-qr.display-qr-code.status.authorizing", {
+      context_id: this.venmoContextId,
+      payment_method_usage: this.paymentMethodUsage,
+    });
     this.setAlert("Authorize on your Venmo app");
   };
   VenmoDesktop.prototype.startPolling = function () {
@@ -221,11 +246,7 @@ var VenmoDesktop = /** @class */ (function () {
         if (!result) {
           return;
         }
-        // since we are manually adding a prepended @ sign
-        // we want to make sure that the username does not
-        // start giving us the @ sign up front in the future
         var username = result.userName || "";
-        username = "@" + username.replace("@", "");
         _this.triggerCompleted({
           paymentMethodNonce: result.paymentMethodId,
           username: username,
@@ -238,7 +259,9 @@ var VenmoDesktop = /** @class */ (function () {
           // noop here and let the UI handle the customer error
           return;
         }
-        _this.sendEvent("venmo.tokenize.desktop.unhandled-error");
+        _this.sendEvent("venmo.tokenize.desktop.unhandled-error", {
+          payment_method_usage: _this.paymentMethodUsage,
+        });
         _this.triggerRejected(err);
       });
   };
@@ -250,23 +273,31 @@ var VenmoDesktop = /** @class */ (function () {
     if (Date.now() > expiredTime) {
       return this.updateVenmoDesktopPaymentContext("EXPIRED").then(function () {
         _this.displayError("Something went wrong");
-        _this.sendEvent("venmo.tokenize.desktop.status-change.sdk-timeout");
+        _this.sendEvent("venmo.tokenize.desktop.status-change.sdk-timeout", {
+          payment_method_usage: _this.paymentMethodUsage,
+        });
         return _this.Promise.reject({
           allowUIToHandleError: true,
           reason: "TIMEOUT",
         });
       });
     }
+
     return this.lookupVenmoDesktopPaymentContext().then(function (response) {
       if (!_this.venmoContextId || !response) {
         return _this.Promise.resolve();
       }
+
       var newStatus = response.status;
       if (newStatus !== status) {
         status = newStatus;
         _this.sendEvent(
-          "venmo.tokenize.desktop.status-change." + status.toLowerCase()
+          "venmo.tokenize.desktop.status-change." + status.toLowerCase(),
+          {
+            payment_method_usage: _this.paymentMethodUsage,
+          }
         );
+
         switch (status) {
           case "CREATED":
             // noop, no need to do anything here
@@ -320,53 +351,76 @@ var VenmoDesktop = /** @class */ (function () {
     this.alertBox.style.display = message ? "block" : "none";
     this.alertBox.textContent = message;
   };
-  VenmoDesktop.prototype.createPaymentContextFromGraphqlLegacyQRCodeMutation =
-    function (intent) {
-      return this.apiRequest(queries_1.LEGACY_CREATE_PAYMENT_CONTEXT_QUERY, {
-        input: {
-          environment: this.env,
-          intent: intent,
-        },
-      }).then(function (response) {
-        return response.createVenmoQRCodePaymentContext
-          .venmoQRCodePaymentContext;
-      });
-    };
   VenmoDesktop.prototype.createPaymentContextFromGraphQL = function (intent) {
+    var _this = this;
+
     var input = {
       intent: intent,
       paymentMethodUsage: this.paymentMethodUsage,
       venmoRiskCorrelationId: this.riskCorrelationId,
       customerClient: "DESKTOP",
     };
+
+    if (
+      this.collectCustomerBillingAddress ||
+      this.collectCustomerShippingAddress
+    ) {
+      input.paysheetDetails = {};
+    }
+
+    if (this.collectCustomerBillingAddress) {
+      input.paysheetDetails.collectCustomerBillingAddress =
+        this.collectCustomerBillingAddress;
+    }
+
+    if (this.collectCustomerShippingAddress) {
+      input.paysheetDetails.collectCustomerShippingAddress =
+        this.collectCustomerShippingAddress;
+    }
+
     if (this.profileId) {
       input.merchantProfileId = this.profileId;
     }
     if (this.displayName) {
       input.displayName = this.displayName;
     }
+
+    _this.sendEvent("venmo.desktop-qr.create-payment-context.started", {
+      payment_method_usage: _this.paymentMethodUsage,
+    });
+
     return this.apiRequest(queries_1.CREATE_PAYMENT_CONTEXT_QUERY, {
       input: input,
-    }).then(function (response) {
-      return response.createVenmoPaymentContext.venmoPaymentContext;
-    });
+    })
+      .then(function (response) {
+        _this.sendEvent("venmo.desktop-qr.create-payment-context.succeeded", {
+          context_id: response.createVenmoPaymentContext.venmoPaymentContext.id,
+          payment_method_usage: _this.paymentMethodUsage,
+        });
+        return response.createVenmoPaymentContext.venmoPaymentContext;
+      })
+      .catch(function (err) {
+        _this.sendEvent("venmo.desktop-qr.create-payment-context.failed", {
+          payment_method_usage: _this.paymentMethodUsage,
+        });
+        throw err;
+      });
   };
   VenmoDesktop.prototype.createVenmoDesktopPaymentContext = function () {
     var _this = this;
-    var contextPromise = this.shouldUseLegacyQRCodeMutation
-      ? this.createPaymentContextFromGraphqlLegacyQRCodeMutation("PAY_FROM_APP")
-      : this.createPaymentContextFromGraphQL("PAY_FROM_APP");
-    return contextPromise.then(function (context) {
-      _this.venmoContextId = context.id;
-      var merchantId = _this.profileId || context.merchantId;
-      return {
-        id: context.id,
-        status: context.status,
-        merchantId: merchantId,
-        createdAt: context.createdAt,
-        expiresAt: context.expiresAt,
-      };
-    });
+    return this.createPaymentContextFromGraphQL("PAY_FROM_APP").then(
+      function (context) {
+        _this.venmoContextId = context.id;
+        var merchantId = _this.profileId || context.merchantId;
+        return {
+          id: context.id,
+          status: context.status,
+          merchantId: merchantId,
+          createdAt: context.createdAt,
+          expiresAt: context.expiresAt,
+        };
+      }
+    );
   };
   VenmoDesktop.prototype.updateVenmoDesktopPaymentContext = function (
     status,
@@ -384,26 +438,42 @@ var VenmoDesktop = /** @class */ (function () {
         additionalOptions
       ),
     };
-    var query = this.shouldUseLegacyQRCodeMutation
-      ? queries_1.LEGACY_UPDATE_PAYMENT_CONTEXT_QUERY
-      : queries_1.UPDATE_PAYMENT_CONTEXT_QUERY;
-    return this.apiRequest(query, data).then(function () {
-      // noop so we can resolve without any data to match the type
-    });
+    return this.apiRequest(queries_1.UPDATE_PAYMENT_CONTEXT_QUERY, data).then(
+      function () {
+        // noop so we can resolve without any data to match the type
+      }
+    );
   };
   VenmoDesktop.prototype.lookupVenmoDesktopPaymentContext = function () {
-    if (!this.venmoContextId) {
-      return this.Promise.resolve();
+    var _this = this;
+    if (!_this.venmoContextId) {
+      return _this.Promise.resolve();
     }
-    var query = this.shouldUseLegacyQRCodeMutation
-      ? queries_1.LEGACY_VENMO_PAYMENT_CONTEXT_STATUS_QUERY
-      : queries_1.VENMO_PAYMENT_CONTEXT_STATUS_QUERY;
-    return this.apiRequest(query, {
-      id: this.venmoContextId,
-    }).then(function (response) {
-      return response.node;
+
+    _this.sendEvent("venmo.desktop-qr.query-payment-context.started", {
+      context_id: _this.venmoContextId,
+      payment_method_usage: _this.paymentMethodUsage,
     });
+
+    return _this
+      .apiRequest(queries_1.VENMO_PAYMENT_CONTEXT_STATUS_QUERY, {
+        id: _this.venmoContextId,
+      })
+      .then(function (response) {
+        _this.sendEvent("venmo.desktop-qr.query-payment-context.succeeded", {
+          context_id: _this.venmoContextId,
+          payment_method_usage: _this.paymentMethodUsage,
+        });
+        return response.node;
+      })
+      .catch(function (err) {
+        _this.sendEvent("venmo.desktop-qr.query-payment-context.failed", {
+          context_id: _this.venmoContextId,
+          payment_method_usage: _this.paymentMethodUsage,
+        });
+        throw err;
+      });
   };
   return VenmoDesktop;
 })();
-exports.default = VenmoDesktop;
+export default VenmoDesktop;

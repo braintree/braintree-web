@@ -1,6 +1,5 @@
-"use strict";
-
-var BaseInput = require("./base-input").BaseInput;
+// @ts-nocheck
+import { BaseInput } from "./base-input";
 
 var DEFAULT_MAX_LENGTH = 255;
 
@@ -27,6 +26,8 @@ function CardholderNameInput() {
 CardholderNameInput.prototype = Object.create(BaseInput.prototype);
 CardholderNameInput.prototype.constructor = CardholderNameInput;
 
-module.exports = {
-  CardholderNameInput: CardholderNameInput,
+export { CardholderNameInput };
+
+export default {
+  CardholderNameInput,
 };

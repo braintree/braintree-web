@@ -1,6 +1,4 @@
-"use strict";
-
-const injectFrame = require("../../../../src/hosted-fields/external/inject-frame");
+import injectFrame from "../../../../src/hosted-fields/external/inject-frame";
 
 describe("injectFrame", () => {
   it("adds frame to container and returns it as result", () => {

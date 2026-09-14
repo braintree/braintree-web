@@ -1,17 +1,14 @@
-"use strict";
-
-var analytics = require("../lib/analytics");
-var assign = require("../lib/assign").assign;
-var convertMethodsToError = require("../lib/convert-methods-to-error");
-var find = require("../lib/find");
-var generateGooglePayConfiguration = require("../lib/generate-google-pay-configuration");
-var BraintreeError = require("../lib/braintree-error");
-var errors = require("./errors");
-var methods = require("../lib/methods");
-var wrapPromise = require("@braintree/wrap-promise");
+// @ts-nocheck
+import analytics from "../lib/analytics";
+import { assign } from "../lib/assign";
+import convertMethodsToError from "../lib/convert-methods-to-error";
+import find from "../lib/find";
+import generateGooglePayConfiguration from "./generate-google-pay-configuration";
+import BraintreeError from "../lib/braintree-error";
+import errors from "./errors";
+import methods from "../lib/methods";
 
 var CREATE_PAYMENT_DATA_REQUEST_METHODS = {
-  1: "_createV1PaymentDataRequest",
   2: "_createV2PaymentDataRequest",
 };
 
@@ -52,17 +49,14 @@ function GooglePayment(options) {
   this._createPromise = options.createPromise;
   this._client = options.client;
   this._useDeferredClient = options.useDeferredClient;
-  // NEXT_MAJOR_VERSION this should be updated to 2 (or whatever the current latest version is)
-  this._googlePayVersion = options.googlePayVersion || 1;
+  this._googlePayVersion = 2;
   this._googleMerchantId = options.googleMerchantId;
 
   if (this._isUnsupportedGooglePayAPIVersion()) {
     throw new BraintreeError({
       code: errors.GOOGLE_PAYMENT_UNSUPPORTED_VERSION.code,
       message:
-        "The Braintree SDK does not support Google Pay version " +
-        this._googlePayVersion +
-        ". Please upgrade the version of your Braintree SDK and contact support if this error persists.",
+        "The Braintree SDK only supports version 2 of the Google Pay API. Please upgrade the version of your Braintree SDK and contact support if this error persists.",
       type: errors.GOOGLE_PAYMENT_UNSUPPORTED_VERSION.type,
     });
   }
@@ -98,26 +92,6 @@ GooglePayment.prototype._getDefaultConfig = function () {
   return this._defaultConfig;
 };
 
-GooglePayment.prototype._createV1PaymentDataRequest = function (
-  paymentDataRequest
-) {
-  var defaultConfig = this._getDefaultConfig();
-  var overrideCardNetworks =
-    paymentDataRequest.cardRequirements &&
-    paymentDataRequest.cardRequirements.allowedCardNetworks;
-  var defaultConfigCardNetworks =
-    defaultConfig.cardRequirements.allowedCardNetworks;
-  var allowedCardNetworks = overrideCardNetworks || defaultConfigCardNetworks;
-
-  paymentDataRequest = assign({}, defaultConfig, paymentDataRequest);
-
-  // this way we can preserve allowedCardNetworks from default integration
-  // if merchant did not pass any in `cardRequirements`
-  paymentDataRequest.cardRequirements.allowedCardNetworks = allowedCardNetworks;
-
-  return paymentDataRequest;
-};
-
 GooglePayment.prototype._createV2PaymentDataRequest = function (
   paymentDataRequest
 ) {
@@ -148,13 +122,13 @@ GooglePayment.prototype._createV2PaymentDataRequest = function (
 /**
  * Create a configuration object for use in the `loadPaymentData` method.
  *
- * **Note**: Version 1 of the Google Pay Api is deprecated and will become unsupported in a future version. Until then, version 1 will continue to be used by default, and version 1 schema parameters and overrides will remain functional on existing integrations. However, new integrations and all following examples will be presented in the GooglePay version 2 schema. See [Google Pay's upgrade guide](https://developers.google.com/pay/api/web/guides/resources/update-to-latest-version) to see how to update your integration.
- *
- * If `options.googlePayVersion === 2` was set during the initial {@link module:braintree-web/google-payment.create|create} call, overrides must match the Google Pay v2 schema to be valid.
+ * **Important**: The Braintree SDK Google Pay component now only supports Google Pay API version 2. When calling Google Pay API methods
+ * such as `isReadyToPay()` and `loadPaymentData()`, you MUST set `apiVersion: 2` in the configuration object.
+ * Using `apiVersion: 1` will cause errors and unexpected behavior as the SDK generates v2-compatible payment requests.
  *
  * @public
  * @param {object} overrides The supplied parameters for creating the PaymentDataRequest object. Required parameters are:
- *  @param {object} overrides.transactionInfo Object according to the [Google Pay Transaction Info](https://developers.google.com/pay/api/web/reference/object#TransactionInfo) spec.
+ * @param {object} overrides.transactionInfo Object according to the [Google Pay Transaction Info](https://developers.google.com/pay/api/web/reference/object#TransactionInfo) spec.
  *  Optionally, any of the parameters in the [PaymentDataRequest](https://developers.google.com/pay/api/web/reference/object#PaymentDataRequest) parameters can be overridden, but note that it is recommended only to override top level parameters to avoid squashing deeply nested configuration objects. An example can be found below showing how to safely edit these deeply nested objects.
  * @example
  * var paymentDataRequest = googlePaymentInstance.createPaymentDataRequest({
@@ -178,8 +152,9 @@ GooglePayment.prototype._createV2PaymentDataRequest = function (
  *
  * var paymentsClient = new google.payments.api.PaymentsClient({
  *   environment: 'TEST' // or 'PRODUCTION'
- * })
+ * });
  *
+ * // IMPORTANT: You must use apiVersion: 2 when calling Google Pay API methods
  * paymentsClient.loadPaymentData(paymentDataRequest).then(function (response) {
  *   // handle response with googlePaymentInstance.parseResponse
  *   // (see below)
@@ -205,28 +180,29 @@ GooglePayment.prototype._createV2PaymentDataRequest = function (
  *
  *   var paymentsClient = new google.payments.api.PaymentsClient({
  *     environment: 'TEST' // or 'PRODUCTION'
- *   })
+ *   });
  *
+ *   // IMPORTANT: You must use apiVersion: 2 when calling Google Pay API methods
  *   return paymentsClient.loadPaymentData(paymentDataRequest);
  * }).then(function (response) {
  *   // handle response with googlePaymentInstance.parseResponse
  *   // (see below)
  * });
- * @returns {object|Promise} Returns a configuration object for Google PaymentDataRequest. If instantiated with `useDeferredClient` and an `authorization` it will return a promise that resolves with the configuration.
+ * @returns {Promise} Returns a promise that resolves with the configuration object for Google PaymentDataRequest.
  */
 GooglePayment.prototype.createPaymentDataRequest = function (overrides) {
   if (!this._useDeferredClient) {
-    return this._createPaymentDataRequestSyncronously(overrides);
+    return this._createPaymentDataRequestSynchronously(overrides);
   }
 
   return this._waitForClient().then(
     function () {
-      return this._createPaymentDataRequestSyncronously(overrides);
+      return this._createPaymentDataRequestSynchronously(overrides);
     }.bind(this)
   );
 };
 
-GooglePayment.prototype._createPaymentDataRequestSyncronously = function (
+GooglePayment.prototype._createPaymentDataRequestSynchronously = function (
   overrides
 ) {
   var paymentDataRequest = assign({}, overrides);
@@ -254,21 +230,7 @@ GooglePayment.prototype._createPaymentDataRequestSyncronously = function (
  * Parse the response from the tokenization.
  * @public
  * @param {object} response The response back from the Google Pay tokenization.
- * @param {callback} [callback] The second argument, <code>data</code>, is a {@link GooglePay~tokenizePayload|tokenizePayload}. If no callback is provided, `parseResponse` returns a promise that resolves with a {@link GooglePayment~tokenizePayload|tokenizePayload}.
- * @example with callback
- * var paymentsClient = new google.payments.api.PaymentsClient({
- *   environment: 'TEST' // or 'PRODUCTION'
- * })
- *
- * paymentsClient.loadPaymentData(paymentDataRequestFromCreatePaymentDataRequest).then(function (response) {
- *   googlePaymentInstance.parseResponse(response, function (err, data) {
- *     if (err) {
- *       // handle errors
- *     }
- *     // send parsedResponse.nonce to your server
- *   });
- * });
- * @example with promise
+ * @example
  * var paymentsClient = new google.payments.api.PaymentsClient({
  *   environment: 'TEST' // or 'PRODUCTION'
  * })
@@ -280,93 +242,87 @@ GooglePayment.prototype._createPaymentDataRequestSyncronously = function (
  * }).catch(function (err) {
  *   // handle errors
  * });
- * @returns {(Promise|void)} Returns a promise that resolves the parsed response if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves the parsed response.
  */
 GooglePayment.prototype.parseResponse = function (response) {
   var self = this;
+  var payload, rawResponse, parsedResponse, error;
 
-  return Promise.resolve()
-    .then(function () {
-      var payload;
-      var rawResponse =
-        response.apiVersion === 2
-          ? response.paymentMethodData.tokenizationData.token
-          : response.paymentMethodToken.token;
-      var parsedResponse = JSON.parse(rawResponse);
-      var error = parsedResponse.error;
+  try {
+    rawResponse =
+      response.apiVersion === 2
+        ? response.paymentMethodData.tokenizationData.token
+        : response.paymentMethodToken.token;
+    parsedResponse = JSON.parse(rawResponse);
+    error = parsedResponse.error;
 
-      if (error) {
-        return Promise.reject(error);
-      }
+    if (error) {
+      // oxlint-disable-next-line no-throw-literal
+      throw error;
+    }
 
+    analytics.sendEvent(
+      self._createPromise,
+      "google-payment.parseResponse.succeeded"
+    );
+
+    if (parsedResponse.paypalAccounts) {
+      payload = parsedResponse.paypalAccounts[0];
       analytics.sendEvent(
         self._createPromise,
-        "google-payment.parseResponse.succeeded"
-      );
-
-      if (parsedResponse.paypalAccounts) {
-        payload = parsedResponse.paypalAccounts[0];
-        analytics.sendEvent(
-          self._createPromise,
-          "google-payment.parseResponse.succeeded.paypal"
-        );
-
-        return Promise.resolve({
-          nonce: payload.nonce,
-          type: payload.type,
-          description: payload.description,
-        });
-      }
-      payload = parsedResponse.androidPayCards[0];
-      analytics.sendEvent(
-        self._createPromise,
-        "google-payment.parseResponse.succeeded.google-payment"
+        "google-payment.parseResponse.succeeded.paypal"
       );
 
       return Promise.resolve({
         nonce: payload.nonce,
         type: payload.type,
         description: payload.description,
-        details: {
-          cardType: payload.details.cardType,
-          lastFour: payload.details.lastFour,
-          lastTwo: payload.details.lastTwo,
-          isNetworkTokenized: payload.details.isNetworkTokenized,
-          bin: payload.details.bin,
-        },
-        binData: payload.binData,
       });
-    })
-    .catch(function (error) {
-      analytics.sendEvent(
-        self._createPromise,
-        "google-payment.parseResponse.failed"
-      );
+    }
+    payload = parsedResponse.androidPayCards[0];
+    analytics.sendEvent(
+      self._createPromise,
+      "google-payment.parseResponse.succeeded.google-payment"
+    );
 
-      return Promise.reject(
-        new BraintreeError({
-          code: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.code,
-          message: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.message,
-          type: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.type,
-          details: {
-            originalError: error,
-          },
-        })
-      );
+    return Promise.resolve({
+      nonce: payload.nonce,
+      type: payload.type,
+      description: payload.description,
+      details: {
+        cardType: payload.details.cardType,
+        lastFour: payload.details.lastFour,
+        lastTwo: payload.details.lastTwo,
+        isNetworkTokenized: payload.details.isNetworkTokenized,
+        bin: payload.details.bin,
+      },
+      binData: payload.binData,
     });
+  } catch (error) {
+    analytics.sendEvent(
+      self._createPromise,
+      "google-payment.parseResponse.failed"
+    );
+
+    return Promise.reject(
+      new BraintreeError({
+        code: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.code,
+        message: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.message,
+        type: errors.GOOGLE_PAYMENT_GATEWAY_ERROR.type,
+        details: {
+          originalError: error,
+        },
+      })
+    );
+  }
 };
 
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/google-payment.create|create}.
  * @public
- * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @example
  * googlePaymentInstance.teardown();
- * @example <caption>With callback</caption>
- * googlePaymentInstance.teardown(function () {
- *   // teardown is complete
- * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  */
 GooglePayment.prototype.teardown = function () {
   convertMethodsToError(this, methods(GooglePayment.prototype));
@@ -393,4 +349,4 @@ function applyDefaultsToPaymentMethodConfiguration(
   });
 }
 
-module.exports = wrapPromise.wrapPrototype(GooglePayment);
+export default GooglePayment;

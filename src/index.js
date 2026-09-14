@@ -1,4 +1,3 @@
-"use strict";
 /**
  * @module braintree-web
  * @description This is the top-level module exported by the Braintree JavaScript SDK. In a browser environment, this will be the global <code>braintree</code> object. In a CommonJS environment (like Browserify or Webpack), it will be the default export of the <code>braintree-web</code> package. In AMD environments (like RequireJS), it can be `require`d like other modules.
@@ -36,81 +35,63 @@
  * @returns {void}
  */
 
-var americanExpress = require("./american-express");
-var applePay = require("./apple-pay");
-var client = require("./client");
-var fastlane = require("./fastlane");
-var dataCollector = require("./data-collector");
-var hostedFields = require("./hosted-fields");
-var localPayment = require("./local-payment");
-var masterpass = require("./masterpass");
-var instantVerification = require("./instant-verification");
-var paymentRequest = require("./payment-request");
-var paymentReady = require("./payment-ready");
-var paypal = require("./paypal");
-var paypalCheckout = require("./paypal-checkout");
-var paypalCheckoutV6 = require("./paypal-checkout-v6");
-var googlePayment = require("./google-payment");
-var sepa = require("./sepa");
-var threeDSecure = require("./three-d-secure");
-var unionpay = require("./unionpay");
-var usBankAccount = require("./us-bank-account");
-var vaultManager = require("./vault-manager");
-var venmo = require("./venmo");
-var visaCheckout = require("./visa-checkout");
-var preferredPaymentMethods = require("./preferred-payment-methods");
-var VERSION = process.env.npm_package_version;
+import americanExpress from "./american-express";
+import applePay from "./apple-pay";
+import client from "./client";
+import fastlane from "./fastlane";
+import dataCollector from "./data-collector";
+import hostedFields from "./hosted-fields";
+import localPayment from "./local-payment";
+import instantVerification from "./instant-verification";
+import paymentReady from "./payment-ready";
+import paypalCheckout from "./paypal-checkout";
+import paypalCheckoutV6 from "./paypal-checkout-v6";
+import googlePayment from "./google-payment";
+import sepa from "./sepa";
+import threeDSecure from "./three-d-secure";
+import usBankAccount from "./us-bank-account";
+import vaultManager from "./vault-manager";
+import venmo from "./venmo";
+const VERSION = __SDK_VERSION__;
 
-module.exports = {
+export default {
   /** @type {module:braintree-web/fastlane} */
-  fastlane: fastlane,
+  fastlane,
   /** @type {module:braintree-web/american-express} */
-  americanExpress: americanExpress,
+  americanExpress,
   /** @type {module:braintree-web/apple-pay} */
-  applePay: applePay,
+  applePay,
   /** @type {module:braintree-web/client} */
-  client: client,
+  client,
   /** @type {module:braintree-web/data-collector} */
-  dataCollector: dataCollector,
+  dataCollector,
   /** @type {module:braintree-web/hosted-fields} */
-  hostedFields: hostedFields,
+  hostedFields,
   /** @type {module:braintree-web/instant-verification} */
-  instantVerification: instantVerification,
+  instantVerification,
   /** @type {module:braintree-web/local-payment} */
-  localPayment: localPayment,
-  /** @type {module:braintree-web/masterpass} */
-  masterpass: masterpass,
+  localPayment,
   /** @type {module:braintree-web/google-payment} */
-  googlePayment: googlePayment,
-  /** @type {module:braintree-web/payment-request} */
-  paymentRequest: paymentRequest,
+  googlePayment,
   /** @type {module:braintree-web/payment-ready} */
-  paymentReady: paymentReady,
-  /** @type {module:braintree-web/paypal} */
-  paypal: paypal,
+  paymentReady,
   /** @type {module:braintree-web/paypal-checkout} */
-  paypalCheckout: paypalCheckout,
+  paypalCheckout,
   /** @type {module:braintree-web/paypal-checkout-v6} */
-  paypalCheckoutV6: paypalCheckoutV6,
+  paypalCheckoutV6,
   /** @type {module:braintree-web/three-d-secure} */
-  threeDSecure: threeDSecure,
-  /** @type {module:braintree-web/unionpay} */
-  unionpay: unionpay,
+  threeDSecure,
   /** @type {module:braintree-web/us-bank-account} */
-  usBankAccount: usBankAccount,
+  usBankAccount,
   /** @type {module:braintree-web/vault-manager} */
-  vaultManager: vaultManager,
+  vaultManager,
   /** @type {module:braintree-web/venmo} */
-  venmo: venmo,
-  /** @type {module:braintree-web/visa-checkout} */
-  visaCheckout: visaCheckout,
+  venmo,
   /** @type {module:braintree-web/sepa} */
-  sepa: sepa,
-  /** @type {module:braintree-web/preferred-payment-methods} */
-  preferredPaymentMethods: preferredPaymentMethods,
+  sepa,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION,
+  VERSION,
 };

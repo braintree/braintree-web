@@ -1,16 +1,15 @@
-"use strict";
+// @ts-nocheck
 /** @module braintree-web/sepa */
 
-var analytics = require("../lib/analytics");
-var SEPA = require("./external/sepa");
-var createAssetsUrl = require("../lib/create-assets-url");
-var createDeferredClient = require("../lib/create-deferred-client");
-var basicComponentVerification = require("../lib/basic-component-verification");
-var wrapPromise = require("@braintree/wrap-promise");
-var VERSION = process.env.npm_package_version;
-var parse = require("../lib/querystring").parse;
-var assign = require("../lib/assign").assign;
-var mandate = require("./external/mandate");
+import analytics from "../lib/analytics";
+import SEPA from "./external/sepa";
+import createAssetsUrl from "../lib/create-assets-url";
+import createDeferredClient from "../lib/create-deferred-client";
+import basicComponentVerification from "../lib/basic-component-verification";
+import { parse } from "../lib/querystring";
+import { assign } from "../lib/assign";
+import mandate from "./external/mandate";
+const VERSION = __SDK_VERSION__;
 
 /**
  * @static
@@ -20,8 +19,7 @@ var mandate = require("./external/mandate");
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {boolean} [options.debug] A debug flag.
  * @param {string} [options.redirectUrl] When provided, triggers full page redirect flow instead of popup flow.
- * @param {callback} [callback] When provided, will be used instead of a promise. First argument is an error object, where the second is an instance of {@link SEPA|SEPA}.
- * @returns {Promise<void|error>} Returns the SEPA instance.
+ * @returns {Promise} Returns a promise that resolves with the SEPA instance.
  * @example
  * braintree.sepa.create({
  *   client: clientInstance
@@ -97,11 +95,11 @@ function create(options) {
     });
 }
 
-module.exports = {
-  create: wrapPromise(create),
+export default {
+  create,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION,
+  VERSION,
 };

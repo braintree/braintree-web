@@ -1,19 +1,22 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("../../../src/lib/create-deferred-client");
+vi.mock("../../../src/venmo/shared/supports-venmo");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/venmo/shared/browser-detection");
 
-jest.mock("../../../src/lib/analytics");
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("../../../src/lib/create-deferred-client");
-jest.mock("../../../src/venmo/shared/supports-venmo");
-jest.mock("../../../src/lib/create-assets-url");
+import analytics from "../../../src/lib/analytics";
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import _e10 from "../../../src/venmo";
 
-const analytics = require("../../../src/lib/analytics");
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const { create, isBrowserSupported } = require("../../../src/venmo");
-const { fake } = require("../../helpers");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const supportsVenmo = require("../../../src/venmo/shared/supports-venmo");
-const Venmo = require("../../../src/venmo/venmo");
+const { create, isBrowserSupported } = _e10;
+
+import { fake } from "../../helpers";
+import BraintreeError from "../../../src/lib/braintree-error";
+import supportsVenmo from "../../../src/venmo/shared/supports-venmo";
+import Venmo from "../../../src/venmo/venmo";
+import browserDetection from "../../../src/venmo/shared/browser-detection";
 
 describe("venmo static methods", () => {
   describe("venmo.create", () => {
@@ -25,14 +28,27 @@ describe("venmo static methods", () => {
       testContext.client = fake.client({
         configuration: testContext.configuration,
       });
-      jest
-        .spyOn(createDeferredClient, "create")
-        .mockResolvedValue(testContext.client);
+      testContext.client.request = vi.fn().mockResolvedValue({
+        data: {
+          createVenmoPaymentContext: {
+            venmoPaymentContext: {
+              id: "fake-context-id",
+              createdAt: "2026-01-01T00:00:00Z",
+              expiresAt: "2026-01-01T01:00:00Z",
+            },
+          },
+        },
+      });
+      vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+        testContext.client
+      );
     });
 
     it("verifies with basicComponentVerification", () =>
       create({
         client: testContext.client,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
       }).then(() => {
         expect(basicComponentVerification.verify).toBeCalledTimes(1);
         expect(
@@ -47,6 +63,8 @@ describe("venmo static methods", () => {
       create({
         authorization: fake.clientToken,
         debug: true,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
       }).then((instance) => {
         expect(createDeferredClient.create).toBeCalledTimes(1);
         expect(
@@ -63,16 +81,24 @@ describe("venmo static methods", () => {
       }));
 
     it("resolves with a Venmo instance", () => {
-      expect(create({ client: testContext.client })).resolves.toBeInstanceOf(
-        Venmo
-      );
+      return expect(
+        create({
+          client: testContext.client,
+          paymentMethodUsage: "single_use",
+          totalAmount: "10.00",
+        })
+      ).resolves.toBeInstanceOf(Venmo);
     });
 
     it("errors out if Venmo is not enabled for the merchant when using client", () => {
-      delete testContext.configuration.gatewayConfiguration.payWithVenmo;
+      delete testContext.configuration.gatewayConfiguration.venmo;
 
       return expect(
-        create({ client: testContext.client })
+        create({
+          client: testContext.client,
+          paymentMethodUsage: "single_use",
+          totalAmount: "10.00",
+        })
       ).rejects.toMatchObject({
         type: "MERCHANT",
         code: "VENMO_NOT_ENABLED",
@@ -80,9 +106,90 @@ describe("venmo static methods", () => {
       });
     });
 
+    it("errors out if options.paymentMethodUsage is not provided", () =>
+      create({
+        client: testContext.client,
+      }).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe("MERCHANT");
+        expect(err.code).toBe("VENMO_PAYMENT_METHOD_USAGE_REQUIRED");
+        expect(err.message).toBe("Payment method usage is required.");
+      }));
+
+    it("errors out if options.paymentMethodUsage is not a valid value", () =>
+      create({
+        client: testContext.client,
+        paymentMethodUsage: "invalid_value",
+      }).catch((err) => {
+        expect(err).toBeInstanceOf(BraintreeError);
+        expect(err.type).toBe("MERCHANT");
+        expect(err.code).toBe("VENMO_INVALID_PAYMENT_METHOD_USAGE");
+        expect(err.message).toBe("Payment method usage is invalid.");
+      }));
+
+    it("errors out if options.totalAmount is missing when paymentMethodUsage is single_use", () =>
+      expect(
+        create({
+          client: testContext.client,
+          paymentMethodUsage: "single_use",
+        })
+      ).rejects.toMatchObject({
+        type: "MERCHANT",
+        code: "VENMO_TOTAL_AMOUNT_REQUIRED",
+        message:
+          "Total amount required when payment method usage is single use.",
+      }));
+
+    it("errors out if options.totalAmount is not a string when paymentMethodUsage is single_use", () =>
+      expect(
+        create({
+          client: testContext.client,
+          paymentMethodUsage: "single_use",
+          totalAmount: 10,
+        })
+      ).rejects.toMatchObject({
+        type: "MERCHANT",
+        code: "VENMO_TOTAL_AMOUNT_REQUIRED",
+        message:
+          "Total amount required when payment method usage is single use.",
+      }));
+
+    it("errors out if options.totalAmount is an empty string when paymentMethodUsage is single_use", () =>
+      expect(
+        create({
+          client: testContext.client,
+          paymentMethodUsage: "single_use",
+          totalAmount: "",
+        })
+      ).rejects.toMatchObject({
+        type: "MERCHANT",
+        code: "VENMO_TOTAL_AMOUNT_REQUIRED",
+        message:
+          "Total amount required when payment method usage is single use.",
+      }));
+
+    it("accepts single_use as paymentMethodUsage", () =>
+      create({
+        client: testContext.client,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
+      }).then((instance) => {
+        expect(instance).toBeInstanceOf(Venmo);
+      }));
+
+    it("accepts multi_use as paymentMethodUsage", () =>
+      create({
+        client: testContext.client,
+        paymentMethodUsage: "multi_use",
+      }).then((instance) => {
+        expect(instance).toBeInstanceOf(Venmo);
+      }));
+
     it("errors out if options.profileId is present but not a string", () =>
       create({
         client: testContext.client,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
         profileId: 1234,
       }).catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
@@ -94,6 +201,8 @@ describe("venmo static methods", () => {
     it("errors out if options.deepLinkReturnUrl is present but not a string", () =>
       create({
         client: testContext.client,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
         deepLinkReturnUrl: 1234,
       }).catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
@@ -105,6 +214,8 @@ describe("venmo static methods", () => {
     it("errors out if options.riskCorrelationId is present but not a string", () =>
       create({
         client: testContext.client,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
         riskCorrelationId: 1234,
       }).catch((err) => {
         expect(err).toBeInstanceOf(BraintreeError);
@@ -116,6 +227,8 @@ describe("venmo static methods", () => {
     it("accepts a valid riskCorrelationId string", () =>
       create({
         client: testContext.client,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
         riskCorrelationId: "my-custom-risk-id",
       }).then((instance) => {
         expect(instance).toBeInstanceOf(Venmo);
@@ -123,17 +236,36 @@ describe("venmo static methods", () => {
       }));
 
     it("sends an analytics event when successful", () =>
-      create({ client: testContext.client }).then(() => {
+      create({
+        client: testContext.client,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
+      }).then(() => {
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
           "venmo.initialized"
         );
       }));
+
+    it("does not fast-fail create when isIncognito rejects", () => {
+      browserDetection.isIncognito.mockRejectedValueOnce(
+        new Error("incognito detection failed")
+      );
+
+      return create({
+        client: testContext.client,
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
+      }).then((instance) => {
+        expect(instance).toBeInstanceOf(Venmo);
+        expect(instance._isIncognito).toBe(false);
+      });
+    });
   });
 
   describe("venmo.isBrowserSupported", () => {
     beforeEach(() => {
-      jest.spyOn(supportsVenmo, "isBrowserSupported");
+      vi.spyOn(supportsVenmo, "isBrowserSupported");
     });
 
     it("calls isBrowserSupported library", () => {

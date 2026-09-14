@@ -1,7 +1,5 @@
-"use strict";
-
-const applePay = require("../../../src/apple-pay");
-const { version: packageVersion } = require("../../../package.json");
+import applePay from "../../../src/apple-pay";
+import { version as packageVersion } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

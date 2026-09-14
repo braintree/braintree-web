@@ -2,6 +2,7 @@ dist/
 node_modules*/
 npm-debug.log
 .env
+.env.local
 
 .DS_Store
 src/dropin/
@@ -19,12 +20,23 @@ storybook-static
 cert.pem
 key.pem
 
-browserstack.err
-local.log
-logs/
 .storybook/certs/
+
+.claude/worktrees/
 
 # Playwright
 test-results/
 playwright-report/
+playwright/.auth/
 playwright/.cache/
+blob-report/
+.playwright-mcp/
+hars/
+
+# TypeScript
+*.tsbuildinfo
+
+# Claude
+CLAUDE.md
+.remember/
+.codegraph/

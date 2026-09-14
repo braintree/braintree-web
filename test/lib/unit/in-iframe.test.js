@@ -1,6 +1,4 @@
-"use strict";
-
-const inIframe = require("../../../src/lib/in-iframe");
+import inIframe from "../../../src/lib/in-iframe";
 
 describe("inIframe", () => {
   it("returns false when window.self equals window.top", () => {

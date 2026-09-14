@@ -1,9 +1,7 @@
-"use strict";
-
-var directions = require("../shared/constants").navigationDirections;
-var browserDetection = require("../shared/browser-detection");
-var focusIntercept = require("../shared/focus-intercept");
-var findParentTags = require("../shared/find-parent-tags");
+import { navigationDirections as directions } from "../shared/constants";
+import browserDetection from "../shared/browser-detection";
+import focusIntercept from "../shared/focus-intercept";
+import findParentTags from "../shared/find-parent-tags";
 var userFocusableTagNames = ["INPUT", "SELECT", "TEXTAREA"];
 // Devices with software keyboards do not or cannot focus on input types
 // that do not require keyboard-based interaction.
@@ -70,7 +68,7 @@ function _findFirstFocusableElement(elementsInForm) {
   return null;
 }
 
-module.exports = {
+const _default = {
   removeExtraFocusElements: function (checkoutForm, onRemoveFocusIntercepts) {
     var elements = Array.prototype.slice.call(checkoutForm.elements);
     var firstFocusableInput = _findFirstFocusableElement(elements);
@@ -130,3 +128,7 @@ module.exports = {
     };
   },
 };
+
+export const { removeExtraFocusElements, createFocusChangeHandler } = _default;
+
+export default _default;

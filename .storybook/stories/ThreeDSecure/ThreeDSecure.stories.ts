@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/html";
+import { isIntegrationCoverageRun } from "../../utils/integration-coverage";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import "./threeDSecure.css";
+import { IHostedFieldsInstance, IThreeDSecureInstance } from "../../types";
+import { getClientToken } from "../../utils/sdk-config";
 
 const meta: Meta = {
   title: "Braintree/3D Secure",
@@ -19,6 +22,20 @@ It helps prevent fraud and meets Strong Customer Authentication (SCA) requiremen
 };
 
 export default meta;
+
+interface BillingFieldsElements {
+  email: HTMLInputElement;
+  "billing-phone": HTMLInputElement;
+  "billing-given-name": HTMLInputElement;
+  "billing-surname": HTMLInputElement;
+  "billing-street-address": HTMLInputElement;
+  "billing-extended-address": HTMLInputElement;
+  "billing-locality": HTMLInputElement;
+  "billing-region": HTMLInputElement;
+  "billing-postal-code": HTMLInputElement;
+  "billing-country-code": HTMLSelectElement;
+  [key: string]: HTMLInputElement | HTMLSelectElement;
+}
 
 const createThreeDSecureForm = (): HTMLElement => {
   const container = document.createElement("div");
@@ -51,7 +68,7 @@ const createThreeDSecureForm = (): HTMLElement => {
 
       <div id="three-ds-content" class="three-ds-content" style="display: none;">
         <div class="three-d-secure-intro">
-          <button id="autofill" type="button" class="autofill-button">Auto-fill form</button>
+          <button id="autofill" type="button" class="autofill-button">Auto-fill Billing Info</button>
         </div>
 
       <div class="form-grid">
@@ -148,12 +165,6 @@ const createThreeDSecureForm = (): HTMLElement => {
 };
 
 const initialize3DSecure = (container: HTMLElement): void => {
-  const publicKeyInput = container.querySelector(
-    "#public-key"
-  ) as HTMLInputElement;
-  const privateKeyInput = container.querySelector(
-    "#private-key"
-  ) as HTMLInputElement;
   const initializeButton = container.querySelector(
     "#initialize-3ds"
   ) as HTMLButtonElement;
@@ -171,66 +182,9 @@ const initialize3DSecure = (container: HTMLElement): void => {
   const cancelButton = container.querySelector("#cancel-3ds") as HTMLElement;
   const autofillButton = container.querySelector("#autofill") as HTMLElement;
 
-  let hostedFieldsInstance;
-  let threeDSecureInstance;
-  let authorization;
-
-  const validateCredentials = (): boolean => {
-    let isValid = true;
-    const publicKey = publicKeyInput.value.trim();
-    const privateKey = privateKeyInput.value.trim();
-
-    const publicKeyHelp = container.querySelector(
-      "#help-public-key"
-    ) as HTMLElement;
-    const privateKeyHelp = container.querySelector(
-      "#help-private-key"
-    ) as HTMLElement;
-
-    if (!publicKey) {
-      isValid = false;
-      publicKeyHelp.textContent = "Public key is required.";
-      publicKeyInput.parentElement?.classList.add("has-error");
-    } else {
-      publicKeyHelp.textContent = "";
-      publicKeyInput.parentElement?.classList.remove("has-error");
-    }
-
-    if (!privateKey) {
-      isValid = false;
-      privateKeyHelp.textContent = "Private key is required.";
-      privateKeyInput.parentElement?.classList.add("has-error");
-    } else {
-      privateKeyHelp.textContent = "";
-      privateKeyInput.parentElement?.classList.remove("has-error");
-    }
-
-    return isValid;
-  };
-
-  const getClientToken = async (): Promise<string> => {
-    const publicKey = publicKeyInput.value.trim();
-    const privateKey = privateKeyInput.value.trim();
-
-    const gqlAuthorization = window.btoa(`${publicKey}:${privateKey}`);
-    const responseBody = `{"query": "mutation CreateClientToken($input: CreateClientTokenInput!) { createClientToken(input: $input) { clientToken } }","variables": {"input": {"clientToken": {}}}}`;
-
-    const response = await fetch(
-      "https://payments.sandbox.braintree-api.com/graphql",
-      {
-        method: "POST",
-        headers: {
-          Authorization: gqlAuthorization,
-          "Braintree-version": "2023-07-03",
-          "Content-Type": "application/json",
-        },
-        body: responseBody,
-      }
-    );
-
-    const clientTokenResponse = await response.json();
-    return clientTokenResponse?.data.createClientToken.clientToken;
-  };
+  let hostedFieldsInstance: IHostedFieldsInstance;
+  let threeDSecureInstance: IThreeDSecureInstance;
+  let authorization: string;
 
   // Billing field elements
   const billingFields = {
@@ -262,7 +216,7 @@ const initialize3DSecure = (container: HTMLElement): void => {
     "billing-country-code": container.querySelector(
       "#billing-country-code"
     ) as HTMLSelectElement,
-  };
+  } as BillingFieldsElements;
 
   // Auto-fill functionality
   autofillButton.addEventListener("click", () => {
@@ -332,13 +286,14 @@ const initialize3DSecure = (container: HTMLElement): void => {
   });
 
   const setupBraintree = () => {
-    window.braintree.client
+    window.braintree?.client
       .create({
         authorization: authorization,
+        ...(isIntegrationCoverageRun() && { debug: true }),
       })
       .then((clientInstance) => {
         return Promise.all([
-          window.braintree.hostedFields.create({
+          window.braintree?.hostedFields.create({
             client: clientInstance,
             styles: {
               input: {
@@ -348,65 +303,71 @@ const initialize3DSecure = (container: HTMLElement): void => {
             },
             fields: {
               number: {
-                selector: "#card-number",
+                container: "#card-number",
                 placeholder: "4111 1111 1111 1111",
               },
               cvv: {
-                selector: "#cvv",
+                container: "#cvv",
                 placeholder: "123",
               },
               expirationDate: {
-                selector: "#expiration-date",
+                container: "#expiration-date",
                 placeholder: "12/34",
               },
             },
           }),
-          window.braintree.threeDSecure.create({
+          window.braintree?.threeDSecure.create({
             authorization: authorization,
-            version: "2-inline-iframe",
+            challengeDisplay: "inline-iframe",
           }),
         ]);
       })
       .then(([hostedFields, threeDSecure]) => {
-        hostedFieldsInstance = hostedFields;
-        threeDSecureInstance = threeDSecure;
+        // Expose instances to window for testing
+        window.hostedFieldsInstance = hostedFields;
+        window.threeDSecureInstance = threeDSecure;
 
-        // Set up 3D Secure event handlers
-        threeDSecureInstance.on("lookup-complete", (payload, next) => {
-          next();
-        });
+        if (hostedFields && threeDSecure) {
+          hostedFieldsInstance = hostedFields;
+          threeDSecureInstance = threeDSecure;
 
-        threeDSecureInstance.on(
-          "authentication-iframe-available",
-          (payload, next) => {
-            threeDSContainer.appendChild(payload.element);
-            showModal();
-            next();
-          }
-        );
+          // Set up 3D Secure event handlers
+          threeDSecureInstance.on("lookup-complete", (payload) => {
+            payload?.next();
+          });
 
-        payButton.disabled = false;
-        payButton.textContent = "Pay $100.00";
-        threeDSContent.style.display = "block";
+          threeDSecureInstance.on(
+            "authentication-iframe-available",
+            (payload) => {
+              if (payload) {
+                threeDSContainer.appendChild(payload.element);
+                showModal();
+                payload?.next();
+              }
+            }
+          );
+
+          payButton.disabled = false;
+          payButton.textContent = "Pay $100.00";
+          threeDSContent.style.display = "block";
+        }
       })
       .catch((error) => {
         resultDiv.style.display = "block";
         resultDiv.className =
           "shared-result-display shared-result--error shared-result--visible";
         resultDiv.innerHTML = `<strong>Initialization Error:</strong> ${error.message}`;
+        initializeButton.disabled = false;
+        initializeButton.textContent = "Initialize 3D Secure";
       });
   };
 
   // Initialize button event listener
   initializeButton.addEventListener("click", async () => {
-    if (!validateCredentials()) {
-      return;
-    }
-
-    initializeButton.disabled = true;
-    initializeButton.textContent = "Initializing...";
-
     try {
+      initializeButton.disabled = true;
+      initializeButton.textContent = "Initializing...";
+
       const clientToken = await getClientToken();
       authorization = clientToken;
       setupBraintree();
@@ -414,10 +375,12 @@ const initialize3DSecure = (container: HTMLElement): void => {
       resultDiv.style.display = "block";
       resultDiv.className =
         "shared-result-display shared-result--error shared-result--visible";
-      resultDiv.innerHTML = `<strong>Error:</strong> ${error.message}`;
+      resultDiv.innerHTML = `<strong>Error:</strong> ${(error as Error).message}`;
       initializeButton.disabled = false;
       initializeButton.textContent = "Initialize 3D Secure";
     }
+    initializeButton.disabled = false;
+    initializeButton.textContent = "Initialize 3D Secure";
   });
 
   // Payment flow
@@ -461,7 +424,7 @@ const initialize3DSecure = (container: HTMLElement): void => {
         hideModal();
 
         resultDiv.style.display = "block";
-        if (payload.liabilityShifted) {
+        if (payload.threeDSecureInfo.liabilityShifted) {
           resultDiv.className =
             "shared-result-display shared-result--success shared-result--visible";
           resultDiv.innerHTML = `

@@ -1,4 +1,4 @@
-"use strict";
+import BraintreeError from "../lib/braintree-error";
 
 /**
  * @name BraintreeError.Vault Manager - deletePaymentMethod Error Codes
@@ -8,9 +8,7 @@
  * @property {UNKNOWN} VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR Occurs when there is an error attempting to delete the payment method.
  */
 
-var BraintreeError = require("../lib/braintree-error");
-
-module.exports = {
+const _default = {
   VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN: {
     type: BraintreeError.types.MERCHANT,
     code: "VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN",
@@ -26,3 +24,11 @@ module.exports = {
     code: "VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR",
   },
 };
+
+export const {
+  VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN,
+  VAULT_MANAGER_PAYMENT_METHOD_NONCE_NOT_FOUND,
+  VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR,
+} = _default;
+
+export default _default;

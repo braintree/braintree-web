@@ -1,15 +1,9 @@
-"use strict";
-var __importDefault =
-  (this && this.__importDefault) ||
-  function (mod) {
-    return mod && mod.__esModule ? mod : { default: mod };
-  };
-Object.defineProperty(exports, "__esModule", { value: true });
-var add_styles_1 = __importDefault(require("./add-styles"));
+// @ts-nocheck
+import addStyles from "./add-styles";
 var UIElement = /** @class */ (function () {
   function UIElement(options) {
     var _this = this;
-    add_styles_1.default(this.getStyleConfig());
+    addStyles(this.getStyleConfig());
     this.element = this.constructElement();
     if (options.onClick) {
       this.element.addEventListener("click", options.onClick);
@@ -41,4 +35,4 @@ var UIElement = /** @class */ (function () {
   };
   return UIElement;
 })();
-exports.default = UIElement;
+export default UIElement;

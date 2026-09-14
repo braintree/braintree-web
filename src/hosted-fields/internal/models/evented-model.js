@@ -1,6 +1,7 @@
-"use strict";
+// @ts-nocheck
+import EventEmitter from "@braintree/event-emitter";
 
-var EventEmitter = require("@braintree/event-emitter");
+var DANGEROUS_KEYS = ["__proto__", "constructor", "prototype"];
 
 function EventedModel() {
   EventEmitter.call(this);
@@ -8,7 +9,9 @@ function EventedModel() {
   this._attributes = this.resetAttributes();
 }
 
-EventEmitter.createChild(EventedModel);
+EventedModel.prototype = Object.create(EventEmitter.prototype, {
+  constructor: { value: EventedModel },
+});
 
 EventedModel.prototype.get = function get(compoundKey) {
   var i, key, keys;
@@ -22,6 +25,10 @@ EventedModel.prototype.get = function get(compoundKey) {
 
   for (i = 0; i < keys.length; i++) {
     key = keys[i];
+
+    if (DANGEROUS_KEYS.indexOf(key) !== -1) {
+      return; // eslint-disable-line consistent-return
+    }
 
     if (!traversal.hasOwnProperty(key)) {
       return; // eslint-disable-line consistent-return
@@ -42,6 +49,10 @@ EventedModel.prototype.set = function set(compoundKey, value) {
   for (i = 0; i < keys.length - 1; i++) {
     key = keys[i];
 
+    if (DANGEROUS_KEYS.indexOf(key) !== -1) {
+      return;
+    }
+
     if (!traversal.hasOwnProperty(key)) {
       traversal[key] = {};
     }
@@ -50,13 +61,18 @@ EventedModel.prototype.set = function set(compoundKey, value) {
   }
   key = keys[i];
 
+  if (DANGEROUS_KEYS.indexOf(key) !== -1) {
+    return;
+  }
+
   if (traversal[key] !== value) {
     oldValue = traversal[key];
     traversal[key] = value;
-    this._emit("change");
+    this.emit("change");
     for (i = 1; i <= keys.length; i++) {
       key = keys.slice(0, i).join(".");
-      this._emit("change:" + key, this.get(key), {
+      this.emit("change:" + key, {
+        value: this.get(key),
         old: oldValue,
       });
     }
@@ -67,4 +83,4 @@ EventedModel.prototype.resetAttributes = function resetAttributes() {
   return {};
 };
 
-module.exports = EventedModel;
+export default EventedModel;

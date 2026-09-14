@@ -1,17 +1,9 @@
-"use strict";
-
-const RestrictedInput = require("restricted-input");
-const {
-  CreditCardForm,
-} = require("../../../../../src/hosted-fields/internal/models/credit-card-form");
-const {
-  BaseInput,
-} = require("../../../../../src/hosted-fields/internal/components/base-input");
-const browserDetection = require("../../../../../src/hosted-fields/shared/browser-detection");
-const {
-  PostalCodeInput,
-} = require("../../../../../src/hosted-fields/internal/components/postal-code-input");
-const { createInput, getModelConfig } = require("../../helpers");
+import RestrictedInput from "restricted-input";
+import { CreditCardForm } from "../../../../../src/hosted-fields/internal/models/credit-card-form";
+import { BaseInput } from "../../../../../src/hosted-fields/internal/components/base-input";
+import browserDetection from "../../../../../src/hosted-fields/shared/browser-detection";
+import { PostalCodeInput } from "../../../../../src/hosted-fields/internal/components/postal-code-input";
+import { createInput, getModelConfig } from "../../helpers";
 
 describe("Postal Code Input", () => {
   let testContext;
@@ -46,9 +38,9 @@ describe("Postal Code Input", () => {
     });
 
     it("sets the maxLength to custom maxlength if one is provided", () => {
-      jest
-        .spyOn(BaseInput.prototype, "getConfiguration")
-        .mockReturnValue({ maxlength: 5 });
+      vi.spyOn(BaseInput.prototype, "getConfiguration").mockReturnValue({
+        maxlength: 5,
+      });
 
       let input = createInput("postalCode");
 
@@ -76,7 +68,7 @@ describe("Postal Code Input", () => {
       let config, input;
 
       // causes base input to set the pattern property
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
 
       config = getModelConfig("postalCode");
       input = new PostalCodeInput({
@@ -100,7 +92,7 @@ describe("Postal Code Input", () => {
 
   describe("formatter", () => {
     it("sets the pattern to a 10-character pattern with default maxLength", () => {
-      jest.spyOn(RestrictedInput.prototype, "setPattern");
+      vi.spyOn(RestrictedInput.prototype, "setPattern");
 
       createInput("postalCode");
 
@@ -110,10 +102,10 @@ describe("Postal Code Input", () => {
     });
 
     it("sets the pattern to custom maxLength when provided", () => {
-      jest.spyOn(RestrictedInput.prototype, "setPattern");
-      jest
-        .spyOn(BaseInput.prototype, "getConfiguration")
-        .mockReturnValue({ maxlength: 5 });
+      vi.spyOn(RestrictedInput.prototype, "setPattern");
+      vi.spyOn(BaseInput.prototype, "getConfiguration").mockReturnValue({
+        maxlength: 5,
+      });
 
       createInput("postalCode");
 

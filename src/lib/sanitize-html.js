@@ -1,6 +1,4 @@
-"use strict";
-
-module.exports = function (str) {
+export default function (str) {
   if (typeof str === "string") {
     return str
       .replace(/&/g, "&amp;")
@@ -9,4 +7,4 @@ module.exports = function (str) {
   }
 
   return "";
-};
+}

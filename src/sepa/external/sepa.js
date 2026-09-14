@@ -1,14 +1,13 @@
-"use strict";
+// @ts-nocheck
+import BraintreeError from "../../lib/braintree-error";
+import sepaErrors from "../shared/errors";
+import constants from "../shared/constants";
+import mandates from "./mandate";
+import hasMissingOption from "../../lib/has-missing-option";
+import analytics from "../../lib/analytics";
+import { assign } from "../../lib/assign";
 
-var wrapPromise = require("@braintree/wrap-promise");
-var BraintreeError = require("../../lib/braintree-error");
-var sepaErrors = require("../shared/errors");
-var constants = require("../shared/constants");
-var mandates = require("./mandate");
-var hasMissingOption = require("../../lib/has-missing-option");
-var analytics = require("../../lib/analytics");
-var VERSION = process.env.npm_package_version;
-var assign = require("../../lib/assign").assign;
+const VERSION = __SDK_VERSION__;
 
 /**
  * @class
@@ -49,16 +48,15 @@ function SEPA(options) {
 
 /**
  * @public
- * @param {object} options All options for intiating the SEPA payment flow.
- * @param {string} [options.accountHolderName] The account holder name.
- * @param {string} [options.customerId] The customer's id.
- * @param {string} [options.iban] The customer's International Bank Account Number.
- * @param {string} [options.mandateType] Specify ONE_OFF or RECURRENT payment.
- * @param {string} [options.countryCode] The customer's country code.
- * @param {string} [options.merchantAccountId] The merchant's account id.
+ * @param {object} options All options for initiating the SEPA payment flow.
+ * @param {string} options.accountHolderName The account holder name.
+ * @param {string} options.customerId The customer's id.
+ * @param {string} options.iban The customer's International Bank Account Number.
+ * @param {string} options.mandateType Specify ONE_OFF or RECURRENT payment.
+ * @param {string} options.countryCode The customer's country code.
+ * @param {string} options.merchantAccountId The merchant's account id.
  * @param {callback} [callback] The first argument is an error object, where the second is a {@link SEPA~tokenizePayload|tokenizePayload}
- * @returns {(Promise<tokenizePayload|error>)} Returns a promise if no callback is provided.
- *
+ * @returns {Promise<SEPA~tokenizePayload>} Returns a promise that resolves with a {@link SEPA~tokenizePayload|tokenizePayload}.
  * @example
  * button.addEventListener('click', function () {
  *   var tokenizeInputs = {
@@ -139,13 +137,13 @@ SEPA.prototype.tokenize = function (options) {
     .then(function (approval) {
       analytics.sendEvent(self._client, "sepa.tokenization.success");
 
-      return Promise.resolve(approval);
+      return approval;
     })
     .catch(function (err) {
       analytics.sendEvent(self._client, "sepa." + err.details + ".failed");
 
-      return Promise.reject(err);
+      throw err;
     });
 };
 
-module.exports = wrapPromise.wrapPrototype(SEPA);
+export default SEPA;

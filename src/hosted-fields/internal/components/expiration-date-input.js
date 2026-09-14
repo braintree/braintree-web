@@ -1,7 +1,6 @@
-"use strict";
-
-var BaseInput = require("./base-input").BaseInput;
-var RestrictedInput = require("restricted-input");
+// @ts-nocheck
+import { BaseInput } from "./base-input";
+import RestrictedInput from "restricted-input";
 
 var DEFAULT_PATTERN = "{{99}} / {{9999}}";
 var ZERO_PADDED_PATTERN = "0{{9}} / {{9999}}";
@@ -34,7 +33,9 @@ function ExpirationDateInput() {
 
   this.model.on(
     "change:expirationDate.value",
-    function (date) {
+    function (payload) {
+      var date = payload.value;
+
       if (date.length === 0 || date[0] === "0" || date[0] === "1") {
         this.formatter.setPattern(DEFAULT_PATTERN);
       } else {
@@ -61,6 +62,8 @@ ExpirationDateInput.prototype.getUnformattedValue = function () {
   return value;
 };
 
-module.exports = {
-  ExpirationDateInput: ExpirationDateInput,
+export { ExpirationDateInput };
+
+export default {
+  ExpirationDateInput,
 };

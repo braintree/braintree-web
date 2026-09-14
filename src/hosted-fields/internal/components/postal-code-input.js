@@ -1,6 +1,5 @@
-"use strict";
-
-var BaseInput = require("./base-input").BaseInput;
+// @ts-nocheck
+import { BaseInput } from "./base-input";
 
 var DEFAULT_MAX_LENGTH = 10;
 
@@ -27,6 +26,8 @@ function PostalCodeInput() {
 PostalCodeInput.prototype = Object.create(BaseInput.prototype);
 PostalCodeInput.prototype.constructor = PostalCodeInput;
 
-module.exports = {
-  PostalCodeInput: PostalCodeInput,
+export { PostalCodeInput };
+
+export default {
+  PostalCodeInput,
 };

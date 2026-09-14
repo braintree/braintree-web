@@ -1,3 +1,1 @@
-"use strict";
-
-jest.mock("framebus");
+vi.mock("framebus");

@@ -1,5 +1,4 @@
-"use strict";
-var venmoConstants = require("./constants");
+import venmoConstants from "./constants";
 
 function getVenmoUrl(options) {
   if (options.useAllowDesktopWebLogin) {
@@ -20,4 +19,4 @@ function getVenmoUrl(options) {
   return venmoConstants.VENMO_MOBILE_APP_AUTH_ONLY_URL;
 }
 
-module.exports = getVenmoUrl;
+export default getVenmoUrl;

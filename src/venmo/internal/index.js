@@ -1,37 +1,40 @@
-"use strict";
-var __importDefault =
-  (this && this.__importDefault) ||
-  function (mod) {
-    return mod && mod.__esModule ? mod : { default: mod };
-  };
-var setup_iframe_base_1 = __importDefault(require("./setup-iframe-base"));
-var modal_1 = __importDefault(require("./ui-elements/modal"));
-var framebus_1 = __importDefault(require("framebus"));
-var events_1 = require("../shared/events");
-module.exports = function start() {
+// @ts-nocheck
+import setupIframeBase from "./setup-iframe-base";
+import Modal from "./ui-elements/modal";
+import framebus from "framebus";
+import events from "../shared/events";
+
+export default function start() {
   var hash = window.location.hash.split("#")[1];
   var _a = hash.split("_"),
     env = _a[0],
     id = _a[1];
-  var bus = new framebus_1.default({
+  var bus = new framebus({
     channel: id,
     targetFrames: [window.parent],
   });
-  setup_iframe_base_1.default();
-  var modal = modal_1.default.create({
+  setupIframeBase();
+  var sendEvent = function (eventName, metadata) {
+    bus.emit(events.VENMO_DESKTOP_ANALYTICS_EVENT, {
+      eventName: eventName,
+      metadata: metadata || {},
+    });
+  };
+  var modal = Modal.create({
     container: document.body,
-    onRequestNewQrCode: function () {
-      bus.emit(events_1.VENMO_DESKTOP_REQUEST_NEW_QR_CODE);
+    sendEvent: sendEvent,
+    onRequestNewQrCode: function (source) {
+      bus.emit(events.VENMO_DESKTOP_REQUEST_NEW_QR_CODE, { source: source });
     },
     onClose: function () {
-      bus.emit(events_1.VENMO_DESKTOP_CUSTOMER_CANCELED);
+      bus.emit(events.VENMO_DESKTOP_CUSTOMER_CANCELED);
       modal.reset();
     },
   });
-  bus.on(events_1.VENMO_DESKTOP_DISPLAY_ERROR, function (payload) {
+  bus.on(events.VENMO_DESKTOP_DISPLAY_ERROR, function (payload) {
     modal.displayError(payload.message);
   });
-  bus.on(events_1.VENMO_DESKTOP_DISPLAY_QR_CODE, function (payload) {
+  bus.on(events.VENMO_DESKTOP_DISPLAY_QR_CODE, function (payload) {
     var url =
       "https://venmo.com/go/purchase?facilitator=BT&intent=Continue&resource_id=" +
       payload.id +
@@ -42,14 +45,14 @@ module.exports = function start() {
     modal.show();
     modal.displayQRCode(url);
   });
-  bus.on(events_1.VENMO_DESKTOP_AUTHORIZING, function () {
+  bus.on(events.VENMO_DESKTOP_AUTHORIZING, function () {
     modal.authorizing();
   });
-  bus.on(events_1.VENMO_DESKTOP_AUTHORIZE, function () {
+  bus.on(events.VENMO_DESKTOP_AUTHORIZE, function () {
     modal.authorize();
   });
-  bus.on(events_1.VENMO_DESKTOP_CLOSED_FROM_PARENT, function () {
+  bus.on(events.VENMO_DESKTOP_CLOSED_FROM_PARENT, function () {
     modal.reset();
   });
-  bus.emit(events_1.VENMO_DESKTOP_IFRAME_READY);
-};
+  bus.emit(events.VENMO_DESKTOP_IFRAME_READY);
+}

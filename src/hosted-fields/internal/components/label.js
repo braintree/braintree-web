@@ -1,5 +1,3 @@
-"use strict";
-
 function LabelComponent(options) {
   this.element = document.createElement("label");
 
@@ -7,6 +5,8 @@ function LabelComponent(options) {
   this.element.innerText = options.label;
 }
 
-module.exports = {
-  LabelComponent: LabelComponent,
+export { LabelComponent };
+
+export default {
+  LabelComponent,
 };

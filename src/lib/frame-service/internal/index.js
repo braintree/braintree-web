@@ -1,7 +1,5 @@
-"use strict";
-
-var events = require("../shared/events");
-var constants = require("../shared/constants");
+import events from "../shared/events";
+import constants from "../shared/constants";
 
 function getServiceId() {
   return window.name.split("_")[1].split("?")[0];
@@ -48,10 +46,12 @@ function asyncClose() {
   }, constants.POPUP_CLOSE_TIMEOUT);
 }
 
-module.exports = {
-  asyncClose: asyncClose,
-  constants: constants,
-  getFrame: getFrame,
-  getServiceId: getServiceId,
-  report: report,
+export { asyncClose, constants, getFrame, getServiceId, report };
+
+export default {
+  asyncClose,
+  constants,
+  getFrame,
+  getServiceId,
+  report,
 };

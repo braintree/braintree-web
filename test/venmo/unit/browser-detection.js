@@ -1,17 +1,15 @@
-"use strict";
+vi.mock("@braintree/browser-detection/is-android");
+vi.mock("@braintree/browser-detection/is-ios");
+vi.mock("@braintree/browser-detection/is-chrome");
+vi.mock("@braintree/browser-detection/is-ios-safari");
+vi.mock("@braintree/browser-detection/is-ios-webview");
 
-jest.mock("@braintree/browser-detection/is-android");
-jest.mock("@braintree/browser-detection/is-ios");
-jest.mock("@braintree/browser-detection/is-chrome");
-jest.mock("@braintree/browser-detection/is-ios-safari");
-jest.mock("@braintree/browser-detection/is-ios-webview");
-
-const browserDetection = require("../../../src/venmo/shared/browser-detection");
-const isAndroid = require("@braintree/browser-detection/is-android");
-const isChrome = require("@braintree/browser-detection/is-chrome");
-const isIosSafari = require("@braintree/browser-detection/is-ios-safari");
-const isIos = require("@braintree/browser-detection/is-ios");
-const isIosWebview = require("@braintree/browser-detection/is-ios-webview");
+import browserDetection from "../../../src/venmo/shared/browser-detection";
+import isAndroid from "@braintree/browser-detection/is-android";
+import isChrome from "@braintree/browser-detection/is-chrome";
+import isIosSafari from "@braintree/browser-detection/is-ios-safari";
+import isIos from "@braintree/browser-detection/is-ios";
+import isIosWebview from "@braintree/browser-detection/is-ios-webview";
 
 describe("browser detection", () => {
   beforeEach(() => {
@@ -26,7 +24,7 @@ describe("browser detection", () => {
     let userAgentSpy;
 
     beforeEach(() => {
-      userAgentSpy = jest.spyOn(window.navigator, "userAgent", "get");
+      userAgentSpy = vi.spyOn(window.navigator, "userAgent", "get");
     });
 
     it("returns false when not android", () => {
@@ -79,7 +77,7 @@ describe("browser detection", () => {
     let userAgentSpy;
 
     beforeEach(() => {
-      userAgentSpy = jest.spyOn(window.navigator, "userAgent", "get");
+      userAgentSpy = vi.spyOn(window.navigator, "userAgent", "get");
     });
 
     it("returns false when not android", () => {

@@ -1,7 +1,5 @@
-"use strict";
-
-const methods = require("../../../src/lib/methods");
-const { noop } = require("../../helpers");
+import methods from "../../../src/lib/methods";
+import { noop } from "../../helpers";
 
 describe("methods", () => {
   it("extracts all methods from an object", () => {

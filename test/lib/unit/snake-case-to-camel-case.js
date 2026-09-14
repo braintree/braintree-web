@@ -1,6 +1,4 @@
-"use strict";
-
-const snakeToCamel = require("../../../src/lib/snake-case-to-camel-case");
+import snakeToCamel from "../../../src/lib/snake-case-to-camel-case";
 
 describe("snake-case-to-camel-case.js", () => {
   it("should camel case the input", function () {

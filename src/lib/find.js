@@ -1,6 +1,4 @@
-"use strict";
-
-module.exports = function (array, key, value) {
+export default function (array, key, value) {
   var i;
 
   for (i = 0; i < array.length; i++) {
@@ -10,4 +8,4 @@ module.exports = function (array, key, value) {
   }
 
   return null;
-};
+}

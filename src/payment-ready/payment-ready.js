@@ -1,12 +1,9 @@
-"use strict";
-
-var wrapPromise = require("@braintree/wrap-promise");
-
-var analytics = require("../lib/analytics");
-var BraintreeError = require("../lib/braintree-error");
-var constants = require("./constants");
-var errors = require("./errors");
-var hasMissingOption = require("../lib/has-missing-option");
+// @ts-nocheck
+import analytics from "../lib/analytics";
+import BraintreeError from "../lib/braintree-error";
+import constants from "./constants";
+import errors from "./errors";
+import hasMissingOption from "../lib/has-missing-option";
 
 /**
  * @class
@@ -32,7 +29,7 @@ function PaymentReady(options) {
  * * E.164 format example 1: '+12345551234' where country code is '1', area code is '234' and subscriber number is '555-1234'
  * * E.164 format example 2: '+6129876543X' where country code is '61', area code is '2' and subscriber number is '9876 543X'
  * @property {boolean} [paypalAppInstalled] - A flag indicating if customer device has paypal application installed.
- * @property {boolean} [venmoAppInstalled] - A flag indicating if customer device has venmo applicaition installed.
+ * @property {boolean} [venmoAppInstalled] - A flag indicating if customer device has venmo application installed.
  * @property {string} [userAgent] - The user agent string of customer browser describing application, OS, vendor, and version of requesting user agent.
  */
 
@@ -102,15 +99,13 @@ PaymentReady.prototype.createCustomerSession = function (options) {
         "payment-ready.create-customer-session.failed"
       );
 
-      return Promise.reject(
-        new BraintreeError({
-          type: err.type || errors.PAYMENT_READY_CREATE_SESSION_ERROR.type,
-          code: err.code || errors.PAYMENT_READY_CREATE_SESSION_ERROR.code,
-          message:
-            err.message || errors.PAYMENT_READY_CREATE_SESSION_ERROR.message,
-          details: { originalError: err },
-        })
-      );
+      throw new BraintreeError({
+        type: err.type || errors.PAYMENT_READY_CREATE_SESSION_ERROR.type,
+        code: err.code || errors.PAYMENT_READY_CREATE_SESSION_ERROR.code,
+        message:
+          err.message || errors.PAYMENT_READY_CREATE_SESSION_ERROR.message,
+        details: { originalError: err },
+      });
     });
 };
 
@@ -180,15 +175,13 @@ PaymentReady.prototype.updateCustomerSession = function (options) {
         "payment-ready.update-customer-session.failed"
       );
 
-      return Promise.reject(
-        new BraintreeError({
-          type: err.type || errors.PAYMENT_READY_UPDATE_SESSION_ERROR.type,
-          code: err.code || errors.PAYMENT_READY_UPDATE_SESSION_ERROR.code,
-          message:
-            err.message || errors.PAYMENT_READY_UPDATE_SESSION_ERROR.message,
-          details: { originalError: err },
-        })
-      );
+      throw new BraintreeError({
+        type: err.type || errors.PAYMENT_READY_UPDATE_SESSION_ERROR.type,
+        code: err.code || errors.PAYMENT_READY_UPDATE_SESSION_ERROR.code,
+        message:
+          err.message || errors.PAYMENT_READY_UPDATE_SESSION_ERROR.message,
+        details: { originalError: err },
+      });
     });
 };
 
@@ -266,16 +259,13 @@ PaymentReady.prototype.getCustomerRecommendations = function (options) {
         "payment-ready.get-customer-recommendations.failed"
       );
 
-      return Promise.reject(
-        new BraintreeError({
-          type: err.type || errors.PAYMENT_READY_GET_RECOMMENDATIONS_ERROR.type,
-          code: err.code || errors.PAYMENT_READY_GET_RECOMMENDATIONS_ERROR.code,
-          message:
-            err.message ||
-            errors.PAYMENT_READY_GET_RECOMMENDATIONS_ERROR.message,
-          details: { originalError: err },
-        })
-      );
+      throw new BraintreeError({
+        type: err.type || errors.PAYMENT_READY_GET_RECOMMENDATIONS_ERROR.type,
+        code: err.code || errors.PAYMENT_READY_GET_RECOMMENDATIONS_ERROR.code,
+        message:
+          err.message || errors.PAYMENT_READY_GET_RECOMMENDATIONS_ERROR.message,
+        details: { originalError: err },
+      });
     });
 };
 
@@ -440,4 +430,4 @@ PaymentReady.prototype.sendSelectedEvent = function (options) {
   });
 };
 
-module.exports = wrapPromise.wrapPrototype(PaymentReady);
+export default PaymentReady;

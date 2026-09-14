@@ -1,9 +1,7 @@
-"use strict";
-
-var ExpirationSplitInput =
-  require("./expiration-split-input").ExpirationSplitInput;
-var sanitizeHtml = require("../../../lib/sanitize-html");
-var events = require("../../shared/constants").events;
+// @ts-nocheck
+import { ExpirationSplitInput } from "./expiration-split-input";
+import sanitizeHtml from "../../../lib/sanitize-html";
+import { events } from "../../shared/constants";
 
 var PATTERN = "{{99}}";
 var NUMBER_OF_MONTHS = 12;
@@ -86,6 +84,8 @@ ExpirationMonthInput.prototype._updateMonthOptions = function (
   callback();
 };
 
-module.exports = {
-  ExpirationMonthInput: ExpirationMonthInput,
+export { ExpirationMonthInput };
+
+export default {
+  ExpirationMonthInput,
 };

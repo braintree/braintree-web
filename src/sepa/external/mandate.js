@@ -1,14 +1,12 @@
-"use strict";
-
-var BraintreeError = require("../../lib/braintree-error");
-var sepaErrors = require("../shared/errors");
-var frameService = require("../../lib/frame-service/external");
-var analytics = require("../../lib/analytics");
-var useMin = require("../../lib/use-min");
-var billingAddressOptions =
-  require("../shared/constants").BILLING_ADDRESS_OPTIONS;
-var snakeCaseToCamelCase = require("../../lib/snake-case-to-camel-case");
-var assign = require("../../lib/assign").assign;
+// @ts-nocheck
+import BraintreeError from "../../lib/braintree-error";
+import sepaErrors from "../shared/errors";
+import frameService from "../../lib/frame-service/external";
+import analytics from "../../lib/analytics";
+import useMin from "../../lib/use-min";
+import { BILLING_ADDRESS_OPTIONS as billingAddressOptions } from "../shared/constants";
+import snakeCaseToCamelCase from "../../lib/snake-case-to-camel-case";
+import { assign } from "../../lib/assign";
 
 var POPUP_WIDTH = 400;
 var POPUP_HEIGHT = 570;
@@ -18,7 +16,7 @@ var POPUP_HEIGHT = 570;
  * @typedef CreateMandateResponse
  * @property {string} approvalUrl The URL to present to the customer for payment approval.
  * @property {string} last4 The last four digits of the iban.
- * @property {string} bankReferenceToken The tokenized payment source to fun the payment.
+ * @property {string} bankReferenceToken The tokenized payment source to fund the payment.
  */
 
 /**
@@ -29,7 +27,7 @@ var POPUP_HEIGHT = 570;
  * @static
  * @function createMandate
  * @param {object} client The Braintree client.
- * @param {object} options All options for intiating the SEPA payment flow.
+ * @param {object} options All options for initiating the SEPA payment flow.
  * @param {string} [options.accountHolderName] The account holder name.
  * @param {object} [options.billingAddress] The customer's billing address
  * @param {string} [options.billingAddress.addressLine1] Line 1 of the Address (eg. number, street, etc). An error will occur if this address is not valid.
@@ -74,7 +72,7 @@ function createMandate(client, options) {
       var ccOption = snakeCaseToCamelCase(option);
       if (ccOption in options.billingAddress) {
         data.sepa_debit.billing_address[option] =
-          options.billingAddress[ccOption]; // camelCase equivilent of option (eg. postal_code = postalCode) ]
+          options.billingAddress[ccOption]; // camelCase equivalent of option (eg. postal_code = postalCode) ]
       }
     });
   }
@@ -112,9 +110,9 @@ function createMandate(client, options) {
  * @param {string} client The Braintree client.
  * @param {string} options The input options needed to manage the popup portion of the flow.
  * @param {string} [options.assetsUrl] The url to the Braintree asset to be used in frameservice.
- * @param {string} [options.approvalUrl] The url to open for SEPA authorization. It is `approvalUrl` coming back from the mandate creation, but commonly refered to as the mandate link.
+ * @param {string} [options.approvalUrl] The url to open for SEPA authorization. It is `approvalUrl` coming back from the mandate creation, but commonly referred to as the mandate link.
  * @param {string} [options.debug] Whether to use debugging modes or not.
- * @returns {Promise<void|Error>} Returns a promise.
+ * @returns {Promise} Returns a promise.
  */
 function openPopup(client, options) {
   var popupName = "sepadirectdebit";
@@ -201,14 +199,14 @@ function centeredPopupDimensions() {
  * @static
  * @function handleApproval
  * @param {object} client The Braintree client.
- * @param {object} options All options for intiating the SEPA payment flow.
- * @param {string} [options.bankReferenceToken] The tokenized payment source to fun the payment.
+ * @param {object} options All options for initiating the SEPA payment flow.
+ * @param {string} [options.bankReferenceToken] The tokenized payment source to fund the payment.
  * @param {string} [options.customerId] The customer's id.
  * @param {string} [options.last4] The last four digits of iban.
  * @param {string} [options.mandateType] The mandate type being used. Specify ONE_OFF or RECURRENT payment.
  * @param {string} [options.merchantAccountId] The merchant's account id.
  * @param {string} [options.merchantId] The merchant id.
- * @returns {Promise<tokenizePayload|Error>} Returns a promise with the approval response or an error.
+ * @returns {Promise<SEPA~tokenizePayload|Error>} Returns a promise with the approval response or an error.
  */
 
 function handleApproval(client, options) {
@@ -281,12 +279,22 @@ function handleApprovalForFullPageRedirect(client, options) {
     });
 }
 
-module.exports = {
-  createMandate: createMandate,
-  openPopup: openPopup,
-  handleApproval: handleApproval,
-  POPUP_WIDTH: POPUP_WIDTH,
-  POPUP_HEIGHT: POPUP_HEIGHT,
-  redirectPage: redirectPage,
-  handleApprovalForFullPageRedirect: handleApprovalForFullPageRedirect,
+export {
+  createMandate,
+  openPopup,
+  handleApproval,
+  POPUP_WIDTH,
+  POPUP_HEIGHT,
+  redirectPage,
+  handleApprovalForFullPageRedirect,
+};
+
+export default {
+  createMandate,
+  openPopup,
+  handleApproval,
+  POPUP_WIDTH,
+  POPUP_HEIGHT,
+  redirectPage,
+  handleApprovalForFullPageRedirect,
 };

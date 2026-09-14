@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "strict": false,
+    "strictNullChecks": false,
+    "noUnusedLocals": false,
+    "noImplicitReturns": false
+  },
+  "include": ["./**/*"],
+  "exclude": ["./coverage/**"]
+}

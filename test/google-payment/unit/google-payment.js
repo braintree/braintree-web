@@ -1,17 +1,15 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
+vi.mock("../../../src/lib/create-deferred-client");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/basic-component-verification");
 
-jest.mock("../../../src/lib/analytics");
-jest.mock("../../../src/lib/create-deferred-client");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/lib/basic-component-verification");
-
-const analytics = require("../../../src/lib/analytics");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const GooglePayment = require("../../../src/google-payment/google-payment");
-const { fake } = require("../../helpers");
-const methods = require("../../../src/lib/methods");
-const { version: VERSION } = require("../../../package.json");
+import analytics from "../../../src/lib/analytics";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import BraintreeError from "../../../src/lib/braintree-error";
+import GooglePayment from "../../../src/google-payment/google-payment";
+import { fake } from "../../helpers";
+import methods from "../../../src/lib/methods";
+import { version as VERSION } from "../../../package.json";
 
 describe("GooglePayment", () => {
   let testContext;
@@ -20,10 +18,9 @@ describe("GooglePayment", () => {
     const configuration = fake.configuration();
 
     testContext = {};
-    configuration.gatewayConfiguration.androidPay = {
-      enabled: true,
-      googleAuthorizationFingerprint: "fingerprint",
-      supportedNetworks: ["visa", "amex"],
+    configuration.gatewayConfiguration.googlePay = {
+      googleAuthorization: "fingerprint",
+      supportedCardBrands: ["VISA", "AMERICAN_EXPRESS"],
     };
 
     testContext.fakeClient = fake.client({
@@ -33,177 +30,12 @@ describe("GooglePayment", () => {
       useDeferredClient: true,
       createPromise: Promise.resolve(testContext.fakeClient),
     });
-    jest
-      .spyOn(createDeferredClient, "create")
-      .mockResolvedValue(testContext.fakeClient);
+    vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+      testContext.fakeClient
+    );
   });
 
   describe("createPaymentDataRequest", () => {
-    describe("GooglePay v1 schema", () => {
-      it("returns a payment data request object", () => {
-        return testContext.googlePayment
-          .createPaymentDataRequest()
-          .then((paymentDataRequest) => {
-            expect(paymentDataRequest.environment).toBe("TEST");
-            expect(paymentDataRequest.allowedPaymentMethods).toEqual([
-              "CARD",
-              "TOKENIZED_CARD",
-            ]);
-            expect(
-              paymentDataRequest.paymentMethodTokenizationParameters
-                .tokenizationType
-            ).toBe("PAYMENT_GATEWAY");
-            expect(
-              paymentDataRequest.paymentMethodTokenizationParameters.parameters
-                .gateway
-            ).toBe("braintree");
-          });
-      });
-
-      it("can override parameters with v1 schema overrides and return a v1 schema config", () => {
-        return testContext.googlePayment
-          .createPaymentDataRequest({
-            merchantId: "my-id",
-            environment: "PRODUCTION",
-            allowedPaymentMethods: ["FOO"],
-            cardRequirements: {
-              allowedCardNetworks: ["foo", "bar"],
-              prop: "value",
-            },
-          })
-          .then((paymentDataRequest) => {
-            expect(paymentDataRequest.merchantId).toBe("my-id");
-            expect(paymentDataRequest.environment).toBe("PRODUCTION");
-            expect(paymentDataRequest.allowedPaymentMethods).toEqual(["FOO"]);
-            expect(
-              paymentDataRequest.cardRequirements.allowedCardNetworks
-            ).toEqual(["foo", "bar"]);
-            expect(paymentDataRequest.cardRequirements.prop).toBe("value");
-          });
-      });
-
-      it("can override existing parameters with v1 schema overrides and return a v1 schema config", () => {
-        return testContext.googlePayment
-          .createPaymentDataRequest({
-            merchantId: "my-id",
-            environment: "PRODUCTION",
-            allowedPaymentMethods: ["CARD"],
-            cardRequirements: {
-              allowedCardNetworks: ["foo", "bar"],
-            },
-          })
-          .then((paymentDataRequest) => {
-            expect(paymentDataRequest.merchantId).toBe("my-id");
-            expect(paymentDataRequest.environment).toBe("PRODUCTION");
-            expect(paymentDataRequest.allowedPaymentMethods).toEqual(["CARD"]);
-            expect(
-              paymentDataRequest.cardRequirements.allowedCardNetworks
-            ).toEqual(["foo", "bar"]);
-          });
-      });
-
-      it("retains allowed card networks from default if not passed in with v1 schema", () => {
-        return testContext.googlePayment
-          .createPaymentDataRequest({
-            merchantId: "my-id",
-            environment: "PRODUCTION",
-            allowedPaymentMethods: ["FOO"],
-            cardRequirements: {
-              prop: "value",
-            },
-          })
-          .then((paymentDataRequest) => {
-            expect(paymentDataRequest.cardRequirements.prop).toBe("value");
-            expect(
-              paymentDataRequest.cardRequirements.allowedCardNetworks
-            ).toEqual(["VISA", "AMEX"]);
-          });
-      });
-
-      it("overrides shipping address info with v1 params and returns a v1 schema config", () => {
-        return testContext.googlePayment
-          .createPaymentDataRequest({
-            shippingAddressRequired: false,
-            shippingAddressRequirements: {
-              allowedCountryCodes: ["US", "CA"],
-            },
-          })
-          .then((paymentDataRequest) => {
-            expect(paymentDataRequest.allowedPaymentMethods.length).toBe(2);
-            expect(paymentDataRequest.shippingAddressRequired).toBe(false);
-            expect(paymentDataRequest.shippingAddressRequirements).toEqual({
-              allowedCountryCodes: ["US", "CA"],
-            });
-          });
-      });
-
-      it("overrides paymentMethodTokenizationParameters info with v1 params and returns a v1 schema config", () => {
-        return testContext.googlePayment
-          .createPaymentDataRequest({
-            paymentMethodTokenizationParameters: {
-              tokenizationType: "TEST_GATEWAY",
-              parameters: {
-                gateway: "test-gateway",
-                gatewayMerchantId: "test-merchant-id",
-              },
-            },
-          })
-          .then((paymentDataRequest) => {
-            expect(paymentDataRequest.allowedPaymentMethods.length).toBe(2);
-            expect(
-              paymentDataRequest.paymentMethodTokenizationParameters
-                .tokenizationType
-            ).toBe("TEST_GATEWAY");
-            expect(
-              paymentDataRequest.paymentMethodTokenizationParameters.parameters
-                .gateway
-            ).toBe("test-gateway");
-            expect(
-              paymentDataRequest.paymentMethodTokenizationParameters.parameters
-                .gatewayMerchantId
-            ).toBe("test-merchant-id");
-          });
-      });
-
-      it("overrides billing address info with v1 params and returns a v1 schema config", () => {
-        return testContext.googlePayment
-          .createPaymentDataRequest({
-            cardRequirements: {
-              billingAddressRequired: true,
-              billingAddressFormat: "FULL",
-            },
-            phoneNumberRequired: true,
-          })
-          .then((paymentDataRequest) => {
-            expect(paymentDataRequest.allowedPaymentMethods.length).toBe(2);
-            expect(
-              paymentDataRequest.cardRequirements.billingAddressRequired
-            ).toBe(true);
-            expect(
-              paymentDataRequest.cardRequirements.billingAddressFormat
-            ).toBe("FULL");
-            expect(paymentDataRequest.phoneNumberRequired).toBe(true);
-          });
-      });
-
-      it("does not include a merchant id by default", () => {
-        return testContext.googlePayment
-          .createPaymentDataRequest()
-          .then((paymentDataRequest) => {
-            expect(paymentDataRequest.merchantId).toBeFalsy();
-          });
-      });
-
-      it("sends an analytics event", () => {
-        return testContext.googlePayment.createPaymentDataRequest().then(() => {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
-            expect.anything(),
-            "google-payment.v1.createPaymentDataRequest"
-          );
-        });
-      });
-    });
-
     describe("GooglePay v2 schema", () => {
       beforeEach(() => {
         const options = {
@@ -445,14 +277,12 @@ describe("GooglePayment", () => {
 
         const configuration = fake.configuration();
 
-        configuration.gatewayConfiguration.androidPay = {
-          enabled: true,
-          googleAuthorizationFingerprint: "fingerprint",
-          supportedNetworks: ["visa", "amex"],
+        configuration.gatewayConfiguration.googlePay = {
+          googleAuthorization: "fingerprint",
+          supportedCardBrands: ["VISA", "AMERICAN_EXPRESS"],
         };
-        configuration.gatewayConfiguration.paypalEnabled = true;
         configuration.gatewayConfiguration.paypal = {};
-        configuration.gatewayConfiguration.androidPay.paypalClientId =
+        configuration.gatewayConfiguration.googlePay.paypalClientId =
           "paypal_client_id";
         configuration.gatewayConfiguration.paypal.environmentNoNetwork = false;
 
@@ -589,7 +419,7 @@ describe("GooglePayment", () => {
           });
       });
 
-      it("returns a promise that resolves with the data request object if instance was instanitated with a deferred client", () => {
+      it("returns a promise that resolves with the data request object if instance was instantiated with a deferred client", () => {
         const googlePayment = new GooglePayment({
           useDeferredClient: true,
           createPromise: Promise.resolve(testContext.fakeClient),
@@ -597,42 +427,49 @@ describe("GooglePayment", () => {
 
         return googlePayment
           .createPaymentDataRequest()
-          .then((paymentDataRequest) => {
+          .then(function (paymentDataRequest) {
+            var cardPaymentMethod;
+
+            cardPaymentMethod = paymentDataRequest.allowedPaymentMethods.find(
+              function (el) {
+                return el.type === "CARD";
+              }
+            );
+
             expect(paymentDataRequest.environment).toBe("TEST");
-            expect(paymentDataRequest.allowedPaymentMethods).toEqual([
-              "CARD",
-              "TOKENIZED_CARD",
-            ]);
+            expect(paymentDataRequest.allowedPaymentMethods.length).toBe(1);
+            expect(cardPaymentMethod.type).toBe("CARD");
+            expect(cardPaymentMethod.tokenizationSpecification.type).toBe(
+              "PAYMENT_GATEWAY"
+            );
             expect(
-              paymentDataRequest.paymentMethodTokenizationParameters
-                .tokenizationType
-            ).toBe("PAYMENT_GATEWAY");
-            expect(
-              paymentDataRequest.paymentMethodTokenizationParameters.parameters
-                .gateway
+              cardPaymentMethod.tokenizationSpecification.parameters.gateway
             ).toBe("braintree");
           });
       });
 
-      it("returns an the data request object if instance was instanitated without a deferred client", () => {
-        const googlePayment = new GooglePayment({
+      it("returns the data request object if instance was instantiated without a deferred client", async () => {
+        var googlePayment, paymentDataRequest, cardPaymentMethod;
+
+        googlePayment = new GooglePayment({
           client: testContext.fakeClient,
           createPromise: Promise.resolve(testContext.fakeClient),
         });
-        const paymentDataRequest = googlePayment.createPaymentDataRequest();
+        paymentDataRequest = googlePayment.createPaymentDataRequest();
+        cardPaymentMethod = paymentDataRequest.allowedPaymentMethods.find(
+          function (el) {
+            return el.type === "CARD";
+          }
+        );
 
         expect(paymentDataRequest.environment).toBe("TEST");
-        expect(paymentDataRequest.allowedPaymentMethods).toEqual([
-          "CARD",
-          "TOKENIZED_CARD",
-        ]);
+        expect(paymentDataRequest.allowedPaymentMethods.length).toBe(1);
+        expect(cardPaymentMethod.type).toBe("CARD");
+        expect(cardPaymentMethod.tokenizationSpecification.type).toBe(
+          "PAYMENT_GATEWAY"
+        );
         expect(
-          paymentDataRequest.paymentMethodTokenizationParameters
-            .tokenizationType
-        ).toBe("PAYMENT_GATEWAY");
-        expect(
-          paymentDataRequest.paymentMethodTokenizationParameters.parameters
-            .gateway
+          cardPaymentMethod.tokenizationSpecification.parameters.gateway
         ).toBe("braintree");
       });
     });

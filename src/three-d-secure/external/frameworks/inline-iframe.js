@@ -1,9 +1,8 @@
-"use strict";
-
-var SongbirdFramework = require("./songbird");
-var BraintreeError = require("../../../lib/braintree-error");
-var errors = require("../../shared/errors");
-var enumerate = require("../../../lib/enumerate");
+// @ts-nocheck
+import SongbirdFramework from "./songbird";
+import BraintreeError from "../../../lib/braintree-error";
+import errors from "../../shared/errors";
+import enumerate from "../../../lib/enumerate";
 
 function InlineIframeFramework(options) {
   SongbirdFramework.call(this, options);
@@ -23,8 +22,8 @@ InlineIframeFramework.prototype.setUpEventListeners = function (reply) {
 
   this.on(
     InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE,
-    function (payload, next) {
-      reply("authentication-iframe-available", payload, next);
+    function (payload) {
+      reply("authentication-iframe-available", payload);
     }
   );
 };
@@ -41,18 +40,6 @@ InlineIframeFramework.prototype._createCardinalConfigurationOptions = function (
   options.payment.framework = "inline";
 
   return options;
-};
-
-InlineIframeFramework.prototype._addV1IframeToPage = function () {
-  this._emit(
-    InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE,
-    {
-      element: this._v1Modal,
-    },
-    function () {
-      // NOOP
-    }
-  );
 };
 
 InlineIframeFramework.prototype._setupFrameworkSpecificListeners = function () {
@@ -91,16 +78,13 @@ InlineIframeFramework.prototype._onInlineSetup = function (
     document.body.appendChild(container);
     resolve();
   } else if (details.data.mode === "static") {
-    this._emit(
-      InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE,
-      {
-        element: container,
-      },
-      function () {
+    this.emit(InlineIframeFramework.events.AUTHENTICATION_IFRAME_AVAILABLE, {
+      element: container,
+      next: function () {
         resolve();
-      }
-    );
+      },
+    });
   }
 };
 
-module.exports = InlineIframeFramework;
+export default InlineIframeFramework;

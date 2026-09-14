@@ -3,13 +3,11 @@
 <span class="rule"></span>
 
 - [Overview](#overview)
-  - [Module Hierarchy](#module-hierarchy)
-  - [Callbacks](#callbacks)
-  - [Promises](#promises)
+  - [Async/await](#async-await)
 - [Browser Support](#browser-support)
-  - [Desktop](#browser-support-desktop)
-  - [Mobile](#browser-support-mobile)
-  - [Webviews](#browser-support-webviews)
+  - [Desktop](#desktop)
+  - [Mobile](#mobile)
+  - [Webviews and hybrid environments](#webviews)
 - [Teardown](#teardown)
 - [Content Security Policy](#content-security-policy)
 
@@ -19,84 +17,62 @@
 
 ## Overview
 
-The Braintree JavaScript SDK is split up into several **modules**. Each module is also represented by a **class** encapsulating the actions that module can perform. In general, each SDK feature is represented by its own standalone module. You can include as many or as few of these modules in your page depending on the Braintree features you will be using.
+The Braintree Web SDK is split up into several **modules**. Each module is also represented by a **class** encapsulating the actions that module can perform. In general, each SDK feature is represented by its own standalone module. You can include as many or as few of these modules in your page depending on the Braintree features you will be using.
 
-Each module exports a `create` function which is responsible for returning an instance of that module's class. For instance, the `braintree-web/paypal` module's `create` method will return an instance of the `PayPal` class.
+Each module exports a `create` function which is responsible for returning an instance of that module's class. For instance, the `braintree-web/hosted-fields` module's `create` method will return an instance of the `HostedFields` class.
 
-<a id="module-hierarchy"></a>
+Many modules require an instance of our `Client` to communicate with our servers; a single `Client` instance can be reused to create several other module instances, as shown below.
 
-### Module hierarchy
+<a id="async-await"></a>
 
-Many modules of this SDK require an instance of our `Client` for communicating to our servers. In these cases, a single `Client` instance can be used for the creation of several other module instances.
+### Async/await
 
-```
-braintree.client.create(...) --------> Client ─┐
-                         ┌─────────────────────┤
-braintree.paypal.create(...) --------> PayPal  │
-                               ┌───────────────┘
-braintree.hostedFields.create(...) --> HostedFields
-```
-
-<a id="callbacks"></a>
-
-### Callbacks
-
-This SDK uses the Node.js callback style, with callbacks passed as the last argument to a function. Callbacks are expected to receive possible errors as the first parameter, and any returned data as the second:
+All asynchronous methods will return a `Promise`.
 
 ```javascript
-braintree.client.create({...}, callback);
-
-function callback(err, clientInstance) { ... }
-```
-
-<a id="promises"></a>
-
-### Promises
-
-In addition to callbacks, all asynchronous methods will return a `Promise` if no callback is provided:
-
-```javascript
-braintree.client
-  .create({
+try {
+  const clientInstance = await braintree.client.create({
     authorization: CLIENT_AUTHORIZATION,
-  })
-  .then(function (client) {
-    // Create other components
   });
+
+  const hostedFieldsInstance = await braintree.hostedFields.create({
+    client: clientInstance,
+  });
+
+  /* ... */
+} catch (err) {
+  console.error(err);
+}
 ```
 
 <a id="browser-support"></a>
 
 ## Browser support
 
-The Braintree JS SDK provides support for numerous browsers and devices. There are, however, caveats with certain integrations and browser combinations.
+The Web SDK supports recent versions of all major browsers. As a general policy, we do not support browsers that are no longer receiving security updates. The current minimum versions are listed below. If you have problems with a specific browser or device, contact [our Support team](https://developer.paypal.com/braintree/help).
 
-While `braintree-web` will work in browsers other than the ones below, these represent the platforms against which we actively test. If you have problems with a specific browser or device, contact [our Support team](https://developer.paypal.com/braintree/help).
-
-<a id="browser-support-desktop"></a>
+<a id="desktop"></a>
 
 ### Desktop
 
-- Chrome latest
-- Firefox latest
-- Microsoft Edge latest
-- Safari 8+
+| Browser        | Minimum version |
+| -------------- | --------------- |
+| Chrome         | 69              |
+| Firefox        | 63              |
+| Microsoft Edge | 79              |
+| Safari         | 12              |
 
-<a id="browser-support-mobile"></a>
+<a id="mobile"></a>
 
 ### Mobile
 
-#### iOS
+| Browser                                            | Minimum version |
+| -------------------------------------------------- | --------------- |
+| Android Chrome                                     | 69              |
+| iOS Safari (includes webviews and Webkit browsers) | 12              |
+| Samsung Browser                                    | 10              |
 
-- Safari 8+ (9+ for 3D Secure)
-- Chrome 48+ (iOS 9+)
-
-#### Android
-
-- Native browser 4.4+
-- Chrome
-- Firefox
-  <a id="browser-support-webviews"></a>
+<a id="webviews"></a>
 
 ### Webviews and hybrid environments
 
@@ -108,18 +84,16 @@ Additionally, `braintree-web` is neither tested nor developed for hybrid runtime
 
 ## Teardown
 
-In certain scenarios you may need to remove your `braintree-web` integration. This is common in single page applications, modal flows, and other situations where state management is a key factor. Any module returned from a `braintree.component.create` call that can be torn down will include a `teardown` function.
+In certain scenarios you may need to clean up your `braintree-web` integration. This is common in single page applications, modal flows, and other situations where state management is a key factor. Any module returned from a `braintree.<component>.create` call that can be torn down will include a `teardown` function.
 
-Invoking `teardown` will clean up any DOM nodes, event handlers, popups and/or iframes that have been created by the integration. Additionally, `teardown` accepts a callback which you can use to know when it is safe to proceed.
+Invoking `teardown` will clean up any DOM nodes, event handlers, popups and/or iframes that have been created by the integration. Additionally, `teardown` returns a Promise that resolves when it is safe to proceed.
 
 ```js
-hostedFieldsInstance.teardown(function (err) {
-  if (err) {
-    console.error("Could not tear down Hosted Fields!");
-  } else {
-    console.log("Hosted Fields has been torn down!");
-  }
-});
+try {
+  await hostedFieldsInstance.teardown();
+} catch (err) {
+  console.error("Could not tear down Hosted Fields!", err);
+}
 ```
 
 If you happen to call this method while the instance's `teardown` is in progress, you'll receive an error. Once completed, calling any methods on the instance will throw an error.
@@ -152,6 +126,18 @@ If using the [PayPal Checkout component](module-braintree-web_paypal-checkout.ht
 | child-src  | \*.paypal.com                                               | \*.paypal.com                                               |
 | frame-src  | \*.paypal.com                                               | \*.paypal.com                                               |
 
+### Apple Pay Specific Directives
+
+If using the [Apple Pay component](module-braintree-web_apple-pay.html), include these additional directives:
+
+|            | Sandbox                        | Production                     |
+| ---------- | ------------------------------ | ------------------------------ |
+| frame-src  | https://applepay.cdn-apple.com | https://applepay.cdn-apple.com |
+| img-src    | https://applepay.cdn-apple.com | https://applepay.cdn-apple.com |
+| script-src | https://applepay.cdn-apple.com | https://applepay.cdn-apple.com |
+
+If Apple adds redirects or changes URLs related to the Apple Pay component, the domains or URLs in these directives may change.
+
 ### Google Pay Specific Directives
 
 If using the [Google Pay component](module-braintree-web_google-payment.html), include these additional directives:
@@ -181,8 +167,6 @@ Additionally, 3D Secure 2 includes a data collection flow called "3DS Method" or
 If maintaining a CSP in an integration that uses 3D Secure, merchants can consider setting `frame-src *` to whitelist all potential ACS URLs that could be utilized during the 3D Secure authentication process.
 
 ### Data Collector Specific Directives
-
-If using Kount with the [Data Collector component](DataCollector.html), adhere to the [Kount CSP guide](https://support.kount.com/hc/en-us/articles/360045746311-FAQ-How-is-Content-Security-Policy-CSP-Used-).
 
 For [Braintree Fraud Protection](https://developer.paypal.com/braintree/docs/guides/premium-fraud-management-tools/overview), use these directives:
 
@@ -241,9 +225,3 @@ Adding empty-space around the content of the `<script>` tags changes the matchin
 <script nonce="123a456b789c000d=">var sum = 1 + 2;</script>
 </html>
 ```
-
-ℹ️️ nonce-source should be one-time use; that is, it changes for each request.
-
-ℹ️️ nonce-source should be a randomly generated, non-guessable,cryptographically strong value; the standard of whats cryptographical strong continue to evolve, but is currently at least 128 bits.
-
-ℹ️️ It is recommended that a nonce-source be used with HTML templating engine.

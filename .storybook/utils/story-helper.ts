@@ -14,10 +14,6 @@ export interface StorybookGlobals {
   sdkVersion?: string;
 }
 
-export interface StoryArgs {
-  [key: string]: unknown;
-}
-
 export interface LoadedData {
   sdkVersion?: string;
   sdkReady?: boolean;
@@ -56,15 +52,12 @@ export interface LoadedData {
  * };
  * ```
  */
-export function createSimpleBraintreeStory(
-  renderFunction: (
-    _container: HTMLElement,
-    _args?: StoryArgs
-  ) => void | Promise<void>,
+export function createSimpleBraintreeStory<T>(
+  renderFunction: (_container: HTMLElement, _args?: T) => void | Promise<void>,
   requiredScripts: string[] = ["client.min.js"]
 ) {
   return (
-    args: StoryArgs,
+    args: T,
     { loaded }: { globals: StorybookGlobals; loaded?: LoadedData }
   ): HTMLElement => {
     const container = document.createElement("div");
@@ -119,12 +112,7 @@ function displayError(container: HTMLElement, error: Error): void {
   if (version === "dev") {
     errorMessage += `
       <br><strong>Local Build Required:</strong><br>
-      <p>To use the local build ("dev" version), run:</p>
-      <ol>
-        <li><code>npm run build</code></li>
-        <li><code>npm run storybook:copy-local-build</code></li>
-      </ol>
-      <p>Or use the combined command: <code>npm run build:integration</code></p>
+      <p>To use the local build ("dev" version), restart Storybook with <code>npm run storybook</code> (it rebuilds the SDK and serves it).</p>
       <br>
       <p>Alternatively, select a CDN version from the toolbar above.</p>
     `;

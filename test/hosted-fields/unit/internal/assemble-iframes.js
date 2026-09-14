@@ -1,8 +1,4 @@
-"use strict";
-
-const {
-  assembleIFrames,
-} = require("../../../../src/hosted-fields/internal/assemble-iframes");
+import { assembleIFrames } from "../../../../src/hosted-fields/internal/assemble-iframes";
 
 describe("assembleIFrames", () => {
   it("iterates through window.frames to find frames on the same origin", () => {

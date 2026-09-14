@@ -1,0 +1,27 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "composite": true,
+    "rootDir": "../../",
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "types": ["node"],
+    "lib": ["ES2024"]
+  },
+  "include": [
+    "vite/**/*.ts",
+    "configs/**/*.ts",
+    "*.ts",
+    "../../vite.config.ts",
+    "../../package.json",
+    "../../components.json"
+  ],
+  "exclude": ["vite/plugins/__tests__/**", "vite/helpers/__tests__/**"]
+}

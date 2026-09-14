@@ -1,18 +1,16 @@
-"use strict";
+import PaymentReady from "../../../src/payment-ready/payment-ready";
+import constants from "../../../src/payment-ready/constants";
+import errors from "../../../src/payment-ready/errors";
+import analytics from "../../../src/lib/analytics";
 
-const PaymentReady = require("../../../src/payment-ready/payment-ready");
-const constants = require("../../../src/payment-ready/constants");
-const errors = require("../../../src/payment-ready/errors");
-const analytics = require("../../../src/lib/analytics");
-
-jest.mock("../../../src/lib/analytics");
+vi.mock("../../../src/lib/analytics");
 
 describe("PaymentReady", () => {
   let mockClient, paymentReadyInstance;
 
   beforeEach(() => {
     mockClient = {
-      request: jest.fn(),
+      request: vi.fn(),
     };
 
     paymentReadyInstance = new PaymentReady({
@@ -403,7 +401,7 @@ describe("PaymentReady", () => {
     var consoleLogMock;
 
     beforeEach(() => {
-      consoleLogMock = jest.spyOn(console, "warn").mockImplementation(() => {});
+      consoleLogMock = vi.spyOn(console, "warn").mockImplementation(() => {});
     });
 
     afterEach(() => {

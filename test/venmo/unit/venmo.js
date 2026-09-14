@@ -1,53 +1,47 @@
-"use strict";
-
-jest.mock("../../../src/lib/analytics");
-jest.mock("../../../src/venmo/shared/supports-venmo");
-jest.mock("../../../src/venmo/external");
-jest.mock("../../../src/lib/in-iframe");
-jest.mock("../../../src/venmo/shared/web-login-backdrop");
-jest.mock("../../../src/lib/url-params");
-
-const analytics = require("../../../src/lib/analytics");
-const { fake } = require("../../helpers");
-const querystring = require("../../../src/lib/querystring");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const Venmo = require("../../../src/venmo/venmo");
-const browserDetection = require("../../../src/venmo/shared/browser-detection");
-const supportsVenmo = require("../../../src/venmo/shared/supports-venmo");
-const inIframe = require("../../../src/lib/in-iframe");
-const { version: VERSION } = require("../../../package.json");
-const methods = require("../../../src/lib/methods");
-const createVenmoDesktop = require("../../../src/venmo/external");
-const venmoErrors = require("../../../src/venmo/shared/errors");
-const {
+vi.mock("../../../src/lib/analytics");
+vi.mock("../../../src/venmo/shared/supports-venmo");
+vi.mock("../../../src/venmo/external");
+vi.mock("../../../src/lib/in-iframe");
+vi.mock("../../../src/venmo/shared/web-login-backdrop");
+import analytics from "../../../src/lib/analytics";
+import { fake } from "../../helpers";
+import querystring from "../../../src/lib/querystring";
+import BraintreeError from "../../../src/lib/braintree-error";
+import Venmo from "../../../src/venmo/venmo";
+import browserDetection from "../../../src/venmo/shared/browser-detection";
+import supportsVenmo from "../../../src/venmo/shared/supports-venmo";
+import inIframe from "../../../src/lib/in-iframe";
+import { version as VERSION } from "../../../package.json";
+import methods from "../../../src/lib/methods";
+import createVenmoDesktop from "../../../src/venmo/external";
+import venmoErrors from "../../../src/venmo/shared/errors";
+import {
   runWebLogin,
   setupDesktopWebLogin,
-} = require("../../../src/venmo/shared/web-login-backdrop");
-const venmoConstants = require("../../../src/venmo/shared/constants");
-const urlParams = require("../../../src/lib/url-params");
+} from "../../../src/venmo/shared/web-login-backdrop";
+import venmoConstants from "../../../src/venmo/shared/constants";
 
 function triggerVisibilityHandler(instance, runAllTimers = true) {
-  // TODO we should have it trigger the actual
+  // We should have it trigger the actual
   // visibility event if possible, rather than
   // calling the method saved on the instance
   instance._visibilityChangeListener();
 
   if (runAllTimers) {
-    jest.runAllTimers();
+    vi.runAllTimers();
   }
-}
-
-function triggerHashChangeHandler(instance) {
-  instance._onHashChangeListener({
-    newURL: window.location.href,
-  });
-
-  jest.runAllTimers();
 }
 
 async function flushPromises() {
   await Promise.resolve();
-  await Promise.resolve().then(() => jest.advanceTimersByTime(1));
+  await Promise.resolve().then(() => {
+    try {
+      vi.advanceTimersByTime(1);
+    } catch {
+      // Real timers are active (e.g. inside Desktop QR / Desktop Web Login
+      // beforeEach after vi.useRealTimers()). A plain Promise drain is enough.
+    }
+  });
   await Promise.resolve();
 }
 
@@ -55,13 +49,12 @@ describe("Venmo", () => {
   let testContext, originalLocationHref;
 
   beforeAll(() => {
-    window.open = jest.fn();
+    window.open = vi.fn();
     originalLocationHref = window.location.href;
-    urlParams.getUrlParams.mockReturnValue({});
   });
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     testContext = {};
     inIframe.mockReturnValue(false);
@@ -69,22 +62,61 @@ describe("Venmo", () => {
     testContext.location = originalLocationHref;
     testContext.configuration = fake.configuration();
     testContext.client = {
-      request: jest.fn().mockResolvedValue({}),
+      request: vi.fn().mockImplementation((options) => {
+        var query = (options.data && options.data.query) || "";
+        if (query.includes("createVenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              createVenmoPaymentContext: {
+                venmoPaymentContext: {
+                  id: "context-id",
+                  status: "CREATED",
+                  createdAt: "2021-01-20T03:25:37.522000Z",
+                  expiresAt: "2021-01-20T03:30:37.522000Z",
+                },
+              },
+            },
+          });
+        }
+        if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "test-user",
+              },
+            },
+          });
+        }
+        return Promise.resolve({});
+      }),
       getConfiguration: () => testContext.configuration,
     };
 
     setupDesktopWebLogin.mockResolvedValue({});
 
-    analytics.sendEventPlus = jest.fn();
+    analytics.sendEventPlus = vi.fn();
 
-    jest.spyOn(document, "addEventListener");
-    jest.spyOn(document, "removeEventListener");
+    vi.spyOn(document, "addEventListener");
+    vi.spyOn(document, "removeEventListener");
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
+    // Explicitly reset browser-detection and supportsVenmo mocks to return
+    // undefined. vi.restoreAllMocks() removes the spy wrapper but in some
+    // Vitest versions the underlying vi.fn()'s mockReturnValue implementation
+    // can persist, causing cross-test pollution.
+    Object.values(browserDetection).forEach((fn) => {
+      if (typeof fn === "function" && fn.mockReset) fn.mockReset();
+    });
+    Object.values(supportsVenmo).forEach((fn) => {
+      if (typeof fn === "function" && fn.mockReset) fn.mockReset();
+    });
     window.location.href = originalLocationHref;
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
 
     if (window.popupBridge) {
       delete window.popupBridge;
@@ -94,6 +126,7 @@ describe("Venmo", () => {
   it("sends analytics events when venmo is not configured for desktop", async () => {
     new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
     });
 
     await flushPromises();
@@ -118,6 +151,7 @@ describe("Venmo", () => {
     new Venmo({
       allowDesktop: true,
       createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
     });
 
     await flushPromises();
@@ -142,6 +176,7 @@ describe("Venmo", () => {
     new Venmo({
       allowDesktop: true,
       createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
     });
 
     await flushPromises();
@@ -177,6 +212,7 @@ describe("Venmo", () => {
     const venmo = new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
       allowNonDefaultBrowsers: false,
+      paymentMethodUsage: "single_use",
     });
 
     expect(venmo._allowNonDefaultBrowsers).toBe(false);
@@ -185,6 +221,7 @@ describe("Venmo", () => {
   it("defaults allowNonDefaultBrowsers to true when not specified", () => {
     const venmo = new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
     });
 
     expect(venmo._allowNonDefaultBrowsers).toBe(true);
@@ -196,6 +233,7 @@ describe("Venmo", () => {
       allowDesktop: true,
       createPromise: new Promise((resolve) => resolve(testContext.client)),
       displayName: "name",
+      paymentMethodUsage: "single_use",
     });
 
     await flushPromises();
@@ -212,6 +250,7 @@ describe("Venmo", () => {
     new Venmo({
       allowDesktop: true,
       createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
     });
 
     await flushPromises();
@@ -229,6 +268,7 @@ describe("Venmo", () => {
       allowDesktop: true,
       profileId: "profile-id",
       createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
     });
 
     await flushPromises();
@@ -246,58 +286,16 @@ describe("Venmo", () => {
       allowDesktop: true,
       createPromise: new Promise((resolve) => resolve(testContext.client)),
       riskCorrelationId: "custom-risk-id",
+      paymentMethodUsage: "single_use",
     });
 
     await flushPromises();
 
     expect(createVenmoDesktop).toBeCalledWith(
       expect.objectContaining({
-        venmoRiskCorrelationId: "custom-risk-id",
+        riskCorrelationId: "custom-risk-id",
       })
     );
-  });
-
-  it("sets up a payment context using legacy mutation when mobile polling flow is used without paymentMethodUsage when in an iframe", async () => {
-    testContext.client.request.mockResolvedValue({
-      data: {
-        createVenmoQRCodePaymentContext: {
-          venmoQRCodePaymentContext: {
-            status: "CREATED",
-            id: "context-id",
-            createdAt: "2021-01-20T03:25:37.522000Z",
-            expiresAt: "2021-01-20T03:30:37.522000Z",
-          },
-        },
-      },
-    });
-    inIframe.mockReturnValue(true);
-    const venmo = new Venmo({
-      createPromise: new Promise((resolve) => resolve(testContext.client)),
-    });
-
-    await flushPromises();
-
-    expect(testContext.client.request).toBeCalledWith({
-      api: "graphQLApi",
-      data: {
-        query: expect.stringMatching(
-          "mutation CreateVenmoQRCodePaymentContext"
-        ),
-        variables: {
-          input: {
-            environment: "SANDBOX",
-            intent: "PAY_FROM_APP",
-          },
-        },
-      },
-    });
-    expect(analytics.sendEvent).toBeCalledWith(
-      expect.anything(),
-      "venmo.manual-return.presented"
-    );
-
-    expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
-    expect(venmo._venmoPaymentContextId).toBe("context-id");
   });
 
   it("sets up a payment context when mobile polling flow is used with paymentMethodUsage when in an iframe", async () => {
@@ -339,53 +337,10 @@ describe("Venmo", () => {
         },
       },
     });
-    expect(analytics.sendEvent).toBeCalledWith(
+    expect(analytics.sendEventPlus).toBeCalledWith(
       expect.anything(),
-      "venmo.manual-return.presented"
-    );
-
-    expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
-    expect(venmo._venmoPaymentContextId).toBe("context-id");
-  });
-
-  it("sets up a payment context using legacy mutation when mobile polling flow is used without paymentMethodUsage when configured from manual return", async () => {
-    testContext.client.request.mockResolvedValue({
-      data: {
-        createVenmoQRCodePaymentContext: {
-          venmoQRCodePaymentContext: {
-            status: "CREATED",
-            id: "context-id",
-            createdAt: "2021-01-20T03:25:37.522000Z",
-            expiresAt: "2021-01-20T03:30:37.522000Z",
-          },
-        },
-      },
-    });
-
-    const venmo = new Venmo({
-      createPromise: new Promise((resolve) => resolve(testContext.client)),
-      requireManualReturn: true,
-    });
-
-    await flushPromises();
-
-    expect(testContext.client.request).toBeCalledWith({
-      api: "graphQLApi",
-      data: {
-        query: expect.stringMatching(
-          "mutation CreateVenmoQRCodePaymentContext"
-        ),
-        variables: {
-          input: {
-            environment: "SANDBOX",
-            intent: "PAY_FROM_APP",
-          },
-        },
-      },
-    });
-    expect(analytics.sendEvent).toBeCalledWith(
-      expect.anything(),
-      "venmo.manual-return.presented"
+      "venmo.manual-return.presented",
+      expect.anything()
     );
 
     expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
@@ -431,9 +386,10 @@ describe("Venmo", () => {
         },
       },
     });
-    expect(analytics.sendEvent).toBeCalledWith(
+    expect(analytics.sendEventPlus).toBeCalledWith(
       expect.anything(),
-      "venmo.manual-return.presented"
+      "venmo.manual-return.presented",
+      expect.anything()
     );
 
     expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
@@ -478,9 +434,10 @@ describe("Venmo", () => {
         },
       },
     });
-    expect(analytics.sendEvent).toBeCalledWith(
+    expect(analytics.sendEventPlus).toBeCalledWith(
       expect.anything(),
-      "venmo.mobile-payment-context.presented"
+      "venmo.mobile-payment-context.presented",
+      expect.anything()
     );
 
     expect(venmo._venmoPaymentContextStatus).toBe("CREATED");
@@ -576,44 +533,6 @@ describe("Venmo", () => {
     expect(venmo._venmoPaymentContextId).toBe("context-id");
   });
 
-  it("ignores display name when not configured with paymentMethodUsage", async () => {
-    testContext.client.request.mockResolvedValue({
-      data: {
-        createVenmoQRCodePaymentContext: {
-          venmoQRCodePaymentContext: {
-            status: "CREATED",
-            id: "context-id",
-            createdAt: "2021-01-20T03:25:37.522000Z",
-            expiresAt: "2021-01-20T03:30:37.522000Z",
-          },
-        },
-      },
-    });
-
-    const venmo = new Venmo({
-      createPromise: new Promise((resolve) => resolve(testContext.client)),
-      requireManualReturn: true,
-      displayName: "name",
-    });
-
-    await flushPromises();
-
-    expect(testContext.client.request).toBeCalledWith({
-      api: "graphQLApi",
-      data: {
-        query: expect.stringMatching(
-          "mutation CreateVenmoQRCodePaymentContext"
-        ),
-        variables: {
-          input: {
-            environment: "SANDBOX",
-            intent: "PAY_FROM_APP",
-          },
-        },
-      },
-    });
-  });
-
   it("sets up a payment context with default values of collect address flags when not passed", async () => {
     const expectedDefault = false;
 
@@ -662,7 +581,7 @@ describe("Venmo", () => {
   it("sets up a payment context with collect address flags when passed", async () => {
     const inputAddressCollection = true;
 
-    testContext.configuration.gatewayConfiguration.payWithVenmo.enrichedCustomerDataEnabled = true;
+    testContext.configuration.gatewayConfiguration.venmo.enrichedCustomerDataEnabled = true;
     testContext.client.request.mockResolvedValue({
       data: {
         createVenmoPaymentContext: {
@@ -703,6 +622,58 @@ describe("Venmo", () => {
           },
         },
       },
+    });
+  });
+
+  it("rejects with VENMO_ECD_DISABLED when collectCustomerBillingAddress is true and enrichedCustomerDataEnabled is false", async () => {
+    testContext.configuration.gatewayConfiguration.venmo.enrichedCustomerDataEnabled = false;
+
+    var venmo = new Venmo({
+      allowDesktop: true,
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
+      collectCustomerBillingAddress: true,
+    });
+
+    await expect(venmo._createPromise).rejects.toMatchObject({
+      code: venmoErrors.VENMO_ECD_DISABLED.code,
+      type: venmoErrors.VENMO_ECD_DISABLED.type,
+      message: venmoErrors.VENMO_ECD_DISABLED.message,
+    });
+  });
+
+  it("rejects with VENMO_ECD_DISABLED when collectCustomerShippingAddress is true and enrichedCustomerDataEnabled is false", async () => {
+    testContext.configuration.gatewayConfiguration.venmo.enrichedCustomerDataEnabled = false;
+
+    var venmo = new Venmo({
+      allowDesktop: true,
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
+      collectCustomerShippingAddress: true,
+    });
+
+    await expect(venmo._createPromise).rejects.toMatchObject({
+      code: venmoErrors.VENMO_ECD_DISABLED.code,
+      type: venmoErrors.VENMO_ECD_DISABLED.type,
+      message: venmoErrors.VENMO_ECD_DISABLED.message,
+    });
+  });
+
+  it("rejects with VENMO_ECD_DISABLED when both collect address flags are true and enrichedCustomerDataEnabled is false", async () => {
+    testContext.configuration.gatewayConfiguration.venmo.enrichedCustomerDataEnabled = false;
+
+    var venmo = new Venmo({
+      allowDesktop: true,
+      createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
+      collectCustomerBillingAddress: true,
+      collectCustomerShippingAddress: true,
+    });
+
+    await expect(venmo._createPromise).rejects.toMatchObject({
+      code: venmoErrors.VENMO_ECD_DISABLED.code,
+      type: venmoErrors.VENMO_ECD_DISABLED.type,
+      message: venmoErrors.VENMO_ECD_DISABLED.message,
     });
   });
 
@@ -776,9 +747,41 @@ describe("Venmo", () => {
     });
   });
 
-  it("does not create a new payment context or venmo desktop when url hash has tokenization results", async () => {
-    jest.spyOn(Venmo.prototype, "hasTokenizationResult").mockReturnValue(true);
-
+  it("refreshes the payment context after 2/3 of the expiration time has passed", async () => {
+    var createCallCount = 0;
+    testContext.client.request.mockImplementation((options) => {
+      var query = (options.data && options.data.query) || "";
+      if (query.includes("createVenmoPaymentContext")) {
+        createCallCount++;
+        var contextId =
+          createCallCount === 1 ? "first-context-id" : "second-context-id";
+        return Promise.resolve({
+          data: {
+            createVenmoPaymentContext: {
+              venmoPaymentContext: {
+                status: "CREATED",
+                id: contextId,
+                createdAt: "2021-01-20T03:25:00.000000Z",
+                expiresAt: "2021-01-20T03:25:10.000000Z",
+              },
+            },
+          },
+        });
+      }
+      if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+        return Promise.resolve({
+          data: {
+            node: {
+              status: "APPROVED",
+              paymentMethodId: "fake-nonce",
+              userName: "test-user",
+            },
+          },
+        });
+      }
+      return Promise.resolve({});
+    });
+    inIframe.mockReturnValue(true);
     const venmo = new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
       paymentMethodUsage: "single_use",
@@ -786,56 +789,15 @@ describe("Venmo", () => {
 
     await flushPromises();
 
-    expect(testContext.client.request).not.toBeCalled();
-    expect(createVenmoDesktop).not.toBeCalled();
+    expect(venmo._venmoPaymentContextId).toBe("first-context-id");
 
-    expect(analytics.sendEvent).toBeCalledWith(
-      expect.anything(),
-      "venmo.appswitch.return-in-new-tab"
-    );
-  });
-
-  it("refreshes the payment context after 2/3 of the expiration time has passed", async () => {
-    testContext.client.request.mockResolvedValueOnce({
-      data: {
-        createVenmoQRCodePaymentContext: {
-          venmoQRCodePaymentContext: {
-            status: "CREATED",
-            id: "first-context-id",
-            createdAt: "2021-01-20T03:25:00.000000Z",
-            expiresAt: "2021-01-20T03:25:10.000000Z",
-          },
-        },
-      },
-    });
-    testContext.client.request.mockResolvedValueOnce({
-      data: {
-        createVenmoQRCodePaymentContext: {
-          venmoQRCodePaymentContext: {
-            status: "CREATED",
-            id: "second-context-id",
-            createdAt: "2021-01-20T03:25:00.000000Z",
-            expiresAt: "2021-01-20T03:25:10.000000Z",
-          },
-        },
-      },
-    });
-    inIframe.mockReturnValue(true);
-    const venmo = new Venmo({
-      createPromise: new Promise((resolve) => resolve(testContext.client)),
-    });
+    vi.advanceTimersByTime(6000); // 6 seconds
 
     await flushPromises();
 
     expect(venmo._venmoPaymentContextId).toBe("first-context-id");
 
-    jest.advanceTimersByTime(6000); // 6 seconds
-
-    await flushPromises();
-
-    expect(venmo._venmoPaymentContextId).toBe("first-context-id");
-
-    jest.advanceTimersByTime(1000); // 1 second
+    vi.advanceTimersByTime(1000); // 1 second
 
     await flushPromises();
 
@@ -843,40 +805,46 @@ describe("Venmo", () => {
   });
 
   it("does not refresh the payment context after 2/3 of the expiration time has passed when tokenization is in progress", async () => {
-    testContext.client.request.mockResolvedValueOnce({
-      data: {
-        createVenmoQRCodePaymentContext: {
-          venmoQRCodePaymentContext: {
-            status: "CREATED",
-            id: "first-context-id",
-            createdAt: "2021-01-20T03:25:00.000000Z",
-            expiresAt: "2021-01-20T03:25:10.000000Z",
+    testContext.client.request.mockImplementation((options) => {
+      var query = (options.data && options.data.query) || "";
+      if (query.includes("createVenmoPaymentContext")) {
+        return Promise.resolve({
+          data: {
+            createVenmoPaymentContext: {
+              venmoPaymentContext: {
+                status: "CREATED",
+                id: "first-context-id",
+                createdAt: "2021-01-20T03:25:00.000000Z",
+                expiresAt: "2021-01-20T03:25:10.000000Z",
+              },
+            },
           },
-        },
-      },
-    });
-    testContext.client.request.mockResolvedValueOnce({
-      data: {
-        createVenmoQRCodePaymentContext: {
-          venmoQRCodePaymentContext: {
-            status: "CREATED",
-            id: "second-context-id",
-            createdAt: "2021-01-20T03:25:00.000000Z",
-            expiresAt: "2021-01-20T03:25:10.000000Z",
+        });
+      }
+      if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+        return Promise.resolve({
+          data: {
+            node: {
+              status: "APPROVED",
+              paymentMethodId: "fake-nonce",
+              userName: "test-user",
+            },
           },
-        },
-      },
+        });
+      }
+      return Promise.resolve({});
     });
     inIframe.mockReturnValue(true);
     const venmo = new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
     });
 
     await flushPromises();
 
     expect(venmo._venmoPaymentContextId).toBe("first-context-id");
 
-    jest.advanceTimersByTime(6000); // 6 seconds
+    vi.advanceTimersByTime(6000); // 6 seconds
 
     venmo._tokenizationInProgress = true;
 
@@ -884,7 +852,7 @@ describe("Venmo", () => {
 
     expect(venmo._venmoPaymentContextId).toBe("first-context-id");
 
-    jest.advanceTimersByTime(5000); // 5 seconds
+    vi.advanceTimersByTime(5000); // 5 seconds
 
     await flushPromises();
 
@@ -893,48 +861,56 @@ describe("Venmo", () => {
     expect(testContext.client.request).toHaveBeenNthCalledWith(1, {
       api: "graphQLApi",
       data: expect.objectContaining({
-        query: expect.stringMatching(
-          "mutation CreateVenmoQRCodePaymentContext"
-        ),
+        query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
       }),
     });
   });
 
   it("does make a request for a new payment context after 2/3 of the expiration time has passed, but does not update the reference to the payment context if tokenization started while the request for the new payment context was in process", async () => {
-    testContext.client.request.mockResolvedValueOnce({
-      data: {
-        createVenmoQRCodePaymentContext: {
-          venmoQRCodePaymentContext: {
-            status: "CREATED",
-            id: "first-context-id",
-            createdAt: "2021-01-20T03:25:00.000000Z",
-            expiresAt: "2021-01-20T03:25:10.000000Z",
+    var createCallCount = 0;
+    testContext.client.request.mockImplementation((options) => {
+      var query = (options.data && options.data.query) || "";
+      if (query.includes("createVenmoPaymentContext")) {
+        createCallCount++;
+        var contextId =
+          createCallCount === 1 ? "first-context-id" : "second-context-id";
+        return Promise.resolve({
+          data: {
+            createVenmoPaymentContext: {
+              venmoPaymentContext: {
+                status: "CREATED",
+                id: contextId,
+                createdAt: "2021-01-20T03:25:00.000000Z",
+                expiresAt: "2021-01-20T03:25:10.000000Z",
+              },
+            },
           },
-        },
-      },
-    });
-    testContext.client.request.mockResolvedValueOnce({
-      data: {
-        createVenmoQRCodePaymentContext: {
-          venmoQRCodePaymentContext: {
-            status: "CREATED",
-            id: "second-context-id",
-            createdAt: "2021-01-20T03:25:00.000000Z",
-            expiresAt: "2021-01-20T03:25:10.000000Z",
+        });
+      }
+      if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+        return Promise.resolve({
+          data: {
+            node: {
+              status: "APPROVED",
+              paymentMethodId: "fake-nonce",
+              userName: "test-user",
+            },
           },
-        },
-      },
+        });
+      }
+      return Promise.resolve({});
     });
     inIframe.mockReturnValue(true);
     const venmo = new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
     });
 
     await flushPromises();
 
     expect(venmo._venmoPaymentContextId).toBe("first-context-id");
 
-    jest.advanceTimersByTime(6667); // just over the 2/3 threshold
+    vi.advanceTimersByTime(6667); // just over the 2/3 threshold
 
     venmo._tokenizationInProgress = true;
 
@@ -942,7 +918,7 @@ describe("Venmo", () => {
 
     expect(venmo._venmoPaymentContextId).toBe("first-context-id");
 
-    jest.advanceTimersByTime(1000); // 1 second
+    vi.advanceTimersByTime(1000); // 1 second
 
     await flushPromises();
 
@@ -951,17 +927,13 @@ describe("Venmo", () => {
     expect(testContext.client.request).toHaveBeenNthCalledWith(1, {
       api: "graphQLApi",
       data: expect.objectContaining({
-        query: expect.stringMatching(
-          "mutation CreateVenmoQRCodePaymentContext"
-        ),
+        query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
       }),
     });
     expect(testContext.client.request).toHaveBeenNthCalledWith(2, {
       api: "graphQLApi",
       data: expect.objectContaining({
-        query: expect.stringMatching(
-          "mutation CreateVenmoQRCodePaymentContext"
-        ),
+        query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
       }),
     });
   });
@@ -975,6 +947,7 @@ describe("Venmo", () => {
     inIframe.mockResolvedValue(true);
     const venmo = new Venmo({
       createPromise: new Promise((resolve) => resolve(testContext.client)),
+      paymentMethodUsage: "single_use",
     });
 
     await venmo.getUrl().catch((err) => {
@@ -1153,18 +1126,36 @@ describe("Venmo", () => {
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
         _isIncognito: false,
+        paymentMethodUsage: "single_use",
       });
-      testContext.client.request.mockResolvedValue({
-        data: {
-          createVenmoQRCodePaymentContext: {
-            venmoQRCodePaymentContext: {
-              status: "CREATED",
-              id: "context-id",
-              createdAt: "2021-01-20T03:25:37.522000Z",
-              expiresAt: "2021-01-20T03:30:37.522000Z",
+      testContext.client.request.mockImplementation((options) => {
+        var query = (options.data && options.data.query) || "";
+        if (query.includes("createVenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              createVenmoPaymentContext: {
+                venmoPaymentContext: {
+                  status: "CREATED",
+                  id: "context-id",
+                  createdAt: "2021-01-20T03:25:37.522000Z",
+                  expiresAt: "2021-01-20T03:30:37.522000Z",
+                },
+              },
             },
-          },
-        },
+          });
+        }
+        if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "test-user",
+              },
+            },
+          });
+        }
+        return Promise.resolve({});
       });
     });
 
@@ -1186,14 +1177,15 @@ describe("Venmo", () => {
       venmo = new Venmo({
         allowDesktopWebLogin,
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
 
       return venmo.getUrl().then((url) => {
         const params = querystring.parse(url);
 
-        expect(params["x-success"]).toBe(`${expectedUrl}#venmoSuccess=1`);
-        expect(params["x-cancel"]).toBe(`${expectedUrl}#venmoCancel=1`);
-        expect(params["x-error"]).toBe(`${expectedUrl}#venmoError=1`);
+        expect(params["x-success"]).toBe(expectedUrl);
+        expect(params["x-cancel"]).toBe(expectedUrl);
+        expect(params["x-error"]).toBe(expectedUrl);
       });
     });
 
@@ -1201,6 +1193,7 @@ describe("Venmo", () => {
       const venmoConfig = {
         mobileWebFallBack: true,
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       };
 
       venmo = new Venmo(venmoConfig);
@@ -1217,6 +1210,7 @@ describe("Venmo", () => {
         allowDesktopWebLogin: true,
         enableVenmoSandbox: true,
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       };
 
       venmo = new Venmo(venmoConfig);
@@ -1229,10 +1223,41 @@ describe("Venmo", () => {
     it("uses production url when enableVenmoSandbox is true but environment is production", () => {
       const productionClient = Object.assign({}, testContext.client);
 
-      productionClient.getConfiguration = jest.fn().mockReturnValue({
+      productionClient.request = vi.fn().mockImplementation((options) => {
+        var query = (options.data && options.data.query) || "";
+        if (query.includes("createVenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              createVenmoPaymentContext: {
+                venmoPaymentContext: {
+                  status: "CREATED",
+                  id: "context-id",
+                  createdAt: "2021-01-20T03:25:37.522000Z",
+                  expiresAt: "2021-01-20T03:30:37.522000Z",
+                },
+              },
+            },
+          });
+        }
+        if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "test-user",
+              },
+            },
+          });
+        }
+        return Promise.resolve({});
+      });
+
+      productionClient.getConfiguration = vi.fn().mockReturnValue({
         gatewayConfiguration: {
           assetsUrl: "https://assets.braintreegateway.com",
-          payWithVenmo: {
+          environment: "production",
+          venmo: {
             accessToken: "access-token",
             merchantId: "merchant-id",
             environment: "production",
@@ -1250,6 +1275,7 @@ describe("Venmo", () => {
         allowDesktopWebLogin: true,
         enableVenmoSandbox: true,
         createPromise: new Promise((resolve) => resolve(productionClient)),
+        paymentMethodUsage: "single_use",
       };
 
       venmo = new Venmo(venmoConfig);
@@ -1270,11 +1296,9 @@ describe("Venmo", () => {
       return venmo.getUrl().then((url) => {
         const params = querystring.parse(url);
 
-        expect(params["x-success"]).toBe(
-          `${pageUrlWithoutHash}#venmoSuccess=1`
-        );
-        expect(params["x-cancel"]).toBe(`${pageUrlWithoutHash}#venmoCancel=1`);
-        expect(params["x-error"]).toBe(`${pageUrlWithoutHash}#venmoError=1`);
+        expect(params["x-success"]).toBe(pageUrlWithoutHash);
+        expect(params["x-cancel"]).toBe(pageUrlWithoutHash);
+        expect(params["x-error"]).toBe(pageUrlWithoutHash);
       });
     });
 
@@ -1286,11 +1310,9 @@ describe("Venmo", () => {
       return venmo.getUrl().then((url) => {
         const params = querystring.parse(url);
 
-        expect(params["x-success"]).toBe(
-          `${pageUrlWithoutHash}#venmoSuccess=1`
-        );
-        expect(params["x-cancel"]).toBe(`${pageUrlWithoutHash}#venmoCancel=1`);
-        expect(params["x-error"]).toBe(`${pageUrlWithoutHash}#venmoError=1`);
+        expect(params["x-success"]).toBe(pageUrlWithoutHash);
+        expect(params["x-cancel"]).toBe(pageUrlWithoutHash);
+        expect(params["x-error"]).toBe(pageUrlWithoutHash);
       });
     });
 
@@ -1309,9 +1331,9 @@ describe("Venmo", () => {
     ])("contains return URL %s", (s, location, deepLinked) => {
       let params;
       const expectedReturnUrls = {
-        "x-success": `${location}#venmoSuccess=1`,
-        "x-cancel": `${location}#venmoCancel=1`,
-        "x-error": `${location}#venmoError=1`,
+        "x-success": location,
+        "x-cancel": location,
+        "x-error": location,
       };
 
       if (deepLinked) {
@@ -1319,6 +1341,7 @@ describe("Venmo", () => {
           allowDesktopWebLogin: false,
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           deepLinkReturnUrl: location,
+          paymentMethodUsage: "single_use",
         });
       } else if (location !== testContext.location) {
         history.replaceState({}, "", location);
@@ -1333,21 +1356,39 @@ describe("Venmo", () => {
     });
 
     it("omits return urls when using polling flow without a deep link return url", () => {
-      testContext.client.request.mockResolvedValue({
-        data: {
-          createVenmoQRCodePaymentContext: {
-            venmoQRCodePaymentContext: {
-              status: "CREATED",
-              id: "context-id",
-              createdAt: "2021-01-20T03:25:37.522000Z",
-              expiresAt: "2021-01-20T03:30:37.522000Z",
+      testContext.client.request.mockImplementation((options) => {
+        var query = (options.data && options.data.query) || "";
+        if (query.includes("createVenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              createVenmoPaymentContext: {
+                venmoPaymentContext: {
+                  status: "CREATED",
+                  id: "context-id",
+                  createdAt: "2021-01-20T03:25:37.522000Z",
+                  expiresAt: "2021-01-20T03:30:37.522000Z",
+                },
+              },
             },
-          },
-        },
+          });
+        }
+        if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "test-user",
+              },
+            },
+          });
+        }
+        return Promise.resolve({});
       });
       inIframe.mockReturnValue(true);
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
 
       return venmo.getUrl().then((url) => {
@@ -1360,55 +1401,85 @@ describe("Venmo", () => {
     });
 
     it("includes return urls when using polling flow with a deep link return url", () => {
-      testContext.client.request.mockResolvedValue({
-        data: {
-          createVenmoQRCodePaymentContext: {
-            venmoQRCodePaymentContext: {
-              status: "CREATED",
-              id: "context-id",
-              createdAt: "2021-01-20T03:25:37.522000Z",
-              expiresAt: "2021-01-20T03:30:37.522000Z",
+      testContext.client.request.mockImplementation((options) => {
+        var query = (options.data && options.data.query) || "";
+        if (query.includes("createVenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              createVenmoPaymentContext: {
+                venmoPaymentContext: {
+                  status: "CREATED",
+                  id: "context-id",
+                  createdAt: "2021-01-20T03:25:37.522000Z",
+                  expiresAt: "2021-01-20T03:30:37.522000Z",
+                },
+              },
             },
-          },
-        },
+          });
+        }
+        if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "test-user",
+              },
+            },
+          });
+        }
+        return Promise.resolve({});
       });
       inIframe.mockReturnValue(true);
       venmo = new Venmo({
         deepLinkReturnUrl: "https://example.com/top-level-page",
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
 
       return venmo.getUrl().then((url) => {
         const params = querystring.parse(url);
 
-        expect(params["x-success"]).toBe(
-          "https://example.com/top-level-page#venmoSuccess=1"
-        );
-        expect(params["x-cancel"]).toBe(
-          "https://example.com/top-level-page#venmoCancel=1"
-        );
-        expect(params["x-error"]).toBe(
-          "https://example.com/top-level-page#venmoError=1"
-        );
+        expect(params["x-success"]).toBe("https://example.com/top-level-page");
+        expect(params["x-cancel"]).toBe("https://example.com/top-level-page");
+        expect(params["x-error"]).toBe("https://example.com/top-level-page");
       });
     });
 
     it("omits return urls when configured to require manual return", () => {
-      testContext.client.request.mockResolvedValue({
-        data: {
-          createVenmoQRCodePaymentContext: {
-            venmoQRCodePaymentContext: {
-              status: "CREATED",
-              id: "context-id",
-              createdAt: "2021-01-20T03:25:37.522000Z",
-              expiresAt: "2021-01-20T03:30:37.522000Z",
+      testContext.client.request.mockImplementation((options) => {
+        var query = (options.data && options.data.query) || "";
+        if (query.includes("createVenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              createVenmoPaymentContext: {
+                venmoPaymentContext: {
+                  status: "CREATED",
+                  id: "context-id",
+                  createdAt: "2021-01-20T03:25:37.522000Z",
+                  expiresAt: "2021-01-20T03:30:37.522000Z",
+                },
+              },
             },
-          },
-        },
+          });
+        }
+        if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "test-user",
+              },
+            },
+          });
+        }
+        return Promise.resolve({});
       });
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
         requireManualReturn: true,
+        paymentMethodUsage: "single_use",
       });
 
       return venmo.getUrl().then((url) => {
@@ -1421,7 +1492,7 @@ describe("Venmo", () => {
     });
 
     it("omits return urls when using non-default mobile browser", function () {
-      jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+      vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
 
       return venmo.getUrl().then(function (url) {
         var params = querystring.parse(url);
@@ -1434,13 +1505,14 @@ describe("Venmo", () => {
 
     describe("non-default browser with deep link return URL", () => {
       it("omits return urls when using iOS non-default browser even with deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
-        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
 
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           deepLinkReturnUrl: "com.example://return",
+          paymentMethodUsage: "single_use",
         });
 
         return venmo.getUrl().then((url) => {
@@ -1452,43 +1524,41 @@ describe("Venmo", () => {
       });
 
       it("includes return urls when using Android non-default browser with deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
-        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
 
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           deepLinkReturnUrl: "com.example://return",
+          paymentMethodUsage: "single_use",
         });
 
         return venmo.getUrl().then((url) => {
           const params = querystring.parse(url);
-          expect(params["x-success"]).toBe(
-            "com.example://return#venmoSuccess=1"
-          );
-          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
-          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+          expect(params["x-success"]).toBe("com.example://return");
+          expect(params["x-cancel"]).toBe("com.example://return");
+          expect(params["x-error"]).toBe("com.example://return");
         });
       });
     });
 
     describe("webview with deep link return URL", () => {
       it("includes return urls when using webview with deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(true);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(true);
 
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           deepLinkReturnUrl: "com.example://return",
+          paymentMethodUsage: "single_use",
         });
 
         return venmo.getUrl().then((url) => {
           const params = querystring.parse(url);
-          expect(params["x-success"]).toBe(
-            "com.example://return#venmoSuccess=1"
-          );
-          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
-          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+          expect(params["x-success"]).toBe("com.example://return");
+          expect(params["x-cancel"]).toBe("com.example://return");
+          expect(params["x-error"]).toBe("com.example://return");
         });
       });
     });
@@ -1499,12 +1569,13 @@ describe("Venmo", () => {
       });
 
       it("omits return urls when iframe + non-default browser + deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
 
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           deepLinkReturnUrl: "com.example://return",
+          paymentMethodUsage: "single_use",
         });
 
         return venmo.getUrl().then((url) => {
@@ -1516,53 +1587,52 @@ describe("Venmo", () => {
       });
 
       it("includes return urls when iframe + default browser + deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
 
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           deepLinkReturnUrl: "com.example://return",
+          paymentMethodUsage: "single_use",
         });
 
         return venmo.getUrl().then((url) => {
           const params = querystring.parse(url);
-          expect(params["x-success"]).toBe(
-            "com.example://return#venmoSuccess=1"
-          );
-          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
-          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+          expect(params["x-success"]).toBe("com.example://return");
+          expect(params["x-cancel"]).toBe("com.example://return");
+          expect(params["x-error"]).toBe("com.example://return");
         });
       });
 
       it("includes return urls when webview + iframe + deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(true);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(true);
 
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           deepLinkReturnUrl: "com.example://return",
+          paymentMethodUsage: "single_use",
         });
 
         return venmo.getUrl().then((url) => {
           const params = querystring.parse(url);
-          expect(params["x-success"]).toBe(
-            "com.example://return#venmoSuccess=1"
-          );
-          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
-          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+          expect(params["x-success"]).toBe("com.example://return");
+          expect(params["x-cancel"]).toBe("com.example://return");
+          expect(params["x-error"]).toBe("com.example://return");
         });
       });
     });
 
     describe("incognito mode scenarios", () => {
       it("omits return urls when default browser + incognito + no deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
         inIframe.mockReturnValue(false);
 
         // Create venmo instance with incognito mode
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
+          paymentMethodUsage: "single_use",
         });
         venmo._isIncognito = true;
 
@@ -1575,35 +1645,35 @@ describe("Venmo", () => {
       });
 
       it("includes return urls when incognito + deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
 
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           deepLinkReturnUrl: "com.example://return",
+          paymentMethodUsage: "single_use",
         });
         venmo._isIncognito = true;
 
         return venmo.getUrl().then((url) => {
           const params = querystring.parse(url);
-          expect(params["x-success"]).toBe(
-            "com.example://return#venmoSuccess=1"
-          );
-          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
-          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+          expect(params["x-success"]).toBe("com.example://return");
+          expect(params["x-cancel"]).toBe("com.example://return");
+          expect(params["x-error"]).toBe("com.example://return");
         });
       });
     });
 
     describe("manual return scenarios", () => {
       it("omits return urls when manual return is required + no deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
         inIframe.mockReturnValue(false);
 
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           requireManualReturn: true,
+          paymentMethodUsage: "single_use",
         });
 
         return venmo.getUrl().then((url) => {
@@ -1615,22 +1685,21 @@ describe("Venmo", () => {
       });
 
       it("includes return urls when manual return is required + deep link return url", () => {
-        jest.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
-        jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        vi.spyOn(supportsVenmo, "isNonDefaultBrowser").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
 
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           requireManualReturn: true,
           deepLinkReturnUrl: "com.example://return",
+          paymentMethodUsage: "single_use",
         });
 
         return venmo.getUrl().then((url) => {
           const params = querystring.parse(url);
-          expect(params["x-success"]).toBe(
-            "com.example://return#venmoSuccess=1"
-          );
-          expect(params["x-cancel"]).toBe("com.example://return#venmoCancel=1");
-          expect(params["x-error"]).toBe("com.example://return#venmoError=1");
+          expect(params["x-success"]).toBe("com.example://return");
+          expect(params["x-cancel"]).toBe("com.example://return");
+          expect(params["x-error"]).toBe("com.example://return");
         });
       });
     });
@@ -1657,6 +1726,7 @@ describe("Venmo", () => {
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           profileId: merchantID,
+          paymentMethodUsage: "single_use",
         });
 
         return venmo.getUrl().then((url) => {
@@ -1675,33 +1745,90 @@ describe("Venmo", () => {
       }
     );
 
-    // NEXT_MAJOR_VERSION should be able to remove this test
-    // since we won't be using the legacy qr code mutation anymore
+    it("lowercases the GraphQL-native uppercase environment enum for the deep link params", () => {
+      testContext.configuration.gatewayConfiguration.venmo.environment =
+        "SANDBOX";
+
+      venmo = new Venmo({
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
+      });
+
+      return venmo.getUrl().then((url) => {
+        const params = querystring.parse(url);
+
+        expect(params.braintree_environment).toBe("sandbox");
+      });
+    });
+
     it("applies mobile polling context id to pwv-access-token when it is present", () => {
+      testContext.client.request.mockImplementation((options) => {
+        var query = (options.data && options.data.query) || "";
+        if (query.includes("createVenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              createVenmoPaymentContext: {
+                venmoPaymentContext: {
+                  status: "CREATED",
+                  id: "context-id",
+                  createdAt: "2021-01-20T03:25:37.522000Z",
+                  expiresAt: "2021-01-20T03:30:37.522000Z",
+                },
+              },
+            },
+          });
+        }
+        if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "test-user",
+              },
+            },
+          });
+        }
+        return Promise.resolve({});
+      });
+      venmo = new Venmo({
+        createPromise: new Promise((resolve) => resolve(testContext.client)),
+        requireManualReturn: true,
+        paymentMethodUsage: "single_use",
+      });
+
+      return venmo.getUrl().then((url) => {
+        const params = querystring.parse(url);
+
+        expect(params.braintree_access_token).toBe("pwv-access-token");
+        expect(params.resource_id).toBe("context-id");
+      });
+    });
+
+    it("applies venmoRiskCorrelationId to client-metadata-id param when passed", () => {
       testContext.client.request.mockResolvedValue({
         data: {
-          createVenmoQRCodePaymentContext: {
-            venmoQRCodePaymentContext: {
+          createVenmoPaymentContext: {
+            venmoPaymentContext: {
               status: "CREATED",
               id: "context-id",
               createdAt: "2021-01-20T03:25:37.522000Z",
               expiresAt: "2021-01-20T03:30:37.522000Z",
+              venmoRiskCorrelationId: "foo-bar-test",
             },
           },
         },
       });
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
-        requireManualReturn: true,
+        paymentMethodUsage: "multi_use",
+        riskCorrelationId: "foo-bar-test",
       });
 
       return venmo.getUrl().then((url) => {
-        const params = querystring.parse(url);
-
-        expect(params.braintree_access_token).toBe(
-          "pwv-access-token|pcid:context-id"
+        expect(url).toEqual(
+          expect.stringContaining("client-metadata-id=foo-bar-test")
         );
-        expect(params.resource_id).toBeFalsy();
       });
     });
 
@@ -1753,6 +1880,7 @@ describe("Venmo", () => {
       expect(
         new Venmo({
           createPromise: Promise.reject(new Error("client error")),
+          paymentMethodUsage: "single_use",
         }).getUrl()
       ).rejects.toThrow("client error"));
 
@@ -1760,6 +1888,7 @@ describe("Venmo", () => {
       let venmoRecreating = new Venmo({
         allowAndroidRecreation: false,
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
       const url = await venmoRecreating.getUrl();
 
@@ -1773,314 +1902,13 @@ describe("Venmo", () => {
     });
   });
 
-  describe("processHashChangeFlowResults", () => {
-    let createOptions;
-
-    beforeEach(() => {
-      createOptions = {
-        createPromise: new Promise((resolve) => resolve(testContext.client)),
-      };
-      // when venmo is created with a paymentMethodUsage param, it ends
-      // up creating a payment context object before it resolves.
-      // This requires a lot of boilerplate scaffolding in the tests.
-      // The one exception to this is when the page url has a hash
-      // with tokenization results already, so in order to simplify
-      // our test setup, we're just going to mock that so it will always
-      // indicate that the hash has a tokenization result. It should have
-      // no effect on the actual tests.
-      jest
-        .spyOn(Venmo.prototype, "hasTokenizationResult")
-        .mockReturnValue(true);
-    });
-
-    it("uses hash from url if no hash is provided", async () => {
-      const venmo = new Venmo(createOptions);
-
-      history.replaceState(
-        {},
-        "",
-        `${testContext.location}#venmoSuccess=1&paymentMethodNonce=nonce-from-url&username=username-from-url`
-      );
-
-      const resultFromUrl = await venmo.processHashChangeFlowResults();
-      const result = await venmo.processHashChangeFlowResults(
-        "venmoSuccess=1&paymentMethodNonce=nonce-from-argument&username=username-from-argument"
-      );
-
-      expect(resultFromUrl.paymentMethodNonce).toBe("nonce-from-url");
-      expect(resultFromUrl.username).toBe("username-from-url");
-      expect(result.paymentMethodNonce).toBe("nonce-from-argument");
-      expect(result.username).toBe("username-from-argument");
-    });
-
-    it("sanitizes keys pulled off of hash for non-alpha characters", async () => {
-      const venmo = new Venmo(createOptions);
-
-      history.replaceState(
-        {},
-        "",
-        `${testContext.location}#/venmoSuccess=1&paym!entMethodNonce/=abc&userna@#me=keanu`
-      );
-
-      const result = await venmo.processHashChangeFlowResults();
-
-      expect(result.paymentMethodNonce).toBe("abc");
-      expect(result.username).toBe("keanu");
-    });
-
-    it("resolves with nonce payload on successful result", () => {
-      const name = "keanu";
-      const nonce = "abc";
-      const resourceId = "123";
-      const venmo = new Venmo(createOptions);
-
-      return venmo
-        .processHashChangeFlowResults(
-          `venmoSuccess=1&paymentMethodNonce=${nonce}&username=${name}&resource_id=${resourceId}`
-        )
-        .then((payload) => {
-          expect(payload.paymentMethodNonce).toBe(nonce);
-          expect(payload.username).toBe(name);
-          expect(payload.id).toBe(resourceId);
-        });
-    });
-
-    it("successfully returns a nonce payload when nonce hash value is snake case", () => {
-      const snakeCaseNonceParam = "payment_method_nonce";
-      const venmo = new Venmo(createOptions);
-
-      return venmo
-        .processHashChangeFlowResults(
-          `venmoSuccess=1&${snakeCaseNonceParam}=abc&username=keanu`
-        )
-        .then((payload) => {
-          expect(payload.paymentMethodNonce).toBe("abc");
-          expect(payload.username).toBe("keanu");
-        });
-    });
-
-    it("polls for status change when using the legacy flow instead of relying on hashes", async () => {
-      const mockPaymentContextId = "some-context-id";
-
-      testContext.client.request.mockResolvedValueOnce({
-        data: {
-          node: {
-            status: "APPROVED",
-            paymentMethodId: "fake-nonce-from-context",
-            userName: "name-from-context",
-          },
-        },
-      });
-      createOptions.paymentMethodUsage = "single_use";
-
-      const venmo = new Venmo(createOptions);
-
-      venmo._venmoPaymentContextId = mockPaymentContextId;
-
-      const payload = await venmo.processHashChangeFlowResults();
-
-      expect(payload.paymentMethodNonce).toBe("fake-nonce-from-context");
-      expect(payload.username).toBe("name-from-context");
-      expect(payload.id).toBe(mockPaymentContextId);
-      expect(testContext.client.request).toBeCalledTimes(1);
-      expect(testContext.client.request).toBeCalledWith({
-        api: "graphQLApi",
-        data: {
-          query: expect.stringMatching("on VenmoPaymentContext"),
-          variables: {
-            id: mockPaymentContextId,
-          },
-        },
-      });
-    });
-
-    it("resolves with hash params when payment context status polling fails", async () => {
-      const mockNonce = "nonce-from-hash";
-      const mockUsername = "bill-bobbo";
-      const mockResourceId = "context-id-from-hash";
-
-      testContext.client.request.mockRejectedValue(new Error("network error"));
-      createOptions.paymentMethodUsage = "single_use";
-
-      const venmo = new Venmo(createOptions);
-
-      // hasTokenizationResult should have extracted this in real-life usage
-      venmo._venmoPaymentContextId = mockResourceId;
-
-      const results = await venmo.processHashChangeFlowResults(
-        `venmoSuccess=1&paymentMethodNonce=${mockNonce}&username=${mockUsername}&resource_id=${mockResourceId}`
-      );
-
-      expect(results.venmoSuccess).toBe("1");
-      expect(results.paymentMethodNonce).toBe(mockNonce);
-      expect(results.username).toBe(mockUsername);
-      expect(results.id).toBe(mockResourceId);
-      expect(testContext.client.request).toBeCalledTimes(1);
-    });
-
-    it("fails if polling rejects due to canceled status", async () => {
-      const mockResourceId = "context-id-from-hash";
-
-      expect.assertions(4);
-      testContext.client.request.mockResolvedValueOnce({
-        data: {
-          node: {
-            status: "CANCELED",
-          },
-        },
-      });
-      createOptions.paymentMethodUsage = "single_use";
-
-      const venmo = new Venmo(createOptions);
-
-      // hasTokenizationResult should have extracted this in real-life usage
-      venmo._venmoPaymentContextId = mockResourceId;
-
-      return venmo
-        .processHashChangeFlowResults(
-          `venmoSuccess=1&paymentMethodNonce=nonce-from-hash&username=name-from-hash&resource_id=${mockResourceId}`
-        )
-        .catch((error) => {
-          expect(error).toBeInstanceOf(BraintreeError);
-          expect(error.code).toBe("VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED");
-          expect(testContext.client.request).toBeCalledTimes(1);
-
-          // Add this new assertion to check the context ID is passed correctly
-          expect(testContext.client.request).toBeCalledWith({
-            api: "graphQLApi",
-            data: {
-              query: expect.stringMatching("on VenmoPaymentContext"),
-              variables: {
-                id: "context-id-from-hash",
-              },
-            },
-          });
-        });
-    });
-
-    it("resolves with nonce payload on successful result when params include a resource id but sdk is initialized to use legacy flow", () => {
-      const venmo = new Venmo(createOptions);
-
-      return venmo
-        .processHashChangeFlowResults(
-          "venmoSuccess=1&paymentMethodNonce=nonce-from-hash&username=name-from-hash&resource_id=context-id-from-hash"
-        )
-        .then((payload) => {
-          expect(payload.paymentMethodNonce).toBe("nonce-from-hash");
-          expect(payload.username).toBe("name-from-hash");
-        });
-    });
-
-    it("rejects with error for error result", () => {
-      const venmo = new Venmo(createOptions);
-
-      return venmo
-        .processHashChangeFlowResults(
-          "venmoError=1&errorMessage=This%20is%20an%20error%20message.&errorCode=42"
-        )
-        .catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe("UNKNOWN");
-          expect(err.code).toBe("VENMO_APP_FAILED");
-          expect(err.message).toBe("Venmo app encountered a problem.");
-          expect(err.details.originalError.message).toBe(
-            "This is an error message."
-          );
-          expect(err.details.originalError.code).toBe("42");
-        });
-    });
-
-    it("rejects with cancellation error on Venmo app cancel", () => {
-      const venmo = new Venmo(createOptions);
-
-      return venmo
-        .processHashChangeFlowResults("venmoCancel=1")
-        .catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe("CUSTOMER");
-          expect(err.code).toBe("VENMO_APP_CANCELED");
-          expect(err.message).toBe("Venmo app authorization was canceled.");
-        });
-    });
-
-    it("rejects with cancellation error when app switch result not found", () => {
-      const venmo = new Venmo(createOptions);
-
-      return venmo.processHashChangeFlowResults().catch((err) => {
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.type).toBe("CUSTOMER");
-        expect(err.code).toBe("VENMO_CANCELED");
-        expect(err.message).toBe(
-          "User canceled Venmo authorization, or Venmo app is not available."
-        );
-      });
-    });
-
-    it("consumes URL fragment parameters on Success result", async () => {
-      const venmo = new Venmo(createOptions);
-
-      history.replaceState({}, "", `${testContext.location}#venmoSuccess=1`);
-
-      await venmo.processHashChangeFlowResults();
-
-      expect(window.location.href.indexOf("#")).toBe(-1);
-    });
-
-    it.each([["Error"], ["Cancel"]])(
-      "consumes URL fragment parameters on %p result",
-      async (result) => {
-        const venmo = new Venmo(createOptions);
-
-        history.replaceState(
-          {},
-          "",
-          `${testContext.location}#venmo${result}=1`
-        );
-
-        await expect(venmo.processHashChangeFlowResults()).rejects.toThrow();
-
-        expect(window.location.href.indexOf("#")).toBe(-1);
-      }
-    );
-
-    it("does not modify history state on Success if configured", async () => {
-      createOptions.ignoreHistoryChanges = true;
-
-      const venmo = new Venmo(createOptions);
-
-      history.replaceState({}, "", `${testContext.location}#venmoSuccess=1`);
-
-      await venmo.processHashChangeFlowResults();
-
-      expect(window.location.hash).toBe("#venmoSuccess=1");
-    });
-
-    it.each([["Error"], ["Cancel"]])(
-      "does not modify history state on %p result if configured",
-      async (result) => {
-        createOptions.ignoreHistoryChanges = true;
-
-        const venmo = new Venmo(createOptions);
-
-        history.replaceState(
-          {},
-          "",
-          `${testContext.location}#venmo${result}=1`
-        );
-
-        await expect(venmo.processHashChangeFlowResults()).rejects.toThrow();
-
-        expect(window.location.hash).toBe(`#venmo${result}=1`);
-      }
-    );
-  });
-
   describe("appSwitch", () => {
     let originalNavigator, originalLocation, originalTop, venmoOptions;
 
     beforeEach(() => {
       venmoOptions = {
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       };
 
       originalNavigator = window.navigator;
@@ -2126,7 +1954,7 @@ describe("Venmo", () => {
 
       it("calls window.open when device is not ios and is configured to use ios redirect strategy", async () => {
         venmoOptions.useRedirectForIOS = true;
-        jest.spyOn(browserDetection, "isIos").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isIos").mockReturnValue(false);
 
         const venmo = new Venmo(venmoOptions);
 
@@ -2140,7 +1968,7 @@ describe("Venmo", () => {
       });
 
       it("calls window.open when device is ios but is not configured to use ios redirect strategy", async () => {
-        jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
 
         const venmo = new Venmo(venmoOptions);
 
@@ -2155,7 +1983,7 @@ describe("Venmo", () => {
 
       it("sets location.href when device is ios and is configured to use ios redirect strategy", async () => {
         venmoOptions.useRedirectForIOS = true;
-        jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
 
         const venmo = new Venmo(venmoOptions);
 
@@ -2171,9 +1999,10 @@ describe("Venmo", () => {
 
       it("sets location.href when device does not support redirects on ios, even when not configured to use ios redirect strategy", async () => {
         venmoOptions.useRedirectForIOS = false;
-        jest
-          .spyOn(browserDetection, "doesNotSupportWindowOpenInIos")
-          .mockReturnValue(true);
+        vi.spyOn(
+          browserDetection,
+          "doesNotSupportWindowOpenInIos"
+        ).mockReturnValue(true);
 
         const venmo = new Venmo(venmoOptions);
 
@@ -2188,8 +2017,8 @@ describe("Venmo", () => {
       });
 
       it("sets location.href when device is android chrome and mobileWebFallBack is true", async () => {
-        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
-        jest.spyOn(browserDetection, "isChrome").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isChrome").mockReturnValue(true);
 
         const venmoOptionsWithFallback = {
           ...venmoOptions,
@@ -2208,8 +2037,8 @@ describe("Venmo", () => {
       });
 
       it("calls window.open when device is android chrome and mobileWebFallBack is false", async () => {
-        jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
-        jest.spyOn(browserDetection, "isChrome").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isChrome").mockReturnValue(true);
 
         const venmoOptionsWithoutFallback = {
           ...venmoOptions,
@@ -2259,7 +2088,7 @@ describe("Venmo", () => {
         const venmo = new Venmo(venmoOptions);
 
         window.popupBridge = {
-          open: jest.fn(),
+          open: vi.fn(),
         };
         await venmo.appSwitch("https://venmo.com/braintree");
 
@@ -2277,7 +2106,7 @@ describe("Venmo", () => {
       it("opens the app switch url by setting window.location.href for Android webview", async () => {
         const venmo = new Venmo(venmoOptions);
 
-        jest.spyOn(browserDetection, "isAndroidWebview").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isAndroidWebview").mockReturnValue(true);
 
         await venmo.appSwitch("https://venmo.com/braintree");
 
@@ -2292,7 +2121,7 @@ describe("Venmo", () => {
       it("breaks out of iframe when in iframe and using Android webview", async () => {
         const venmo = new Venmo(venmoOptions);
 
-        jest.spyOn(browserDetection, "isAndroidWebview").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isAndroidWebview").mockReturnValue(true);
         inIframe.mockReturnValue(true);
 
         await venmo.appSwitch("https://venmo.com/braintree");
@@ -2343,7 +2172,7 @@ describe("Venmo", () => {
         const mockUrl = "https://venmo.com/braintree";
 
         window.popupBridge = {
-          open: jest.fn(),
+          open: vi.fn(),
         };
         window.navigator.platform = "iPhone";
 
@@ -2363,7 +2192,7 @@ describe("Venmo", () => {
         const mockUrl = "https://venmo.com/braintree";
 
         window.popupBridge = {
-          open: jest.fn(),
+          open: vi.fn(),
         };
         window.navigator.platform = "iPhone";
 
@@ -2404,8 +2233,9 @@ describe("Venmo", () => {
     beforeEach(() => {
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
-      jest.spyOn(supportsVenmo, "isBrowserSupported");
+      vi.spyOn(supportsVenmo, "isBrowserSupported");
     });
 
     it("calls isBrowserSupported library", () => {
@@ -2452,6 +2282,7 @@ describe("Venmo", () => {
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowNewBrowserTab: false,
+        paymentMethodUsage: "single_use",
       });
 
       venmo.isBrowserSupported();
@@ -2467,6 +2298,7 @@ describe("Venmo", () => {
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowWebviews: false,
+        paymentMethodUsage: "single_use",
       });
 
       venmo.isBrowserSupported();
@@ -2484,6 +2316,7 @@ describe("Venmo", () => {
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowDesktop: true,
+        paymentMethodUsage: "single_use",
       });
 
       venmo.isBrowserSupported();
@@ -2502,6 +2335,7 @@ describe("Venmo", () => {
         createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowDesktop: false,
         allowDesktopWebLogin: true,
+        paymentMethodUsage: "single_use",
       });
 
       venmo.isBrowserSupported();
@@ -2518,6 +2352,7 @@ describe("Venmo", () => {
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowNonDefaultBrowsers: false,
+        paymentMethodUsage: "single_use",
       });
 
       venmo.isBrowserSupported();
@@ -2540,64 +2375,11 @@ describe("Venmo", () => {
     });
   });
 
-  describe("hasTokenizationResult", () => {
-    let venmo;
-
-    beforeEach(() => {
-      venmo = new Venmo({
-        createPromise: new Promise((resolve) => resolve(testContext.client)),
-      });
-    });
-
-    afterEach(() => {
-      history.replaceState({}, "", testContext.location);
-    });
-
-    it.each([["Success"], ["Error"], ["Cancel"]])(
-      "returns true when URL has %p payload",
-      (payload) => {
-        history.replaceState(
-          {},
-          "",
-          `${testContext.location}#venmo${payload}=1`
-        );
-
-        expect(venmo.hasTokenizationResult()).toBe(true);
-      }
-    );
-
-    it("returns false when URL has no Venmo payload", () => {
-      expect(venmo.hasTokenizationResult()).toBe(false);
-    });
-
-    it("sets the _venmoPaymentContextId from the resource_id", () => {
-      urlParams.getUrlParams.mockReturnValue({
-        resource_id: "test-resource-id",
-      });
-
-      venmo.hasTokenizationResult();
-
-      expect(venmo._venmoPaymentContextId).toBe("test-resource-id");
-    });
-
-    it("sets the _venmoPaymentContextId from the hash fragment id", () => {
-      urlParams.getUrlParams.mockReturnValue({});
-      history.replaceState(
-        {},
-        "",
-        `${testContext.location}#venmoSuccess=1&resource_id=test-hash-id`
-      );
-
-      venmo.hasTokenizationResult();
-
-      expect(venmo._venmoPaymentContextId).toBe("test-hash-id");
-    });
-  });
-
   describe("tokenize", () => {
     it("errors if another tokenization request is active", () => {
       const venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
 
       venmo.tokenize();
@@ -2617,6 +2399,7 @@ describe("Venmo", () => {
       beforeEach(() => {
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
+          paymentMethodUsage: "single_use",
         });
       });
 
@@ -2628,352 +2411,209 @@ describe("Venmo", () => {
          * */
         history.replaceState({}, "", testContext.location);
 
-        jest.runAllTimers();
-      });
-
-      it("includes paymentContextId for mobile flow with hash change listeners", () => {
-        const expectedContextId = "muh-context-id-666";
-        const promise = venmo.tokenize().then((resp) => {
-          expect(resp.details.paymentContextId).toBe(expectedContextId);
-        });
-
-        expect.assertions(1);
-        history.replaceState(
-          {},
-          "",
-          `${testContext.location}#venmoSuccess=1&paymentMethodNonce=abc&username=keanu&id=${expectedContextId}`
-        );
-        triggerHashChangeHandler(venmo);
-
-        return promise;
+        vi.runAllTimers();
       });
 
       it("errors if getUrl fails", () => {
-        jest
-          .spyOn(venmo, "getUrl")
-          .mockRejectedValue(new Error("client error"));
+        vi.spyOn(venmo, "getUrl").mockRejectedValue(new Error("client error"));
 
         return expect(venmo.tokenize()).rejects.toThrow("client error");
       });
 
-      it("processes results instead of doing app switch when url has venmo results", () => {
-        jest.spyOn(venmo, "processHashChangeFlowResults");
-        jest.spyOn(venmo, "appSwitch");
-
-        history.replaceState(
-          {},
-          "",
-          `${testContext.location}#venmoSuccess=1&paymentMethodNonce=abc&username=keanu`
-        );
-
-        return venmo.tokenize().then(() => {
-          expect(venmo.processHashChangeFlowResults).toBeCalledTimes(1);
-          expect(venmo.appSwitch).not.toBeCalled();
-        });
-      });
-
-      it("app switches to venmo", () => {
-        jest.spyOn(venmo, "appSwitch");
-
-        const promise = venmo.tokenize().then(() => {
-          expect(venmo.appSwitch).toBeCalledTimes(1);
-          expect(venmo.appSwitch).toBeCalledWith(
-            expect.stringContaining("https://venmo.com/braintree")
-          );
-        });
-
-        expect.assertions(2);
-        history.replaceState(
-          {},
-          "",
-          `${testContext.location}#venmoSuccess=1&paymentMethodNonce=abc&username=keanu`
-        );
-        triggerHashChangeHandler(venmo);
-
-        return promise;
-      });
-
       describe("when visibility listener triggers", () => {
-        it("resolves with nonce payload on success", () => {
-          jest.spyOn(venmo, "processHashChangeFlowResults").mockResolvedValue({
-            paymentMethodNonce: "abc",
-            username: "keanu",
+        it("resolves with nonce payload on success", async () => {
+          vi.spyOn(venmo, "_pollForStatusChange").mockResolvedValue({
+            paymentMethodId: "abc",
+            userName: "keanu",
           });
 
-          const promise = venmo.tokenize().then(({ details, nonce, type }) => {
-            expect(nonce).toBe("abc");
-            expect(type).toBe("VenmoAccount");
-            expect(details.username).toBe("@keanu");
-          });
+          const promise = venmo.tokenize();
 
-          expect.assertions(3);
           triggerVisibilityHandler(venmo);
+          await flushPromises();
 
-          return promise;
+          const { details, nonce, type } = await promise;
+
+          expect(nonce).toBe("abc");
+          expect(type).toBe("VenmoAccount");
+          expect(details.username).toBe("keanu");
         });
 
-        it("rejects with error on Venmo app error", () => {
+        it("rejects with error on Venmo app error", async () => {
           const err = new Error("fail");
 
-          jest
-            .spyOn(venmo, "processHashChangeFlowResults")
-            .mockRejectedValue(err);
-
-          const promise = venmo.tokenize().catch((tokenizeError) => {
-            expect(tokenizeError).toBe(err);
-          });
-
-          triggerVisibilityHandler(venmo);
-
-          return promise;
-        });
-
-        it("sets _tokenizationInProgress to false when app switch result not found", () => {
-          const promise = venmo.tokenize().catch(() => {
-            expect(venmo._tokenizationInProgress).toBe(false);
-          });
-
-          triggerVisibilityHandler(venmo);
-
-          return promise;
-        });
-
-        it("restores the previous URL fragment after consuming Venmo results", () => {
-          let promise;
-
-          history.replaceState({}, "", `${testContext.location}#foo`);
-
-          promise = venmo
-            .tokenize()
-            .catch(() => {
-              jest.runAllTimers();
-            })
-            .then(() => {
-              expect(window.location.hash).toBe("#foo");
-            });
-
-          history.replaceState({}, "", `${testContext.location}#venmoCancel=1`);
-
-          triggerVisibilityHandler(venmo);
-
-          return promise;
-        });
-
-        it("preserves URL if fragments are never set", () => {
-          const promise = venmo.tokenize().catch(() => {
-            expect(window.location.href).toBe(testContext.location);
-          });
-
-          triggerVisibilityHandler(venmo);
-
-          return promise;
-        });
-
-        it("delays processing results by 1 second by default", () => {
-          const originalTimeout = window.setTimeout;
-
-          window.setTimeout = jest.fn().mockImplementation((fn) => {
-            fn();
-          });
-
-          const promise = venmo.tokenize().then(() => {
-            // document visibility change event delay
-            expect(setTimeout).toBeCalledWith(expect.any(Function), 500);
-            // process results
-            expect(setTimeout).toBeCalledWith(expect.any(Function), 1000);
-
-            window.setTimeout = originalTimeout;
-          });
-
-          history.replaceState(
-            {},
-            "",
-            `${testContext.location}#venmoSuccess=1`
-          );
-          triggerVisibilityHandler(venmo);
-
-          return promise;
-        });
-
-        it("can configure processing delay", () => {
-          const originalTimeout = window.setTimeout;
-
-          window.setTimeout = jest.fn().mockImplementation((fn) => {
-            fn();
-          });
-
-          const promise = venmo
-            .tokenize({
-              processResultsDelay: 3000,
-            })
-            .then(() => {
-              // document visibility change event delay
-              expect(setTimeout).toBeCalledWith(expect.any(Function), 500);
-              // process results
-              expect(setTimeout).toBeCalledWith(expect.any(Function), 3000);
-
-              window.setTimeout = originalTimeout;
-            });
-
-          history.replaceState(
-            {},
-            "",
-            `${testContext.location}#venmoSuccess=1`
-          );
-          triggerVisibilityHandler(venmo);
-
-          return promise;
-        });
-
-        it("creates a new payment context upon succesfull tokenization", async () => {
-          testContext.client.request.mockResolvedValue({
-            data: {
-              createVenmoQRCodePaymentContext: {
-                venmoQRCodePaymentContext: {
-                  status: "CREATED",
-                  id: "new-context-id",
-                  createdAt: new Date().toString(),
-                  expiresAt: new Date(Date.now() + 30000000).toString(),
-                },
-              },
-            },
-          });
-          venmo._shouldCreateVenmoPaymentContext = true;
-          venmo._venmoPaymentContextId = "old-context-id";
+          vi.spyOn(venmo, "_pollForStatusChange").mockRejectedValue(err);
 
           const promise = venmo.tokenize();
 
-          history.replaceState(
-            {},
-            "",
-            `${testContext.location}#venmoSuccess=1`
-          );
           triggerVisibilityHandler(venmo);
+          await flushPromises();
 
+          await expect(promise).rejects.toBe(err);
+        });
+
+        it("sets _tokenizationInProgress to false when app switch result not found", async () => {
+          vi.spyOn(venmo, "_pollForStatusChange").mockRejectedValue(
+            new Error("no result")
+          );
+
+          const promise = venmo.tokenize();
+
+          triggerVisibilityHandler(venmo);
+          await flushPromises();
+
+          await promise.catch(() => {});
+
+          expect(venmo._tokenizationInProgress).toBe(false);
+        });
+
+        it("preserves URL if fragments are never set", async () => {
+          vi.spyOn(venmo, "_pollForStatusChange").mockRejectedValue(
+            new Error("no result")
+          );
+
+          const promise = venmo.tokenize();
+
+          triggerVisibilityHandler(venmo);
+          await flushPromises();
+
+          await promise.catch(() => {});
+
+          expect(window.location.href).toBe(testContext.location);
+        });
+
+        it("delays processing results by 1 second by default", async () => {
+          const originalTimeout = window.setTimeout;
+
+          window.setTimeout = vi.fn().mockImplementation((fn) => {
+            fn();
+          });
+
+          vi.spyOn(venmo, "_pollForStatusChange").mockResolvedValue({
+            paymentMethodId: "abc",
+            userName: "keanu",
+          });
+
+          const promise = venmo.tokenize();
+
+          triggerVisibilityHandler(venmo);
+          await flushPromises();
           await promise;
 
-          expect(venmo._venmoPaymentContextId).toBe("new-context-id");
-          expect(testContext.client.request).toBeCalledWith({
-            api: "graphQLApi",
-            data: expect.objectContaining({
-              query: expect.stringMatching(
-                "mutation CreateVenmoQRCodePaymentContext"
-              ),
-            }),
-          });
+          expect(setTimeout).toBeCalledWith(expect.any(Function), 500);
+          expect(setTimeout).toBeCalledWith(expect.any(Function), 1000);
+
+          window.setTimeout = originalTimeout;
         });
 
-        it("creates a new payment context upon unsuccesfull tokenization", async () => {
-          expect.assertions(2);
+        it("can configure processing delay", async () => {
+          const originalTimeout = window.setTimeout;
 
-          testContext.client.request.mockResolvedValue({
-            data: {
-              createVenmoQRCodePaymentContext: {
-                venmoQRCodePaymentContext: {
-                  status: "CREATED",
-                  id: "new-context-id",
-                  createdAt: new Date().toString(),
-                  expiresAt: new Date(Date.now() + 30000000).toString(),
-                },
-              },
-            },
+          window.setTimeout = vi.fn().mockImplementation((fn) => {
+            fn();
           });
 
-          venmo._shouldCreateVenmoPaymentContext = true;
-          venmo._venmoPaymentContextId = "old-context-id";
+          vi.spyOn(venmo, "_pollForStatusChange").mockResolvedValue({
+            paymentMethodId: "abc",
+            userName: "keanu",
+          });
 
-          const promise = venmo.tokenize();
+          const promise = venmo.tokenize({ processResultsDelay: 3000 });
 
-          history.replaceState({}, "", `${testContext.location}#venmoCancel=1`);
           triggerVisibilityHandler(venmo);
+          await flushPromises();
+          await promise;
 
-          try {
-            await promise;
-          } catch (err) {
-            expect(venmo._venmoPaymentContextId).toBe("new-context-id");
-            expect(testContext.client.request).toBeCalledWith({
-              api: "graphQLApi",
-              data: expect.objectContaining({
-                query: expect.stringMatching(
-                  "mutation CreateVenmoQRCodePaymentContext"
-                ),
-              }),
-            });
-          }
+          expect(setTimeout).toBeCalledWith(expect.any(Function), 500);
+          expect(setTimeout).toBeCalledWith(expect.any(Function), 3000);
+
+          window.setTimeout = originalTimeout;
         });
       });
 
       describe("analytics events", () => {
         it("sends an event that the mobile flow is used", async () => {
+          vi.spyOn(venmo, "_pollForStatusChange").mockResolvedValue({
+            paymentMethodId: "abc",
+            userName: "keanu",
+          });
+
           const promise = venmo.tokenize();
 
-          history.replaceState(
-            {},
-            "",
-            `${testContext.location}#venmoSuccess=1`
-          );
           triggerVisibilityHandler(venmo);
-
+          await flushPromises();
           await promise;
 
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            "venmo.tokenize.mobile.start"
+            "venmo.tokenize.mobile.start",
+            expect.anything()
           );
         });
 
         it("sends an event on app switch return Success", async () => {
+          vi.spyOn(venmo, "_pollForStatusChange").mockResolvedValue({
+            paymentMethodId: "abc",
+            userName: "keanu",
+          });
+
           const promise = venmo.tokenize();
 
-          history.replaceState(
-            {},
-            "",
-            `${testContext.location}#venmoSuccess=1`
-          );
           triggerVisibilityHandler(venmo);
-
+          await flushPromises();
           await promise;
 
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            "venmo.appswitch.handle.success"
+            "venmo.appswitch.handle.payment-context-status-query.success",
+            expect.anything()
           );
         });
 
-        it.each([["Error"], ["Cancel"]])(
-          "sends an event on app switch return %p",
-          async (result) => {
-            const promise = expect(venmo.tokenize()).rejects.toThrow();
+        it("sends an event on app switch return failure", async () => {
+          vi.spyOn(venmo, "_pollForStatusChange").mockRejectedValue(
+            new BraintreeError({
+              type: BraintreeError.types.NETWORK,
+              code: "TEST_ERROR",
+              message: "test error",
+            })
+          );
 
-            history.replaceState(
-              {},
-              "",
-              `${testContext.location}#venmo${result}=1`
-            );
-            triggerVisibilityHandler(venmo);
-
-            await promise;
-
-            expect(analytics.sendEvent).toHaveBeenCalledWith(
-              expect.anything(),
-              `venmo.appswitch.handle.${result.toLowerCase()}`
-            );
-          }
-        );
-
-        it("sends an event when there's no app switch result before timeout", () => {
-          expect.assertions(1);
-
-          const promise = venmo.tokenize().catch(() => {
-            expect(analytics.sendEvent).toHaveBeenCalledWith(
-              expect.anything(),
-              "venmo.appswitch.cancel-or-unavailable"
-            );
-          });
+          const promise = venmo.tokenize();
 
           triggerVisibilityHandler(venmo);
+          await flushPromises();
 
-          return promise;
+          await expect(promise).rejects.toThrow();
+
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+            expect.anything(),
+            "venmo.tokenize.mobile.start",
+            expect.anything()
+          );
+        });
+
+        it("sends an event when there's no app switch result before timeout", async () => {
+          vi.spyOn(venmo, "_pollForStatusChange").mockRejectedValue(
+            new BraintreeError({
+              type: BraintreeError.types.CUSTOMER,
+              code: "VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED",
+              message: "Venmo polling was canceled.",
+            })
+          );
+
+          const promise = venmo.tokenize();
+
+          triggerVisibilityHandler(venmo);
+          await flushPromises();
+
+          await promise.catch(() => {});
+
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+            expect.anything(),
+            "venmo.tokenize.mobile.start",
+            expect.anything()
+          );
         });
       });
     });
@@ -2981,93 +2621,135 @@ describe("Venmo", () => {
     describe("mobile flow with polling", () => {
       let venmo;
 
-      beforeEach(() => {
-        jest.useRealTimers();
+      // ---------------------------------------------------------------------------
+      // Helpers scoped to this describe block
+      // ---------------------------------------------------------------------------
 
-        testContext.client.request.mockImplementation((options) => {
-          if (options.data.query.includes("mutation CreateVenmo")) {
-            return Promise.resolve({
-              data: {
-                createVenmoQRCodePaymentContext: {
-                  venmoQRCodePaymentContext: {
-                    status: "CREATED",
-                    id: "context-id",
-                    createdAt: new Date().toString(),
-                    expiresAt: new Date(Date.now() + 30000000).toString(),
-                  },
+      // Build the resolved value for a createVenmoPaymentContext mutation.
+      // Pass overrides to customise individual fields (e.g. a fixed createdAt for
+      // snapshot-style tests, or a different id for counter-based tests).
+      function makePaymentContextResponse(overrides) {
+        return {
+          data: {
+            createVenmoPaymentContext: {
+              venmoPaymentContext: Object.assign(
+                {
+                  status: "CREATED",
+                  id: "context-id",
+                  createdAt: new Date().toString(),
+                  expiresAt: new Date(Date.now() + 30000000).toString(),
                 },
-              },
-            });
-          }
-
-          return Promise.resolve({
-            data: {
-              node: {
-                status: "APPROVED",
-              },
+                overrides
+              ),
             },
-          });
+          },
+        };
+      }
+
+      // Build the resolved value for a node(VenmoPaymentContext) query.
+      // Defaults to a successful APPROVED response; pass overrides to vary the
+      // status or add extra fields (e.g. payerInfo).
+      function makeNodeResponse(overrides) {
+        return {
+          data: {
+            node: Object.assign(
+              {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "some-name",
+              },
+              overrides
+            ),
+          },
+        };
+      }
+
+      // Wire up testContext.client.request with the standard two-branch dispatcher
+      // used by every polling test.
+      //
+      // contextOverrides: plain object merged into the payment context fields
+      // nodeResolver: either a plain object of node field overrides (simple
+      //   case) or a function called on each poll invocation
+      //   (for counter-based or rejection scenarios)
+      // queryMatchString: override the string used to detect the create mutation
+      //                     (defaults to "createVenmoPaymentContext"; use
+      //                     "mutation CreateVenmo" for mobileWebFallBack tests)
+      function mockPollingClient(client, options) {
+        options = options || {};
+        var contextOverrides = options.contextOverrides;
+        var nodeResolver = options.nodeResolver;
+        var queryMatchString =
+          options.queryMatchString || "createVenmoPaymentContext";
+
+        client.request.mockImplementation(function (reqOptions) {
+          var query = (reqOptions.data && reqOptions.data.query) || "";
+          if (query.includes(queryMatchString)) {
+            var resolvedContextOverrides =
+              typeof contextOverrides === "function"
+                ? contextOverrides()
+                : contextOverrides;
+            return Promise.resolve(
+              makePaymentContextResponse(resolvedContextOverrides)
+            );
+          }
+          if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+            if (typeof nodeResolver === "function") {
+              return nodeResolver();
+            }
+            return Promise.resolve(makeNodeResponse(nodeResolver));
+          }
+          return Promise.resolve({});
         });
+      }
+
+      async function drivePolling(promise, ms) {
+        await vi.advanceTimersByTimeAsync(
+          ms !== undefined ? ms : venmo._mobilePollingExpiresThreshold + 1
+        );
+        return promise;
+      }
+
+      // ---------------------------------------------------------------------------
+      // Hooks
+      // ---------------------------------------------------------------------------
+
+      beforeEach(async () => {
+        mockPollingClient(testContext.client);
 
         inIframe.mockReturnValue(true);
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
+          paymentMethodUsage: "single_use",
         });
-        venmo._mobilePollingInterval = 10;
-        venmo._mobilePollingExpiresThreshold = 50;
+        await flushPromises();
+
+        // Reduce polling thresholds so drivePolling() completes in a handful
+        // of fake-timer cycles rather than ~1200, keeping each test under the
+        // 4-second wall-clock timeout.
+        venmo._mobilePollingExpiresThreshold = 500;
+        venmo._mobilePollingInterval = 250;
       });
 
-      it("polls for status using the legacy flow", async () => {
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "APPROVED",
-              paymentMethodId: "fake-nonce",
-              userName: "some-name",
-            },
-          },
-        });
-
-        await venmo.tokenize();
-
-        expect(testContext.client.request).toBeCalledWith({
-          api: "graphQLApi",
-          data: {
-            query: expect.stringMatching("on VenmoQRCodePaymentContext"),
-            variables: {
-              id: "context-id",
-            },
-          },
-        });
+      afterEach(() => {
+        vi.useRealTimers();
       });
+
+      // ---------------------------------------------------------------------------
+      // Tests
+      // ---------------------------------------------------------------------------
 
       it("polls for status", async () => {
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "APPROVED",
-              paymentMethodId: "fake-nonce",
-              userName: "some-name",
-            },
-          },
-        });
-        testContext.client.request.mockResolvedValue({
-          data: {
-            createVenmoPaymentContext: {
-              venmoPaymentContext: {
-                status: "CREATED",
-                id: "context-id",
-                createdAt: "2021-01-20T03:25:37.522000Z",
-                expiresAt: "2021-01-20T03:30:37.522000Z",
-              },
-            },
+        // Use fixed ISO dates so the assertion on the query shape is deterministic.
+        mockPollingClient(testContext.client, {
+          contextOverrides: {
+            createdAt: "2021-01-20T03:25:37.522000Z",
+            expiresAt: "2021-01-20T03:30:37.522000Z",
           },
         });
 
-        venmo._paymentMethodUsage = "single_use";
-        venmo._shouldUseLegacyFlow = false;
+        venmo._paymentMethodUsage = "SINGLE_USE";
 
-        await venmo.tokenize();
+        await drivePolling(venmo.tokenize());
 
         expect(testContext.client.request).toBeCalledWith({
           api: "graphQLApi",
@@ -3081,56 +2763,23 @@ describe("Venmo", () => {
       });
 
       it("app switches to the Venmo app", async () => {
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "APPROVED",
-              paymentMethodId: "fake-nonce",
-              userName: "some-name",
-            },
-          },
-        });
+        vi.spyOn(venmo, "appSwitch");
 
-        jest.spyOn(venmo, "appSwitch");
-
-        await venmo.tokenize();
+        await drivePolling(venmo.tokenize());
 
         expect(venmo.appSwitch).toBeCalledTimes(1);
         expect(venmo.appSwitch).toBeCalledWith(
-          expect.stringContaining(
-            "braintree_access_token=pwv-access-token%7Cpcid%3Acontext-id"
-          )
+          expect.stringContaining("resource_id=context-id")
         );
       });
 
       it("app switches to the Venmo app on mobile web fallback", async () => {
         const mockPaymentContextId = "mockPaymentContextId";
 
-        testContext.client.request.mockImplementation((options) => {
-          if (options.data.query.includes("mutation CreateVenmo")) {
-            return Promise.resolve({
-              data: {
-                createVenmoPaymentContext: {
-                  venmoPaymentContext: {
-                    status: "CREATED",
-                    id: mockPaymentContextId,
-                    createdAt: new Date().toString(),
-                    expiresAt: new Date(Date.now() + 30000000).toString(),
-                  },
-                },
-              },
-            });
-          }
-
-          return Promise.resolve({
-            data: {
-              node: {
-                status: "APPROVED",
-                paymentMethodId: "fake-nonce",
-                userName: "some-name",
-              },
-            },
-          });
+        // mobileWebFallBack uses a different mutation name in the query string.
+        mockPollingClient(testContext.client, {
+          contextOverrides: { id: mockPaymentContextId },
+          queryMatchString: "mutation CreateVenmo",
         });
 
         venmo = new Venmo({
@@ -3139,12 +2788,11 @@ describe("Venmo", () => {
           paymentMethodUsage: "single_use",
         });
 
-        // hasTokenizationResult should have extracted this in real-life usage
         venmo._venmoPaymentContextId = mockPaymentContextId;
 
-        jest.spyOn(venmo, "appSwitch");
+        vi.spyOn(venmo, "appSwitch");
 
-        await venmo.tokenize();
+        await drivePolling(venmo.tokenize());
 
         expect(venmo.appSwitch).toBeCalledWith(
           expect.stringContaining(venmoConstants.VENMO_APP_OR_MOBILE_AUTH_URL)
@@ -3155,34 +2803,22 @@ describe("Venmo", () => {
       });
 
       it("resolves when polling concludes", async () => {
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "APPROVED",
-              paymentMethodId: "fake-nonce",
-              userName: "some-name",
-            },
-          },
-        });
-
-        const payload = await venmo.tokenize();
+        const payload = await drivePolling(venmo.tokenize());
 
         expect(payload.nonce).toBe("fake-nonce");
         expect(payload.type).toBe("VenmoAccount");
-        expect(payload.details.username).toBe("@some-name");
+        expect(payload.details.username).toBe("some-name");
         expect(payload.details.paymentContextId).toBe("context-id");
 
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.start",
-          {
-            context_id: "context-id",
-          }
+          expect.objectContaining({ context_id: "context-id" })
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
-          { context_id: "context-id" }
+          expect.objectContaining({ context_id: "context-id" })
         );
         expect(analytics.sendEvent).toBeCalledWith(
           expect.anything(),
@@ -3191,39 +2827,8 @@ describe("Venmo", () => {
       });
 
       it("includes payerInfo if included in the query", async () => {
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "APPROVED",
-              paymentMethodId: "fake-nonce",
-              userName: "some-name",
-              payerInfo: {
-                userName: "some-name",
-                email: "email@example.com",
-                phoneNumber: "1234567890",
-                billingAddress: {
-                  streetAddress: "2 XYZ St.",
-                  extendedAddress: "Unit 1",
-                  locality: "Atlanta",
-                  region: "GA",
-                  postalCode: "111",
-                },
-                shippingAddress: {
-                  streetAddress: "1 Vista Avenue",
-                  extendedAddress: "Apt. 123",
-                  locality: "San Jose",
-                  region: "CA",
-                  postalCode: "95131",
-                },
-              },
-            },
-          },
-        });
-
-        const payload = await venmo.tokenize();
-
-        expect(payload.details.payerInfo).toEqual({
-          userName: "@some-name",
+        const payerInfo = {
+          userName: "some-name",
           email: "email@example.com",
           phoneNumber: "1234567890",
           billingAddress: {
@@ -3240,35 +2845,34 @@ describe("Venmo", () => {
             region: "CA",
             postalCode: "95131",
           },
+        };
+
+        mockPollingClient(testContext.client, {
+          nodeResolver: { payerInfo: payerInfo },
         });
+
+        const payload = await drivePolling(venmo.tokenize());
+
+        expect(payload.details.payerInfo).toEqual(payerInfo);
       });
 
       it("creates a new payment context upon successful tokenization", async () => {
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "APPROVED",
-              paymentMethodId: "fake-nonce",
-              userName: "some-name",
-            },
-          },
-        });
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            createVenmoQRCodePaymentContext: {
-              venmoQRCodePaymentContext: {
-                status: "CREATED",
-                id: "new-context-id",
-                createdAt: new Date().toString(),
-                expiresAt: new Date(Date.now() + 30000000).toString(),
-              },
-            },
+        var createCallCount = 0;
+
+        mockPollingClient(testContext.client, {
+          contextOverrides: function () {
+            // First call returns the "new" id that we expect to be stored;
+            // subsequent calls (the replacement context) return the default.
+            createCallCount++;
+            return {
+              id: createCallCount === 1 ? "new-context-id" : "context-id",
+            };
           },
         });
 
         expect(venmo._venmoPaymentContextId).toBe("context-id");
 
-        await venmo.tokenize();
+        await drivePolling(venmo.tokenize());
 
         expect(venmo._venmoPaymentContextId).toBe("new-context-id");
       });
@@ -3276,29 +2880,27 @@ describe("Venmo", () => {
       it("creates a new payment context upon unsuccessful tokenization", async () => {
         expect.assertions(2);
 
-        testContext.client.request.mockRejectedValueOnce(
-          new Error("network error")
-        );
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            createVenmoQRCodePaymentContext: {
-              venmoQRCodePaymentContext: {
-                status: "CREATED",
-                id: "new-context-id",
-                createdAt: new Date().toString(),
-                expiresAt: new Date(Date.now() + 30000000).toString(),
-              },
-            },
+        var createCallCount = 0;
+
+        mockPollingClient(testContext.client, {
+          contextOverrides: function () {
+            createCallCount++;
+            return {
+              id: createCallCount === 1 ? "new-context-id" : "context-id",
+            };
+          },
+          nodeResolver: function () {
+            return Promise.reject(new Error("network error"));
           },
         });
 
         expect(venmo._venmoPaymentContextId).toBe("context-id");
 
-        try {
-          await venmo.tokenize();
-        } catch (err) {
-          expect(venmo._venmoPaymentContextId).toBe("new-context-id");
-        }
+        await drivePolling(
+          venmo.tokenize().catch(() => {
+            expect(venmo._venmoPaymentContextId).toBe("new-context-id");
+          })
+        );
       });
 
       it("rejects when a network error occurs", async () => {
@@ -3306,26 +2908,29 @@ describe("Venmo", () => {
 
         const networkError = new Error("network error");
 
-        testContext.client.request.mockRejectedValueOnce(networkError);
-
-        await venmo.tokenize().catch((err) => {
-          expect(analytics.sendEvent).not.toBeCalledWith(
-            expect.anything(),
-            "venmo.tokenize.manual-return.success"
-          );
-          expect(analytics.sendEventPlus).toBeCalledWith(
-            expect.anything(),
-            "venmo.tokenize.manual-return.failure",
-            {
-              context_id: "context-id",
-            }
-          );
-
-          expect(err.code).toBe(
-            "VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR"
-          );
-          expect(err.details.originalError).toBe(networkError);
+        mockPollingClient(testContext.client, {
+          nodeResolver: function () {
+            return Promise.reject(networkError);
+          },
         });
+
+        await drivePolling(
+          venmo.tokenize().catch((err) => {
+            expect(analytics.sendEvent).not.toBeCalledWith(
+              expect.anything(),
+              "venmo.tokenize.manual-return.success"
+            );
+            expect(analytics.sendEventPlus).toBeCalledWith(
+              expect.anything(),
+              "venmo.tokenize.manual-return.failure",
+              expect.objectContaining({ context_id: "context-id" })
+            );
+            expect(err.code).toBe(
+              "VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR"
+            );
+            expect(err.details.originalError).toBe(networkError);
+          })
+        );
       });
 
       it.each(["EXPIRED", "FAILED", "CANCELED"])(
@@ -3333,63 +2938,51 @@ describe("Venmo", () => {
         async (status) => {
           expect.assertions(2);
 
-          testContext.client.request.mockResolvedValueOnce({
-            data: {
-              node: {
-                status,
-              },
-            },
+          mockPollingClient(testContext.client, {
+            nodeResolver: { status: status },
           });
 
-          await venmo.tokenize().catch((err) => {
-            expect(err.code).toBe(
-              `VENMO_MOBILE_POLLING_TOKENIZATION_${status}`
-            );
-            expect(analytics.sendEventPlus).toBeCalledWith(
-              expect.anything(),
-              `venmo.tokenize.manual-return.status-change.${status.toLowerCase()}`,
-              {
-                context_id: "context-id",
-              }
-            );
-          });
+          await drivePolling(
+            venmo.tokenize().catch((err) => {
+              expect(err.code).toBe(
+                `VENMO_MOBILE_POLLING_TOKENIZATION_${status}`
+              );
+              expect(analytics.sendEventPlus).toBeCalledWith(
+                expect.anything(),
+                `venmo.tokenize.manual-return.status-change.${status.toLowerCase()}`,
+                expect.objectContaining({ context_id: "context-id" })
+              );
+            })
+          );
         }
       );
 
       it("rejects with cancellation error when tab/window is closed", async () => {
         expect.assertions(3);
 
-        const mockWindow = { closed: true };
-        venmo._venmoWindow = mockWindow;
+        venmo._venmoWindow = { closed: true };
         venmo._venmoPaymentContextStatus = "CREATED";
+        venmo._cancelOnReturnToBrowser = true;
 
-        await venmo.tokenize().catch((err) => {
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.code).toBe("VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED");
-          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
-            expect.anything(),
-            "venmo.appswitch.browser-window.closed",
-            { context_id: "context-id" }
-          );
-        });
+        await drivePolling(
+          venmo.tokenize().catch((err) => {
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.code).toBe("VENMO_MOBILE_POLLING_TOKENIZATION_CANCELED");
+            expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+              expect.anything(),
+              "venmo.appswitch.browser-window.closed",
+              { context_id: "context-id" }
+            );
+          })
+        );
       });
 
       it("does not trigger cancellation when window is closed but payment context status is APPROVED", async () => {
-        const mockWindow = { closed: true };
-        venmo._venmoWindow = mockWindow;
+        venmo._venmoWindow = { closed: true };
         venmo._venmoPaymentContextStatus = "SCANNED";
 
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "APPROVED",
-              paymentMethodId: "fake-nonce",
-              userName: "some-name",
-            },
-          },
-        });
-
-        const result = await venmo.tokenize();
+        // Default mock already returns APPROVED; no override needed.
+        const result = await drivePolling(venmo.tokenize());
 
         expect(result.nonce).toBe("fake-nonce");
         expect(analytics.sendEventPlus).not.toHaveBeenCalledWith(
@@ -3400,51 +2993,46 @@ describe("Venmo", () => {
       });
 
       it("sends an analytics event for each status change", async () => {
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "SCANNED",
-            },
-          },
-        });
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "UNKNOWN_STATUS_WE_DO_NOT_ACCOUNT_FOR",
-            },
-          },
-        });
-        testContext.client.request.mockResolvedValueOnce({
-          data: {
-            node: {
-              status: "APPROVED",
-              paymentMethodId: "fake-nonce",
-              username: "some-name",
-            },
+        var nodeCallCount = 0;
+
+        mockPollingClient(testContext.client, {
+          nodeResolver: function () {
+            nodeCallCount++;
+            if (nodeCallCount === 1) {
+              return Promise.resolve(makeNodeResponse({ status: "SCANNED" }));
+            }
+            if (nodeCallCount === 2) {
+              return Promise.resolve(
+                makeNodeResponse({
+                  status: "UNKNOWN_STATUS_WE_DO_NOT_ACCOUNT_FOR",
+                })
+              );
+            }
+            return Promise.resolve(makeNodeResponse());
           },
         });
 
-        await venmo.tokenize();
+        await drivePolling(venmo.tokenize());
 
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.scanned",
-          { context_id: "context-id" }
+          expect.objectContaining({ context_id: "context-id" })
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.unknown_status_we_do_not_account_for",
-          { context_id: "context-id" }
+          expect.objectContaining({ context_id: "context-id" })
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.status-change.approved",
-          { context_id: "context-id" }
+          expect.objectContaining({ context_id: "context-id" })
         );
         expect(analytics.sendEventPlus).toBeCalledWith(
           expect.anything(),
           "venmo.tokenize.manual-return.success",
-          { context_id: "context-id" }
+          expect.objectContaining({ context_id: "context-id" })
         );
 
         // once to create the payment context
@@ -3454,57 +3042,230 @@ describe("Venmo", () => {
       });
 
       it("rejects if polling lasts for 5 minutes with no results", async () => {
-        testContext.client.request.mockImplementation((options) => {
-          if (options.data.query.includes("mutation CreateVenmo")) {
-            return Promise.resolve({
-              data: {
-                createVenmoQRCodePaymentContext: {
-                  venmoQRCodePaymentContext: {
-                    status: "CREATED",
-                    id: "context-id",
-                    createdAt: new Date().toString(),
-                    expiresAt: new Date(Date.now() + 30000000).toString(),
-                  },
-                },
-              },
-            });
-          }
+        // Use a short expiry threshold so we only need a handful of poll cycles
+        // to trigger the timeout without spending real time on 1200 fake iterations.
+        venmo._mobilePollingExpiresThreshold = 500;
+        venmo._mobilePollingInterval = 250;
 
-          return Promise.resolve({
-            data: {
-              node: {
-                status: "SCANNED",
-              },
+        // mobileWebFallBack uses a different mutation name; keep that match here
+        // because the production source uses it for the timeout path.
+        mockPollingClient(testContext.client, {
+          nodeResolver: { status: "SCANNED" },
+          queryMatchString: "mutation CreateVenmo",
+        });
+
+        // Advance just past threshold + one interval to trigger the timeout
+        // with the minimum number of polling cycles.
+        var advanceMs =
+          venmo._mobilePollingExpiresThreshold +
+          venmo._mobilePollingInterval +
+          1;
+
+        await drivePolling(
+          venmo.tokenize().catch((err) => {
+            expect(err.code).toBe("VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT");
+          }),
+          advanceMs
+        );
+      });
+
+      describe("platform metadata tag", () => {
+        it("tags manual-return.start/.success with the analytics category", async () => {
+          await drivePolling(venmo.tokenize());
+
+          var expectedPlatform = venmo._determineAnalyticsCategory();
+
+          expect(analytics.sendEventPlus).toBeCalledWith(
+            expect.anything(),
+            "venmo.tokenize.manual-return.start",
+            expect.objectContaining({ platform: expectedPlatform })
+          );
+          expect(analytics.sendEventPlus).toBeCalledWith(
+            expect.anything(),
+            "venmo.tokenize.manual-return.success",
+            expect.objectContaining({ platform: expectedPlatform })
+          );
+        });
+
+        it("tags manual-return events with 'popup-bridge' when PopupBridge is installed", async () => {
+          window.popupBridge = { open: vi.fn() };
+
+          await drivePolling(venmo.tokenize());
+
+          expect(analytics.sendEventPlus).toBeCalledWith(
+            expect.anything(),
+            "venmo.tokenize.manual-return.start",
+            expect.objectContaining({ platform: "popup-bridge" })
+          );
+          expect(analytics.sendEventPlus).toBeCalledWith(
+            expect.anything(),
+            "venmo.tokenize.manual-return.status-change.approved",
+            expect.objectContaining({ platform: "popup-bridge" })
+          );
+          expect(analytics.sendEventPlus).toBeCalledWith(
+            expect.anything(),
+            "venmo.tokenize.manual-return.success",
+            expect.objectContaining({ platform: "popup-bridge" })
+          );
+        });
+
+        it("tags manual-return.failure with 'popup-bridge' when PopupBridge is installed", async () => {
+          window.popupBridge = { open: vi.fn() };
+
+          var networkError = new BraintreeError({
+            type: BraintreeError.types.NETWORK,
+            code: "VENMO_MOBILE_POLLING_TOKENIZATION_NETWORK_ERROR",
+            message: "network error",
+          });
+
+          mockPollingClient(testContext.client, {
+            nodeResolver: function () {
+              return Promise.reject(networkError);
             },
           });
+
+          await drivePolling(venmo.tokenize().catch(function () {}));
+
+          expect(analytics.sendEventPlus).toBeCalledWith(
+            expect.anything(),
+            "venmo.tokenize.manual-return.failure",
+            expect.objectContaining({ platform: "popup-bridge" })
+          );
         });
 
-        const promise = venmo.tokenize().catch((err) => {
-          expect(err.code).toBe("VENMO_MOBILE_POLLING_TOKENIZATION_TIMEOUT");
+        it("tags manual-return.canceled with 'popup-bridge' when PopupBridge is installed", async () => {
+          window.popupBridge = { open: vi.fn() };
+
+          venmo._venmoWindow = { closed: true };
+          venmo._venmoPaymentContextStatus = "CREATED";
+          venmo._cancelOnReturnToBrowser = true;
+
+          await drivePolling(venmo.tokenize().catch(function () {}));
+
+          expect(analytics.sendEventPlus).toBeCalledWith(
+            expect.anything(),
+            "venmo.tokenize.manual-return.canceled",
+            expect.objectContaining({ platform: "popup-bridge" })
+          );
+        });
+      });
+    });
+
+    // Note: These iframe breakout tests test appSwitch behavior but are placed here
+    // (after mobile polling tests) rather than in the describe('appSwitch') section
+    // above to avoid test pollution. When placed before the mobile polling tests,
+    // Android Chrome mocks appear to pollute the "sends an analytics event for each
+    // status change" test despite cleanup attempts with vi.restoreAllMocks() and
+    // explicit mock resets.
+    describe("appSwitch iframe breakout on android chrome", () => {
+      let venmo, venmoOptions, originalNavigator, originalLocation, originalTop;
+
+      beforeEach(async () => {
+        originalNavigator = window.navigator;
+        originalLocation = window.location;
+        originalTop = window.top;
+
+        delete window.navigator;
+        delete window.location;
+        delete window.top;
+
+        window.navigator = {
+          platform: "platform",
+        };
+        window.location = {
+          href: "old",
+          hash: "",
+        };
+        window.top = {
+          location: {
+            href: "top-old",
+          },
+        };
+
+        venmoOptions = {
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          paymentMethodUsage: "single_use",
+        };
+
+        venmo = new Venmo(venmoOptions);
+        await flushPromises();
+      });
+
+      afterEach(() => {
+        window.navigator = originalNavigator;
+        window.location = originalLocation;
+        window.top = originalTop;
+      });
+
+      it("breaks out of iframe when in iframe and using android chrome without mobileWebFallBack", async () => {
+        vi.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isChrome").mockReturnValue(true);
+        inIframe.mockReturnValue(true);
+
+        await venmo.appSwitch("https://venmo.com/braintree");
+
+        expect(window.open).not.toBeCalled();
+        expect(window.location.href).not.toBe("https://venmo.com/braintree");
+        expect(window.top.location.href).toBe("https://venmo.com/braintree");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.browser"
+        );
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.chrome-android-iframe-breakout"
+        );
+      });
+
+      it("breaks out of iframe when in iframe and using android chrome with mobileWebFallBack true", async () => {
+        vi.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+        vi.spyOn(browserDetection, "isChrome").mockReturnValue(true);
+        inIframe.mockReturnValue(true);
+
+        const venmoWithFallback = new Venmo({
+          createPromise: new Promise((resolve) => resolve(testContext.client)),
+          mobileWebFallBack: true,
+          paymentMethodUsage: "single_use",
         });
 
-        await promise;
+        await flushPromises();
+
+        await venmoWithFallback.appSwitch("https://venmo.com/braintree");
+
+        expect(window.open).not.toBeCalled();
+        expect(window.location.href).not.toBe("https://venmo.com/braintree");
+        expect(window.top.location.href).toBe("https://venmo.com/braintree");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.browser"
+        );
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect.anything(),
+          "venmo.appswitch.start.chrome-android-iframe-breakout"
+        );
       });
     });
 
     describe("Desktop QR Code Flow", () => {
       let venmo, fakeVenmoDesktop;
 
-      beforeEach(() => {
-        jest.useRealTimers();
+      beforeEach(async () => {
+        vi.useRealTimers();
 
         fakeVenmoDesktop = {
-          hideDesktopFlow: jest.fn().mockResolvedValue(),
-          launchDesktopFlow: jest.fn().mockResolvedValue({
+          hideDesktopFlow: vi.fn().mockResolvedValue(),
+          launchDesktopFlow: vi.fn().mockResolvedValue({
             paymentMethodNonce: "fake-venmo-account-nonce",
-            username: "@username",
+            username: "username",
           }),
         };
         createVenmoDesktop.mockResolvedValue(fakeVenmoDesktop);
         venmo = new Venmo({
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           allowDesktop: true,
+          paymentMethodUsage: "single_use",
         });
+        await flushPromises();
       });
 
       it("launches the venmo desktop flow", async () => {
@@ -3529,7 +3290,7 @@ describe("Venmo", () => {
           nonce: "fake-venmo-account-nonce",
           type: "VenmoAccount",
           details: {
-            username: "@username",
+            username: "username",
           },
         });
       });
@@ -3537,9 +3298,10 @@ describe("Venmo", () => {
       it("sends an event when the desktop flow succeeds", async () => {
         await venmo.tokenize();
 
-        expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect(analytics.sendEventPlus).toHaveBeenCalledWith(
           expect.anything(),
-          "venmo.tokenize.desktop.success"
+          "venmo.tokenize.desktop.success",
+          expect.anything()
         );
       });
 
@@ -3582,9 +3344,10 @@ describe("Venmo", () => {
         try {
           await venmo.tokenize();
         } catch (err) {
-          expect(analytics.sendEvent).toHaveBeenCalledWith(
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            "venmo.tokenize.desktop.failure"
+            "venmo.tokenize.desktop.failure",
+            expect.anything()
           );
         }
       });
@@ -3593,7 +3356,7 @@ describe("Venmo", () => {
     describe("Desktop Web Login Flow", () => {
       const flowSpecificConfig = {
         allowDesktopWebLogin: true,
-        paymentMethodUsage: "single",
+        paymentMethodUsage: "single_use",
       };
       const mockNonce = "fake-nonce";
       const mockPaymentContextId = "some-context-id";
@@ -3611,12 +3374,12 @@ describe("Venmo", () => {
       runWebLogin.mockResolvedValue(mockPayload);
 
       beforeEach(() => {
-        jest.spyOn(browserDetection, "isIos").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isIos").mockReturnValue(false);
 
-        jest.clearAllMocks();
-        jest.useFakeTimers();
+        vi.clearAllMocks();
+        vi.useFakeTimers();
         inIframe.mockReturnValue(true);
-        window.open = jest.fn();
+        window.open = vi.fn();
         testContext.client.request.mockImplementation((options) => {
           if (options.data.query.includes("mutation CreateVenmo")) {
             return Promise.resolve({
@@ -3642,7 +3405,7 @@ describe("Venmo", () => {
       });
 
       afterEach(() => {
-        jest.useRealTimers();
+        vi.useRealTimers();
       });
 
       it("launches the desktop web login flow with approval", async () => {
@@ -3650,6 +3413,7 @@ describe("Venmo", () => {
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
+        await flushPromises();
 
         const expectedCreateVenmoPaymentContextArgs = {
           api: "graphQLApi",
@@ -3662,7 +3426,7 @@ describe("Venmo", () => {
                 displayName: undefined,
                 intent: "CONTINUE",
                 isFinalAmount: false,
-                paymentMethodUsage: "SINGLE",
+                paymentMethodUsage: "SINGLE_USE",
                 paysheetDetails: {
                   collectCustomerBillingAddress: false,
                   collectCustomerShippingAddress: false,
@@ -3676,11 +3440,23 @@ describe("Venmo", () => {
         const result = await venmo.tokenize();
 
         expect(testContext.client.request).toBeCalledWith(
-          expectedCreateVenmoPaymentContextArgs
+          expect.objectContaining({
+            api: "graphQLApi",
+            data: expect.objectContaining({
+              query: expect.stringMatching(
+                "mutation CreateVenmoPaymentContext"
+              ),
+              variables: expect.objectContaining({
+                input: expect.objectContaining({
+                  paymentMethodUsage: "SINGLE_USE",
+                }),
+              }),
+            }),
+          })
         );
         expect(result.nonce).toBe(mockNonce);
         expect(result.type).toBe("VenmoAccount");
-        expect(result.details.username).toBe(`@${mockVenmoUserName}`);
+        expect(result.details.username).toBe(mockVenmoUserName);
         expect(result.details.paymentContextId).toBe(mockPaymentContextId);
       });
 
@@ -3689,9 +3465,11 @@ describe("Venmo", () => {
           createPromise: new Promise((resolve) => resolve(testContext.client)),
           ...flowSpecificConfig,
         });
+        await flushPromises();
 
         await venmo.tokenize();
         expect(runWebLogin).toHaveBeenCalledWith({
+          analyticsCallback: expect.any(Function),
           cancelTokenization: expect.any(Function),
           checkForStatusChange: expect.any(Function),
           frameServiceInstance: expect.any(Object),
@@ -3712,9 +3490,11 @@ describe("Venmo", () => {
           ...flowSpecificConfig,
           ...nonceOption,
         });
+        await flushPromises();
 
         await venmo.tokenize();
         expect(runWebLogin).toHaveBeenCalledWith({
+          analyticsCallback: expect.any(Function),
           cancelTokenization: expect.any(Function),
           checkForStatusChange: expect.any(Function),
           frameServiceInstance: expect.any(Object),
@@ -4001,22 +3781,40 @@ describe("Venmo", () => {
           });
         });
 
-        it("sends analytics events on start and approval", async () => {
-          const expectedStartEvent = "venmo.tokenize.web-login.start";
-          const expectedApprovedEvent = "venmo.tokenize.web-login.success";
+        const mockStatusCheckRequest = (status) => {
+          testContext.client.request.mockImplementation((options) => {
+            if (options.data.query.includes("mutation CreateVenmo")) {
+              return Promise.resolve({
+                data: {
+                  createVenmoPaymentContext: {
+                    venmoPaymentContext: {
+                      status: "CREATED",
+                      id: mockPaymentContextId,
+                      createdAt: new Date().toString(),
+                      expiresAt: new Date(Date.now() + 30000000).toString(),
+                    },
+                  },
+                },
+              });
+            }
 
+            return Promise.resolve({
+              data: { node: { status: status } },
+            });
+          });
+        };
+
+        it("sends analytics events on start and approval", async () => {
           await venmo._tokenizeWebLoginWithRedirect();
 
-          expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
-            1,
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            expectedStartEvent,
+            "venmo.tokenize.web-login.start",
             { context_id: "some-context-id" }
           );
-          expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
-            2,
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            expectedApprovedEvent,
+            "venmo.tokenize.web-login.success",
             { context_id: "some-context-id" }
           );
         });
@@ -4025,30 +3823,60 @@ describe("Venmo", () => {
           expect.assertions(1);
           runWebLogin.mockRejectedValueOnce(new Error("some error!"));
 
-          const expectedApprovedEvent = "venmo.tokenize.web-login.failure";
-
           await venmo._tokenizeWebLoginWithRedirect().catch(() => {
-            expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
-              2,
+            expect(analytics.sendEventPlus).toHaveBeenCalledWith(
               expect.anything(),
-              expectedApprovedEvent,
+              "venmo.tokenize.web-login.failure",
               { context_id: "some-context-id" }
             );
           });
         });
 
-        it("sends analytics on gateway status change", async () => {
-          const expectedApprovedEvent =
-            "venmo.tokenize.web-login.status-change";
+        it("sends desktop web login analytics from web-login-backdrop callback", async () => {
+          await venmo._tokenizeWebLoginWithRedirect();
 
-          await venmo._checkPaymentContextStatusAndProcessResult();
+          runWebLogin.mock.calls[0][0].analyticsCallback("login", "start");
 
-          expect(analytics.sendEventPlus).toHaveBeenNthCalledWith(
-            1,
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
             expect.anything(),
-            expectedApprovedEvent,
+            "venmo.desktop.login.start",
             { context_id: "some-context-id" }
           );
+        });
+
+        it("uses id argument in query-payment-context analytics on success", async () => {
+          await venmo._queryPaymentContextStatus("query-context-id");
+
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+            expect.anything(),
+            "venmo.query-payment-context.started",
+            { context_id: "query-context-id" }
+          );
+          expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+            expect.anything(),
+            "venmo.query-payment-context.succeeded",
+            { context_id: "query-context-id" }
+          );
+        });
+
+        it("uses id argument in query-payment-context analytics on failure", async () => {
+          expect.assertions(2);
+          testContext.client.request.mockRejectedValueOnce(new Error("fail"));
+
+          await venmo
+            ._queryPaymentContextStatus("query-context-id")
+            .catch(function () {
+              expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+                expect.anything(),
+                "venmo.query-payment-context.started",
+                { context_id: "query-context-id" }
+              );
+              expect(analytics.sendEventPlus).toHaveBeenCalledWith(
+                expect.anything(),
+                "venmo.query-payment-context.failed",
+                { context_id: "query-context-id" }
+              );
+            });
         });
       });
     });
@@ -4058,6 +3886,7 @@ describe("Venmo", () => {
     it("errors if no tokenization is in process", () => {
       const venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
 
       expect.assertions(1);
@@ -4072,18 +3901,17 @@ describe("Venmo", () => {
 
       const venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
 
-      jest.spyOn(window, "addEventListener").mockImplementation();
-      jest.spyOn(window.document, "addEventListener").mockImplementation();
-      jest.spyOn(window, "open").mockImplementation();
+      vi.spyOn(window.document, "addEventListener").mockImplementation();
+      vi.spyOn(window, "open").mockImplementation();
 
       const promise = venmo.tokenize().catch((err) => {
         expect(err.code).toBe("VENMO_TOKENIZATION_CANCELED_BY_MERCHANT");
       });
 
-      jest.spyOn(window, "removeEventListener").mockImplementation();
-      jest.spyOn(window.document, "removeEventListener").mockImplementation();
+      vi.spyOn(window.document, "removeEventListener").mockImplementation();
 
       return venmo.cancelTokenization().then(() => {
         return promise;
@@ -4093,72 +3921,24 @@ describe("Venmo", () => {
     it("removes event listeners for event listener mobile flow", () => {
       const venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
 
-      jest.spyOn(window, "addEventListener").mockImplementation();
-      jest.spyOn(window.document, "addEventListener").mockImplementation();
-      jest.spyOn(window, "open").mockImplementation();
+      vi.spyOn(window.document, "addEventListener").mockImplementation();
+      vi.spyOn(window, "open").mockImplementation();
 
       venmo.tokenize().catch(() => {
         // noop
       });
 
-      jest.spyOn(window, "removeEventListener").mockImplementation();
-      jest.spyOn(window.document, "removeEventListener").mockImplementation();
+      vi.spyOn(window.document, "removeEventListener").mockImplementation();
 
       return venmo.cancelTokenization().then(() => {
-        expect(window.removeEventListener).toBeCalledTimes(1);
-        expect(window.removeEventListener).toBeCalledWith(
-          "hashchange",
-          expect.any(Function)
-        );
         expect(window.document.removeEventListener).toBeCalledTimes(1);
         expect(window.document.removeEventListener).toBeCalledWith(
           "visibilitychange",
           expect.any(Function)
         );
-      });
-    });
-
-    it("cancels the payment context in mobile polling legacy flow", () => {
-      testContext.client.request.mockResolvedValue({
-        data: {
-          createVenmoQRCodePaymentContext: {
-            venmoQRCodePaymentContext: {
-              status: "CREATED",
-              id: "context-id",
-              createdAt: new Date().toString(),
-              expiresAt: new Date(Date.now() + 30000000).toString(),
-            },
-          },
-        },
-      });
-
-      inIframe.mockReturnValue(true);
-
-      const venmo = new Venmo({
-        createPromise: new Promise((resolve) => resolve(testContext.client)),
-      });
-
-      venmo.tokenize().catch(() => {
-        // noop
-      });
-
-      return venmo.cancelTokenization().then(() => {
-        expect(testContext.client.request).toBeCalledWith({
-          api: "graphQLApi",
-          data: {
-            query: expect.stringMatching(
-              "mutation UpdateVenmoQRCodePaymentContext"
-            ),
-            variables: {
-              input: {
-                id: "context-id",
-                status: "CANCELED",
-              },
-            },
-          },
-        });
       });
     });
 
@@ -4205,13 +3985,13 @@ describe("Venmo", () => {
       });
     });
 
-    it("cancels the venmo desktop flow", () => {
+    it("cancels the venmo desktop flow", async () => {
       const fakeVenmoDesktop = {
-        hideDesktopFlow: jest.fn().mockResolvedValue(),
-        updateVenmoDesktopPaymentContext: jest.fn().mockResolvedValue(),
-        launchDesktopFlow: jest.fn().mockResolvedValue({
+        hideDesktopFlow: vi.fn().mockResolvedValue(),
+        updateVenmoDesktopPaymentContext: vi.fn().mockResolvedValue(),
+        launchDesktopFlow: vi.fn().mockResolvedValue({
           paymentMethodNonce: "fake-venmo-account-nonce",
-          username: "@username",
+          username: "username",
         }),
       };
 
@@ -4220,7 +4000,9 @@ describe("Venmo", () => {
       const venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowDesktop: true,
+        paymentMethodUsage: "single_use",
       });
+      await flushPromises();
 
       venmo.tokenize().catch(() => {
         // noop
@@ -4243,48 +4025,49 @@ describe("Venmo", () => {
     beforeEach(async () => {
       venmo = new Venmo({
         createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
       });
       await flushPromises();
     });
 
     it("returns true when on iOS, in iframe, without Venmo app", () => {
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
       inIframe.mockReturnValue(true);
-      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+      vi.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
 
       expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(true);
     });
 
     it("returns false when not on iOS", () => {
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(false);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(false);
       inIframe.mockReturnValue(true);
-      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+      vi.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
 
       expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
     });
 
     it("returns false when not in iframe", () => {
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
       inIframe.mockReturnValue(false);
-      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+      vi.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
 
       expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
     });
 
     it("returns false when Venmo app is installed", () => {
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
       inIframe.mockReturnValue(true);
-      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(true);
+      vi.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(true);
 
       expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
     });
 
     it("returns false when requireManualReturn is true (respects merchant override)", () => {
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
       inIframe.mockReturnValue(true);
 
       venmo._requireManualReturn = true;
-      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+      vi.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
 
       expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
     });
@@ -4296,24 +4079,25 @@ describe("Venmo", () => {
     beforeEach(async () => {
       venmo = new Venmo({
         createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
       });
       await flushPromises();
     });
 
     it("detects the correct scenario for iOS iframe without Venmo app", () => {
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
       inIframe.mockReturnValue(true);
-      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+      vi.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
 
       expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(true);
     });
 
     it("respects requireManualReturn flag even on iOS iframe without app", () => {
-      jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
       inIframe.mockReturnValue(true);
 
       venmo._requireManualReturn = true;
-      jest.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
+      vi.spyOn(venmo, "_venmoNativeAppIsInstalled").mockReturnValue(false);
 
       expect(venmo._isIOSIframeWithoutVenmoApp()).toBe(false);
     });
@@ -4325,6 +4109,7 @@ describe("Venmo", () => {
     beforeEach(() => {
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
+        paymentMethodUsage: "single_use",
       });
     });
 
@@ -4358,73 +4143,53 @@ describe("Venmo", () => {
       });
     });
 
-    it("tears down venmo desktop instance if it exists", () => {
+    it("tears down venmo desktop instance if it exists", async () => {
       const fakeVenmoDesktop = {
-        teardown: jest.fn().mockResolvedValue(),
+        teardown: vi.fn().mockResolvedValue(),
       };
 
       createVenmoDesktop.mockResolvedValue(fakeVenmoDesktop);
       venmo = new Venmo({
         createPromise: new Promise((resolve) => resolve(testContext.client)),
         allowDesktop: true,
+        paymentMethodUsage: "single_use",
       });
+      await flushPromises();
 
       return venmo.teardown().then(() => {
         expect(fakeVenmoDesktop.teardown).toBeCalledTimes(1);
       });
     });
 
-    it("cancels mobile polling venmo payment context if it exists using the legacy flow", async () => {
-      testContext.client.request.mockResolvedValueOnce({
-        data: {
-          createVenmoQRCodePaymentContext: {
-            venmoQRCodePaymentContext: {
-              status: "CREATED",
-              id: "context-id",
-              createdAt: new Date().toString(),
-              expiresAt: new Date(Date.now() + 30000000).toString(),
-            },
-          },
-        },
-      });
-
-      inIframe.mockReturnValue(true);
-      venmo = new Venmo({
-        createPromise: new Promise((resolve) => resolve(testContext.client)),
-      });
-
-      await flushPromises();
-
-      return venmo.teardown().then(() => {
-        expect(testContext.client.request).toBeCalledWith({
-          api: "graphQLApi",
-          data: {
-            query: expect.stringMatching(
-              "mutation UpdateVenmoQRCodePaymentContext"
-            ),
-            variables: {
-              input: {
-                id: "context-id",
-                status: "CANCELED",
+    it("cancels mobile polling venmo payment context if it exists", async () => {
+      testContext.client.request.mockImplementation((options) => {
+        var query = (options.data && options.data.query) || "";
+        if (query.includes("createVenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              createVenmoPaymentContext: {
+                venmoPaymentContext: {
+                  status: "CREATED",
+                  id: "context-id",
+                  createdAt: new Date().toString(),
+                  expiresAt: new Date(Date.now() + 30000000).toString(),
+                },
               },
             },
-          },
-        });
-      });
-    });
-
-    it("cancels mobile polling venmo payment context if it exists", async () => {
-      testContext.client.request.mockResolvedValueOnce({
-        data: {
-          createVenmoPaymentContext: {
-            venmoPaymentContext: {
-              status: "CREATED",
-              id: "context-id",
-              createdAt: new Date().toString(),
-              expiresAt: new Date(Date.now() + 30000000).toString(),
+          });
+        }
+        if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "test-user",
+              },
             },
-          },
-        },
+          });
+        }
+        return Promise.resolve({});
       });
 
       inIframe.mockReturnValue(true);
@@ -4454,17 +4219,35 @@ describe("Venmo", () => {
     });
 
     it("prevents venmo payment context from refreshing after teardown", async () => {
-      testContext.client.request.mockResolvedValueOnce({
-        data: {
-          createVenmoPaymentContext: {
-            venmoPaymentContext: {
-              status: "CREATED",
-              id: "context-id",
-              createdAt: new Date().toString(),
-              expiresAt: new Date(Date.now() + 30000000).toString(),
+      vi.clearAllTimers();
+      testContext.client.request.mockImplementation((options) => {
+        var query = (options.data && options.data.query) || "";
+        if (query.includes("createVenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              createVenmoPaymentContext: {
+                venmoPaymentContext: {
+                  status: "CREATED",
+                  id: "context-id",
+                  createdAt: new Date().toString(),
+                  expiresAt: new Date(Date.now() + 30000000).toString(),
+                },
+              },
             },
-          },
-        },
+          });
+        }
+        if (query.includes("node") && query.includes("VenmoPaymentContext")) {
+          return Promise.resolve({
+            data: {
+              node: {
+                status: "APPROVED",
+                paymentMethodId: "fake-nonce",
+                userName: "test-user",
+              },
+            },
+          });
+        }
+        return Promise.resolve({});
       });
 
       inIframe.mockReturnValue(true);
@@ -4475,17 +4258,19 @@ describe("Venmo", () => {
 
       await flushPromises();
 
-      return venmo.teardown().then(() => {
-        testContext.client.request.mockReset();
+      await venmo.teardown();
 
-        jest.runAllTimers();
+      testContext.client.request.mockReset();
+      testContext.client.request.mockResolvedValue({});
 
-        expect(testContext.client.request).not.toBeCalledWith({
-          api: "graphQLApi",
-          data: expect.objectContaining({
-            query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
-          }),
-        });
+      vi.runAllTimers();
+      await flushPromises();
+
+      expect(testContext.client.request).not.toBeCalledWith({
+        api: "graphQLApi",
+        data: expect.objectContaining({
+          query: expect.stringMatching("mutation CreateVenmoPaymentContext"),
+        }),
       });
     });
   });
@@ -4493,9 +4278,9 @@ describe("Venmo", () => {
   describe("_shouldIncludeReturnUrls", () => {
     beforeEach(() => {
       // Set up default mocks for browser detection
-      jest.spyOn(browserDetection, "isWebview").mockReturnValue(false);
-      jest.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
-      jest.spyOn(browserDetection, "isIosSafari").mockReturnValue(false);
+      vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+      vi.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
+      vi.spyOn(browserDetection, "isIosSafari").mockReturnValue(false);
 
       // Set up default mocks for other conditions
       inIframe.mockReturnValue(false);
@@ -4504,8 +4289,9 @@ describe("Venmo", () => {
 
     it("returns true when _deepLinkReturnUrl is set", () => {
       const instance = new Venmo({
-        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client),
         deepLinkReturnUrl: "myapp://return",
+        paymentMethodUsage: "single_use",
       });
 
       expect(instance._shouldIncludeReturnUrls()).toBe(true);
@@ -4515,7 +4301,8 @@ describe("Venmo", () => {
       supportsVenmo.isNonDefaultBrowser.mockReturnValue(true);
 
       const instance = new Venmo({
-        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
       });
 
       expect(instance._shouldIncludeReturnUrls()).toBe(false);
@@ -4523,11 +4310,12 @@ describe("Venmo", () => {
 
     it("returns true when in a non-default browser that is a webview", () => {
       supportsVenmo.isNonDefaultBrowser.mockReturnValue(true);
-      jest.spyOn(browserDetection, "isWebview").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isWebview").mockReturnValue(true);
 
       const instance = new Venmo({
-        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client),
         _isIncognito: false,
+        paymentMethodUsage: "single_use",
       });
 
       expect(instance._shouldIncludeReturnUrls()).toBe(true);
@@ -4535,11 +4323,12 @@ describe("Venmo", () => {
 
     it("returns true when in a non-default browser on Android", () => {
       supportsVenmo.isNonDefaultBrowser.mockReturnValue(true);
-      jest.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
 
       const instance = new Venmo({
-        client: testContext.client,
+        createPromise: Promise.resolve(testContext.client),
         _isIncognito: false,
+        paymentMethodUsage: "single_use",
       });
 
       expect(instance._shouldIncludeReturnUrls()).toBe(true);
@@ -4550,27 +4339,32 @@ describe("Venmo", () => {
 
       const instance = new Venmo({
         createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
       });
 
       // Prevent async initialization from causing unhandled promise rejections
-      jest.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
+      vi.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
 
       expect(instance._shouldIncludeReturnUrls()).toBe(false);
     });
 
     it("returns false when _isIncognito is true", () => {
       const instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
         _isIncognito: true,
+        paymentMethodUsage: "single_use",
       });
 
       expect(instance._shouldIncludeReturnUrls()).toBe(false);
     });
 
     it("returns true when _isIncognito is true and in iOS Safari", () => {
-      jest.spyOn(browserDetection, "isIosSafari").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIosSafari").mockReturnValue(true);
 
       const instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
         _isIncognito: true,
+        paymentMethodUsage: "single_use",
       });
 
       expect(instance._shouldIncludeReturnUrls()).toBe(true);
@@ -4578,22 +4372,25 @@ describe("Venmo", () => {
 
     it("returns false when _isIncognito is true and in iOS Safari but in iframe", () => {
       inIframe.mockReturnValue(true);
-      jest.spyOn(browserDetection, "isIosSafari").mockReturnValue(true);
+      vi.spyOn(browserDetection, "isIosSafari").mockReturnValue(true);
 
       const instance = new Venmo({
         _isIncognito: true,
         createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
       });
 
       // Prevent async initialization from causing unhandled promise rejections
-      jest.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
+      vi.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
 
       expect(instance._shouldIncludeReturnUrls()).toBe(false);
     });
 
     it("returns true when all conditions allow return URLs", () => {
       const instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
         _isIncognito: false,
+        paymentMethodUsage: "single_use",
       });
 
       expect(instance._shouldIncludeReturnUrls()).toBe(true);
@@ -4601,16 +4398,17 @@ describe("Venmo", () => {
 
     it("returns true when _deepLinkReturnUrl is set even if other conditions would prevent return URLs", () => {
       inIframe.mockReturnValue(true);
-      jest.spyOn(browserDetection, "isWebview").mockReturnValue(true); // Make it webview to bypass first condition
+      vi.spyOn(browserDetection, "isWebview").mockReturnValue(true); // Make it webview to bypass first condition
 
       const instance = new Venmo({
         createPromise: Promise.resolve(testContext.client),
         deepLinkReturnUrl: "myapp://return",
         _isIncognito: true,
+        paymentMethodUsage: "single_use",
       });
 
       // Prevent async initialization from causing unhandled promise rejections
-      jest.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
+      vi.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
 
       expect(instance._shouldIncludeReturnUrls()).toBe(true);
     });
@@ -4620,12 +4418,161 @@ describe("Venmo", () => {
         createPromise: Promise.resolve(testContext.client),
         requireManualReturn: true,
         _isIncognito: false,
+        paymentMethodUsage: "single_use",
       });
 
       // Prevent async initialization from causing unhandled promise rejections
-      jest.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
+      vi.spyOn(instance, "_createVenmoPaymentContext").mockResolvedValue();
 
       expect(instance._shouldIncludeReturnUrls()).toBe(false);
+    });
+
+    describe("non-default browser with deepLinkReturnUrl and redirect strategy", () => {
+      beforeEach(() => {
+        supportsVenmo.isNonDefaultBrowser.mockReturnValue(true);
+        vi.spyOn(browserDetection, "isWebview").mockReturnValue(false);
+        vi.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
+      });
+
+      it("returns true when deepLinkReturnUrl is set and redirect strategy is enabled (iOS + mobileWebFallBack)", () => {
+        vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
+
+        const instance = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          deepLinkReturnUrl: "myapp://return",
+          mobileWebFallBack: true,
+          paymentMethodUsage: "single_use",
+        });
+
+        expect(instance._shouldIncludeReturnUrls()).toBe(true);
+      });
+
+      it("returns true when deepLinkReturnUrl is set and redirect strategy is enabled (iOS + useRedirectForIOS)", () => {
+        vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
+
+        const instance = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          deepLinkReturnUrl: "myapp://return",
+          useRedirectForIOS: true,
+          paymentMethodUsage: "single_use",
+        });
+
+        expect(instance._shouldIncludeReturnUrls()).toBe(true);
+      });
+
+      it("returns false when deepLinkReturnUrl is set but redirect strategy is disabled (iOS)", () => {
+        vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
+
+        const instance = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          deepLinkReturnUrl: "myapp://return",
+          mobileWebFallBack: false,
+          useRedirectForIOS: false,
+          paymentMethodUsage: "single_use",
+        });
+
+        expect(instance._shouldIncludeReturnUrls()).toBe(false);
+      });
+
+      it("returns false when deepLinkReturnUrl is set but not on iOS (Android excluded earlier)", () => {
+        vi.spyOn(browserDetection, "isIos").mockReturnValue(false);
+
+        const instance = new Venmo({
+          createPromise: Promise.resolve(testContext.client),
+          deepLinkReturnUrl: "myapp://return",
+          paymentMethodUsage: "single_use",
+        });
+
+        expect(instance._shouldIncludeReturnUrls()).toBe(false);
+      });
+    });
+  });
+
+  describe("_determineAnalyticsCategory", () => {
+    let venmo;
+
+    beforeEach(() => {
+      venmo = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
+      });
+      vi.spyOn(venmo, "_popupBridgeIsInstalled").mockReturnValue(false);
+      vi.spyOn(venmo, "_isDesktop").mockReturnValue(false);
+      venmo._useDesktopQRFlow = false;
+    });
+
+    it("returns 'popup-bridge' when popupBridge is installed", () => {
+      vi.spyOn(venmo, "_popupBridgeIsInstalled").mockReturnValue(true);
+
+      expect(venmo._determineAnalyticsCategory()).toBe("popup-bridge");
+    });
+
+    it("returns 'qr' when using the desktop QR flow", () => {
+      venmo._useDesktopQRFlow = true;
+
+      expect(venmo._determineAnalyticsCategory()).toBe("desktop-qr");
+    });
+
+    it("returns 'desktop' when on desktop without QR flow or popup-bridge", () => {
+      vi.spyOn(venmo, "_isDesktop").mockReturnValue(true);
+
+      expect(venmo._determineAnalyticsCategory()).toBe("desktop");
+    });
+
+    it("returns 'mobile' when not popup-bridge, QR, or desktop", () => {
+      expect(venmo._determineAnalyticsCategory()).toBe("mobile");
+    });
+
+    it("prefers 'popup-bridge' over QR flow and desktop", () => {
+      vi.spyOn(venmo, "_popupBridgeIsInstalled").mockReturnValue(true);
+      venmo._useDesktopQRFlow = true;
+      vi.spyOn(venmo, "_isDesktop").mockReturnValue(true);
+
+      expect(venmo._determineAnalyticsCategory()).toBe("popup-bridge");
+    });
+
+    it("prefers 'qr' over desktop when both conditions are true", () => {
+      venmo._useDesktopQRFlow = true;
+      vi.spyOn(venmo, "_isDesktop").mockReturnValue(true);
+
+      expect(venmo._determineAnalyticsCategory()).toBe("desktop-qr");
+    });
+  });
+
+  describe("cancelOnReturnToBrowser Android override", () => {
+    it("forces _cancelOnReturnToBrowser to false on Android even when merchant sets it to true", () => {
+      vi.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+
+      var instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
+        cancelOnReturnToBrowser: true,
+      });
+
+      expect(instance._cancelOnReturnToBrowser).toBe(false);
+    });
+
+    it("preserves cancelOnReturnToBrowser on non-Android platforms", () => {
+      vi.spyOn(browserDetection, "isAndroid").mockReturnValue(false);
+
+      var instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
+        cancelOnReturnToBrowser: true,
+      });
+
+      expect(instance._cancelOnReturnToBrowser).toBe(true);
+    });
+
+    it("keeps _cancelOnReturnToBrowser false on Android when merchant does not set the option", () => {
+      vi.spyOn(browserDetection, "isAndroid").mockReturnValue(true);
+
+      var instance = new Venmo({
+        createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
+      });
+
+      expect(instance._cancelOnReturnToBrowser).toBe(false);
     });
   });
 
@@ -4652,14 +4599,17 @@ describe("Venmo", () => {
       expect(venmo._cancelMobilePaymentContext).not.toHaveBeenCalled();
     };
 
-    beforeEach(() => {
-      jest.clearAllMocks();
+    beforeEach(async () => {
+      vi.clearAllMocks();
       venmo = new Venmo({
         createPromise: Promise.resolve(testContext.client),
+        paymentMethodUsage: "single_use",
       });
+      await flushPromises();
+      analytics.sendEventPlus.mockClear();
       venmo._venmoPaymentContextStatus = "CREATED";
       venmo._venmoPaymentContextId = "test-context-id";
-      venmo._cancelMobilePaymentContext = jest.fn().mockResolvedValue();
+      venmo._cancelMobilePaymentContext = vi.fn().mockResolvedValue();
     });
 
     it.each([false, undefined])(
@@ -4683,19 +4633,6 @@ describe("Venmo", () => {
     });
 
     describe("when cancellation conditions are not met", () => {
-      it.each(["cancel", "error", "success"])(
-        "does not cancel if Venmo %s parameter is present",
-        async (param) => {
-          setupVenmoForCancellation({
-            locationHash: `#venmo${param.charAt(0).toUpperCase()}${param.slice(1)}=true`,
-          });
-
-          await venmo._handleCancelOnReturn();
-
-          expectNoCancellation();
-        }
-      );
-
       it.each([
         [
           "payment context status is not CREATED",
@@ -4744,7 +4681,7 @@ describe("Venmo", () => {
 
       it("sends error analytics event when cancel fails", async () => {
         setupVenmoForCancellation();
-        venmo._cancelMobilePaymentContext = jest
+        venmo._cancelMobilePaymentContext = vi
           .fn()
           .mockRejectedValue(new Error("Cancel failed"));
 

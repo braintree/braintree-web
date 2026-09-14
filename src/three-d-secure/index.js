@@ -1,16 +1,15 @@
-"use strict";
+// @ts-nocheck
 /** @module braintree-web/three-d-secure */
 
-var ThreeDSecure = require("./external/three-d-secure");
-var isHTTPS = require("../lib/is-https").isHTTPS;
-var basicComponentVerification = require("../lib/basic-component-verification");
-var createDeferredClient = require("../lib/create-deferred-client");
-var createAssetsUrl = require("../lib/create-assets-url");
-var BraintreeError = require("../lib/braintree-error");
-var analytics = require("../lib/analytics");
-var errors = require("./shared/errors");
-var VERSION = process.env.npm_package_version;
-var wrapPromise = require("@braintree/wrap-promise");
+import ThreeDSecure from "./external/three-d-secure";
+import { isHTTPS } from "../lib/is-https";
+import basicComponentVerification from "../lib/basic-component-verification";
+import createDeferredClient from "../lib/create-deferred-client";
+import createAssetsUrl from "../lib/create-assets-url";
+import BraintreeError from "../lib/braintree-error";
+import analytics from "../lib/analytics";
+import errors from "./shared/errors";
+const VERSION = __SDK_VERSION__;
 
 /**
  * @static
@@ -23,94 +22,72 @@ var wrapPromise = require("@braintree/wrap-promise");
  * @param {object} [options.cardinalSDKConfig.payment] An object to describe how you want the user interactions to behave. Only a subset of the [Cardinal SDK payment configuration object](https://cardinaldocs.atlassian.net/wiki/spaces/CC/pages/1409568/Configurations#Configurations-Payment) are supported: `displayLoading` and `displayExitButton`.
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {(number|string)} [options.version=1] The version of 3D Secure to use. Possible options:
- * * 2 - A 3D Secure v2.0 integration that uses a modal to host the 3D Secure iframe.
- * * 2-bootstrap3-modal - A 3D Secure v2.0 integration that uses a modal styled with Bootstrap 3 styles to host the 3D Secure iframe. Requires having the Bootstrap 3 script files and stylesheets on your page.
- * * 2-inline-iframe - A 3D Secure v2.0 integration that provides the authentication iframe directly to the merchant.
- * @param {callback} [callback] The second argument, `data`, is the {@link ThreeDSecure} instance. If no callback is provided, it returns a promise that resolves the {@link ThreeDSecure} instance.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
-@example
- * <caption>Creating a v2 3D Secure component using 2 version (Cardinal modal)</caption>
- * braintree.threeDSecure.create({
- *   client: clientInstance,
- *   version: '2'
- * }, function (createError, threeDSecure) {
- *   // set up lookup-complete listener
- *   threeDSecure.on('lookup-complete', function (data, next) {
- *     // check lookup data
- *
- *     next();
- *   });
- *
- *   // using Hosted Fields, use `tokenize` to get back a credit card nonce
- *
- *   threeDSecure.verifyCard({
- *     nonce: nonceFromTokenizationPayload,,
- *     bin: binFromTokenizationPayload,
- *     amount: '100.00'
- *   }, function (verifyError, payload) {
- *     // inspect payload
- *     // send payload.nonce to your server
- *   });
- * });
+ * @param {string} [options.challengeDisplay] How the 3D Secure challenge UI should be presented. Defaults to `'modal'`. Possible options:
+ * * `'modal'` - A Cardinal-managed modal hosts the 3D Secure iframe.
+ * * `'inline-iframe'` - The authentication iframe is provided directly to the merchant for custom placement.
+ * @returns {Promise} Returns a promise that resolves the {@link ThreeDSecure} instance.
  * @example
- * <caption>Creating a v2 3D Secure component using 2-bootstrap3-modal version</caption>
- * // must have the boostrap js, css and jquery files on your page
- * braintree.threeDSecure.create({
- *   client: clientInstance,
- *   version: '2-bootstrap3-modal'
- * }, function (createError, threeDSecure) {
- *   // set up lookup-complete listener
- *   threeDSecure.on('lookup-complete', function (data, next) {
- *     // check lookup data
+ * <caption>Creating a 3D Secure component using the Cardinal modal (default)</caption>
+ * try {
+ *   const threeDSecure = await braintree.threeDSecure.create({
+ *     client: clientInstance,
+ *     challengeDisplay: 'modal'
+ *   });
  *
- *     next();
+ *   // set up lookup-complete listener
+ *   threeDSecure.on('lookup-complete', function (payload) {
+ *     // check lookup data
+ *     console.log(payload.data);
+ *
+ *     payload.next();
  *   });
  *
  *   // using Hosted Fields, use `tokenize` to get back a credit card nonce
- *
- *   // challenge will be presented in a bootstrap 3 modal
- *   threeDSecure.verifyCard({
+ *   const payload = await threeDSecure.verifyCard({
  *     nonce: nonceFromTokenizationPayload,
  *     bin: binFromTokenizationPayload,
  *     amount: '100.00'
- *   }, function (verifyError, payload) {
- *     // inspect payload
- *     // send payload.nonce to your server
  *   });
- * });
- * @example
- * <caption>Creating a v2 3D Secure component using 2-inline-iframe version</caption>
- * braintree.threeDSecure.create({
- *   client: clientInstance,
- *   version: '2-inline-iframe'
- * }, function (createError, threeDSecure) {
- *   // set up lookup-complete listener
- *   threeDSecure.on('lookup-complete', function (data, next) {
- *     // check lookup data
+ *   // inspect payload
+ *   // send payload.nonce to your server
  *
- *     next();
+ * } catch (createError) {
+ *   // handle error
+ * }
+ * @example
+ * <caption>Creating a 3D Secure component using the inline iframe</caption>
+ * try {
+ *   const threeDSecure = await braintree.threeDSecure.create({
+ *     client: clientInstance,
+ *     challengeDisplay: 'inline-iframe'
+ *   });
+ *   // set up lookup-complete listener
+ *   threeDSecure.on('lookup-complete', function (payload) {
+ *     // check lookup data
+ *     console.log(payload.data);
+ *
+ *     payload.next();
  *   });
  *   // set up iframe listener
- *   threeDSecure.on('authentication-iframe-available', function (event, next) {
- *     var element = event.element; // an html element that contains the iframe
+ *   threeDSecure.on('authentication-iframe-available', function (payload) {
+ *     var element = payload.element; // an html element that contains the iframe
  *
  *     document.body.appendChild(element); // put it on your page
  *
- *     next(); // let the sdk know the element has been added to the page
+ *     payload.next(); // let the sdk know the element has been added to the page
  *   });
  *
  *   // using Hosted Fields, use `tokenize` to get back a credit card nonce
- *
- *   threeDSecure.verifyCard({
- *     nonce: nonceFromTokenizationPayload,,
+ *   const payload = await threeDSecure.verifyCard({
+ *     nonce: nonceFromTokenizationPayload,
  *     bin: binFromTokenizationPayload,
  *     amount: '100.00'
- *   }, function (verifyError, payload) {
- *     // inspect payload
- *     // send payload.nonce to your server
  *   });
- * });
+ *   // inspect payload
+ *   // send payload.nonce to your server
+ * } catch (error) {
+ *   // handle error
+ * }
  */
 function create(options) {
   var name = "3D Secure";
@@ -139,7 +116,10 @@ function create(options) {
 
           options.client = client;
 
-          if (!gwConfig.threeDSecureEnabled) {
+          if (
+            !gwConfig.creditCard ||
+            !gwConfig.creditCard.threeDSecureEnabled
+          ) {
             error = errors.THREEDS_NOT_ENABLED;
           }
 
@@ -155,8 +135,9 @@ function create(options) {
 
           if (
             !(
-              gwConfig.threeDSecure &&
-              gwConfig.threeDSecure.cardinalAuthenticationJWT
+              gwConfig.creditCard &&
+              gwConfig.creditCard.threeDSecure &&
+              gwConfig.creditCard.threeDSecure.cardinalAuthenticationJWT
             )
           ) {
             analytics.sendEvent(
@@ -167,7 +148,7 @@ function create(options) {
           }
 
           if (error) {
-            return Promise.reject(new BraintreeError(error));
+            throw new BraintreeError(error);
           }
 
           analytics.sendEvent(options.client, "three-d-secure.initialized");
@@ -194,41 +175,30 @@ function create(options) {
 }
 
 function getFramework(options) {
-  var version = String(options.version || "");
+  var challengeDisplay = options.challengeDisplay || "modal";
 
-  if (!version || version === "1") {
-    throw new BraintreeError({
-      code: errors.THREEDS_UNSUPPORTED_VERSION.code,
-      type: errors.THREEDS_UNSUPPORTED_VERSION.type,
-      message: errors.THREEDS_UNSUPPORTED_VERSION.message,
-    });
-  }
-
-  switch (version) {
-    case "2":
-    case "2-cardinal-modal":
+  switch (challengeDisplay) {
+    case "modal":
       return "cardinal-modal";
-    case "2-bootstrap3-modal":
-      return "bootstrap3-modal";
-    case "2-inline-iframe":
+    case "inline-iframe":
       return "inline-iframe";
     default:
       throw new BraintreeError({
-        code: errors.THREEDS_UNRECOGNIZED_VERSION.code,
-        type: errors.THREEDS_UNRECOGNIZED_VERSION.type,
+        code: errors.THREEDS_CHALLENGE_DISPLAY_INVALID.code,
+        type: errors.THREEDS_CHALLENGE_DISPLAY_INVALID.type,
         message:
-          "Version `" +
-          options.version +
-          "` is not a recognized version. You may need to update the version of your Braintree SDK to support this version.",
+          "Challenge display `" +
+          options.challengeDisplay +
+          "` is not recognized. Valid values are 'modal' and 'inline-iframe'.",
       });
   }
 }
 
-module.exports = {
-  create: wrapPromise(create),
+export default {
+  create,
   /**
    * @description The current version of the SDK, i.e. `{@pkg version}`.
    * @type {string}
    */
-  VERSION: VERSION,
+  VERSION,
 };

@@ -1,7 +1,6 @@
-"use strict";
-
-var BraintreeError = require("../../../braintree-error");
-var errors = require("../../shared/errors");
+// @ts-nocheck
+import BraintreeError from "../../../braintree-error";
+import errors from "../../shared/errors";
 
 function noop() {}
 
@@ -51,4 +50,4 @@ PopupBridge.prototype.redirect = function (redirectUrl) {
   this.open({ openFrameUrl: redirectUrl });
 };
 
-module.exports = PopupBridge;
+export default PopupBridge;

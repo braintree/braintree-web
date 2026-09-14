@@ -1,7 +1,5 @@
-"use strict";
-
-const { create } = require("../../../src/lib/create-assets-url");
-const { fake } = require("../../helpers");
+import { create } from "../../../src/lib/create-assets-url";
+import { fake } from "../../helpers";
 
 describe("createAssetsUrl", () => {
   it("defaults to production asset url if no authorization is passed", () => {

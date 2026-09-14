@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 
-import { loadScript, removeScriptsByPattern } from "./script-loader";
 import {
   waitForBraintree,
   isBraintreeReady,
@@ -8,8 +7,9 @@ import {
   getScriptUrl,
   BRAINTREE_HOST,
 } from "./braintree-globals";
-import { setVersionMetadata, clearVersionMetadata } from "./sdk-metadata";
 import { isLocalBuildAvailableBrowser } from "./local-build-manager";
+import { loadScript, removeScriptsByPattern } from "./script-loader";
+import { setVersionMetadata, clearVersionMetadata } from "./sdk-metadata";
 
 export default class BraintreeWebSDKLoader {
   private loadedVersion: string | null = null;
@@ -76,7 +76,7 @@ export default class BraintreeWebSDKLoader {
 
           if (!isAvailable) {
             throw new Error(
-              "Local build not available. Run: npm run build && npm run storybook:copy-local-build"
+              "Local build not available. Run: npm run storybook"
             );
           }
 

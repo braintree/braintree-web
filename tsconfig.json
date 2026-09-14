@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "types": ["node", "applepayjs"],
+    "lib": ["ES2022", "dom"],
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": false,
+    "noImplicitThis": false,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": true,
+    "allowJs": false,
+    "checkJs": false,
+    "jsx": "preserve"
+  },
+  "include": [
+    ".storybook/**/*.ts",
+    ".storybook/**/*.tsx",
+    "msw/**/*.ts",
+    "msw/**/*.tsx",
+    "generated/**/*.ts",
+    "codegen.ts",
+    "src/**/*.ts"
+  ],
+  "ts-node": {
+    "esm": true
+  },
+  "references": [{ "path": "./scripts/build" }]
+}

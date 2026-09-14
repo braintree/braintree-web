@@ -1,6 +1,4 @@
-"use strict";
-
-module.exports = {
+const _default = {
   REQUIRED_OPTIONS: [
     "iban",
     "merchantAccountId",
@@ -18,3 +16,8 @@ module.exports = {
   ],
   MANDATE_TYPE_ENUM: ["ONE_OFF", "RECURRENT"],
 };
+
+export const { REQUIRED_OPTIONS, BILLING_ADDRESS_OPTIONS, MANDATE_TYPE_ENUM } =
+  _default;
+
+export default _default;

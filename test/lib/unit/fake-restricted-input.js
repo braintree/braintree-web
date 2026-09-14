@@ -1,6 +1,4 @@
-"use strict";
-
-const FakeRestrictedInput = require("../../../src/lib/fake-restricted-input");
+import FakeRestrictedInput from "../../../src/lib/fake-restricted-input";
 
 describe("FakeRestrictedInput", () => {
   let testContext;

@@ -1,6 +1,5 @@
-"use strict";
-
-var enumerate = require("./enumerate");
+// @ts-nocheck
+import enumerate from "./enumerate";
 
 /**
  * @class
@@ -84,4 +83,4 @@ BraintreeError.findRootError = function (err) {
   return err;
 };
 
-module.exports = BraintreeError;
+export default BraintreeError;

@@ -1,29 +1,19 @@
-"use strict";
-
-var BRAINTREE_VERSION = require("./constants").BRAINTREE_VERSION;
-
-var GraphQL = require("./request/graphql");
-var request = require("./request");
-var isVerifiedDomain = require("../lib/is-verified-domain");
-var BraintreeError = require("../lib/braintree-error");
-var convertToBraintreeError = require("../lib/convert-to-braintree-error");
-var getGatewayConfiguration = require("./get-configuration").getConfiguration;
-var createAuthorizationData = require("../lib/create-authorization-data");
-var metadata = require("../lib/add-metadata");
-var wrapPromise = require("@braintree/wrap-promise");
-var once = require("../lib/once");
-var deferred = require("../lib/deferred");
-var assign = require("../lib/assign").assign;
-var analytics = require("../lib/analytics");
-var errors = require("./errors");
-var VERSION = require("../lib/constants").VERSION;
-var GRAPHQL_URLS = require("../lib/constants").GRAPHQL_URLS;
-var methods = require("../lib/methods");
-var convertMethodsToError = require("../lib/convert-methods-to-error");
-var assets = require("../lib/assets");
-var FRAUDNET_FNCLS = require("../lib/constants").FRAUDNET_FNCLS;
-var FRAUDNET_SOURCE = require("../lib/constants").FRAUDNET_SOURCE;
-var FRAUDNET_URL = require("../lib/constants").FRAUDNET_URL;
+import { BRAINTREE_VERSION } from "./constants";
+import request from "./request";
+import isVerifiedDomain from "../lib/is-verified-domain";
+import BraintreeError from "../lib/braintree-error";
+import { classifyRequestError } from "./request/request-error";
+import { buildClientSdkMetadata } from "./request/graphql/client-sdk-metadata";
+import { getConfiguration as getGatewayConfiguration } from "./get-configuration";
+import createAuthorizationData from "../lib/create-authorization-data";
+import metadata from "../lib/add-metadata";
+import { assign } from "../lib/assign";
+import analytics from "../lib/analytics";
+import errors from "./errors";
+import { VERSION } from "../lib/constants";
+import { GRAPHQL_URLS } from "../lib/constants";
+import methods from "../lib/methods";
+import convertMethodsToError from "../lib/convert-methods-to-error";
 
 var cachedClients = {};
 
@@ -92,15 +82,11 @@ function Client(configuration) {
         message: "graphQL.url property is on an invalid domain.",
       });
     }
-
-    this._graphQL = new GraphQL({
-      graphQL: gatewayConfiguration.graphQL,
-    });
   }
 }
 
-Client.initialize = function (options) {
-  var clientInstance, authData;
+Client.initialize = async function (options) {
+  var authData, clientInstance;
   var promise = cachedClients[options.authorization];
 
   if (promise) {
@@ -113,345 +99,180 @@ Client.initialize = function (options) {
     authData = createAuthorizationData(options.authorization);
     // eslint-disable-next-line no-unused-vars
   } catch (err) {
-    return Promise.reject(
-      new BraintreeError(errors.CLIENT_INVALID_AUTHORIZATION)
-    );
+    throw new BraintreeError(errors.CLIENT_INVALID_AUTHORIZATION);
   }
 
-  promise = getGatewayConfiguration(authData, options.sessionId).then(
-    function (configuration) {
-      if (options.debug) {
-        configuration.isDebug = true;
-      }
+  promise = (async function () {
+    var configuration = await getGatewayConfiguration(
+      authData,
+      options.sessionId
+    );
 
-      configuration.authorization = options.authorization;
-
-      clientInstance = new Client(configuration);
-
-      return clientInstance;
+    if (options.debug) {
+      configuration.isDebug = true;
     }
-  );
+
+    configuration.authorization = options.authorization;
+
+    return new Client(configuration);
+  })();
 
   cachedClients[options.authorization] = promise;
 
   analytics.sendEvent(promise, "custom.client.load.initialized");
 
-  return promise
-    .then(function (client) {
-      analytics.sendEvent(clientInstance, "custom.client.load.succeeded");
+  try {
+    clientInstance = await promise;
 
-      return client;
-    })
-    .catch(function (err) {
-      delete cachedClients[options.authorization];
+    analytics.sendEvent(clientInstance, "custom.client.load.succeeded");
 
-      return Promise.reject(err);
-    });
+    return clientInstance;
+  } catch (err) {
+    delete cachedClients[options.authorization];
+
+    throw err;
+  }
 };
 
-// Primarily used for testing the client initalization call
+// Primarily used for testing the client initialization call
 Client.clearCache = function () {
   cachedClients = {};
 };
 
-Client.prototype._findOrCreateFraudnetJSON = function (clientMetadataId) {
-  var el = document.querySelector('script[fncls="' + FRAUDNET_FNCLS + '"]');
-  var config, additionalData, authorizationFingerprint, parameters;
-
-  if (!el) {
-    el = document.body.appendChild(document.createElement("script"));
-    el.type = "application/json";
-    el.setAttribute("fncls", FRAUDNET_FNCLS);
-  }
-
-  config = this.getConfiguration();
-  additionalData = {
-    rda_tenant: "bt_card", // eslint-disable-line camelcase
-    mid: config.gatewayConfiguration.merchantId,
-  };
-  authorizationFingerprint = config.authorizationFingerprint;
-
-  if (authorizationFingerprint) {
-    authorizationFingerprint.split("&").forEach(function (pieces) {
-      var component = pieces.split("=");
-
-      if (component[0] === "customer_id" && component.length > 1) {
-        additionalData.cid = component[1];
-      }
-    });
-  }
-
-  parameters = {
-    f: clientMetadataId.substr(0, 32),
-    fp: additionalData,
-    bu: false,
-    s: FRAUDNET_SOURCE,
-  };
-  el.text = JSON.stringify(parameters);
-};
-
 /**
- * Used by other modules to formulate all network requests to the Braintree gateway. It is also capable of being used directly from your own form to tokenize credit card information. However, be sure to satisfy PCI compliance if you use direct card tokenization.
+ * Used by other modules to formulate all network requests to the Braintree API.
  * @public
  * @param {object} options Request options:
  * @param {string} options.method HTTP method, e.g. "get" or "post".
  * @param {string} options.endpoint Endpoint path, e.g. "payment_methods".
  * @param {object} options.data Data to send with the request.
  * @param {number} [options.timeout=60000] Set a timeout (in milliseconds) for the request.
- * @param {callback} [callback] The second argument, <code>data</code>, is the returned server data.
  * @example
- * <caption>Direct Credit Card Tokenization</caption>
+ * <caption>Direct API Request</caption>
  * var createClient = require('braintree-web/client').create;
  *
  * createClient({
  *   authorization: CLIENT_AUTHORIZATION
- * }, function (createErr, clientInstance) {
- *   var form = document.getElementById('my-form-id');
- *   var data = {
- *     creditCard: {
- *       number: form['cc-number'].value,
- *       cvv: form['cc-cvv'].value,
- *       expirationDate: form['cc-expiration-date'].value,
- *       billingAddress: {
- *         postalCode: form['cc-postal-code'].value
- *       },
- *       options: {
- *         validate: false
+ * }).then(function (clientInstance) {
+ *   return clientInstance.request({
+ *     endpoint: 'payment_methods/paypal_accounts',
+ *     method: 'post',
+ *     data: {
+ *       paypalAccount: {
+ *         consentCode: 'consent-code'
  *       }
  *     }
- *   };
- *
- *   // Warning: For a merchant to be eligible for the easiest level of PCI compliance (SAQ A),
- *   // payment fields cannot be hosted on your checkout page.
- *   // For an alternative to the following, use Hosted Fields.
- *   clientInstance.request({
- *     endpoint: 'payment_methods/credit_cards',
- *     method: 'post',
- *     data: data
- *   }, function (requestErr, response) {
- *     // More detailed example of handling API errors: https://codepen.io/braintree/pen/MbwjdM
- *     if (requestErr) { throw new Error(requestErr); }
- *
- *     console.log('Got nonce:', response.creditCards[0].nonce);
  *   });
+ * }).then(function (response) {
+ *   console.log('Got nonce:', response.paypalAccounts[0].nonce);
+ * }).catch(function (requestErr) {
+ *   // More detailed example of handling API errors: https://codepen.io/braintree/pen/MbwjdM
+ *   console.log('something went wrong making the request', requestErr);
  * });
- * @example
- * <caption>Tokenizing Fields for AVS Checks</caption>
- * var createClient = require('braintree-web/client').create;
- *
- * createClient({
- *   authorization: CLIENT_AUTHORIZATION
- * }, function (createErr, clientInstance) {
- *   var form = document.getElementById('my-form-id');
- *   var data = {
- *     creditCard: {
- *       number: form['cc-number'].value,
- *       cvv: form['cc-cvv'].value,
- *       expirationDate: form['cc-date'].value,
- *       // The billing address can be checked with AVS rules.
- *       // See: https://articles.braintreepayments.com/support/guides/fraud-tools/basic/avs-cvv-rules
- *       billingAddress: {
- *         postalCode: form['cc-postal-code'].value,
- *         streetAddress: form['cc-street-address'].value,
- *         countryName: form['cc-country-name'].value,
- *         countryCodeAlpha2: form['cc-country-alpha2'].value,
- *         countryCodeAlpha3: form['cc-country-alpha3'].value,
- *         countryCodeNumeric: form['cc-country-numeric'].value
- *       },
- *       options: {
- *         validate: false
- *       }
- *     }
- *   };
- *
- *   // Warning: For a merchant to be eligible for the easiest level of PCI compliance (SAQ A),
- *   // payment fields cannot be hosted on your checkout page.
- *   // For an alternative to the following, use Hosted Fields.
- *   clientInstance.request({
- *     endpoint: 'payment_methods/credit_cards',
- *     method: 'post',
- *     data: data
- *   }, function (requestErr, response) {
- *     // More detailed example of handling API errors: https://codepen.io/braintree/pen/MbwjdM
- *     if (requestErr) { throw new Error(requestErr); }
- *
- *     console.log('Got nonce:', response.creditCards[0].nonce);
- *   });
- * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with the returned server data.
  */
-Client.prototype.request = function (options, callback) {
+Client.prototype.request = function (options) {
   var self = this;
-  var requestPromise = new Promise(function (resolve, reject) {
-    var optionName, api, baseUrl, requestOptions;
-    var shouldCollectData = Boolean(
-      options.endpoint === "payment_methods/credit_cards" &&
-      self.getConfiguration().gatewayConfiguration.creditCards.collectDeviceData
+  var optionName, api, baseUrl, requestOptions;
+
+  if (options.api !== "graphQLApi") {
+    if (!options.method) {
+      optionName = "options.method";
+    } else if (!options.endpoint) {
+      optionName = "options.endpoint";
+    }
+  }
+
+  if (optionName) {
+    throw new BraintreeError({
+      type: errors.CLIENT_OPTION_REQUIRED.type,
+      code: errors.CLIENT_OPTION_REQUIRED.code,
+      message: optionName + " is required when making a request.",
+    });
+  }
+
+  if ("api" in options) {
+    api = options.api;
+  } else {
+    api = "clientApi";
+  }
+
+  requestOptions = {
+    method: options.method,
+    timeout: options.timeout,
+    metadata: self._configuration.analyticsMetadata,
+  };
+
+  if (api === "clientApi") {
+    baseUrl = self._clientApiBaseUrl;
+
+    requestOptions.data = metadata.addMetadata(
+      self._configuration,
+      options.data
+    );
+  } else if (api === "graphQLApi") {
+    baseUrl =
+      GRAPHQL_URLS[self._configuration.gatewayConfiguration.environment];
+    options.endpoint = "";
+    requestOptions.method = "post";
+    requestOptions.data = assign(
+      {
+        clientSdkMetadata: buildClientSdkMetadata(
+          self._configuration.analyticsMetadata
+        ),
+      },
+      options.data
     );
 
-    if (options.api !== "graphQLApi") {
-      if (!options.method) {
-        optionName = "options.method";
-      } else if (!options.endpoint) {
-        optionName = "options.endpoint";
-      }
-    }
+    requestOptions.headers = getAuthorizationHeadersForGraphQL(
+      self._configuration
+    );
 
-    if (optionName) {
-      throw new BraintreeError({
-        type: errors.CLIENT_OPTION_REQUIRED.type,
-        code: errors.CLIENT_OPTION_REQUIRED.code,
-        message: optionName + " is required when making a request.",
-      });
-    }
+    analytics.sendEvent(self, "graphql.init");
+    analytics.sendEvent(
+      self,
+      self._configuration.authorizationFingerprint
+        ? "graphql.authorization-fingerprint"
+        : "graphql.tokenization-key"
+    );
+  } else {
+    throw new BraintreeError({
+      type: errors.CLIENT_OPTION_INVALID.type,
+      code: errors.CLIENT_OPTION_INVALID.code,
+      message: "options.api is invalid.",
+    });
+  }
 
-    if ("api" in options) {
-      api = options.api;
+  requestOptions.url = baseUrl + options.endpoint;
+  requestOptions.sendAnalyticsEvent = function (kind, extraFields) {
+    if (extraFields) {
+      analytics.sendEventPlus(self, kind, extraFields);
     } else {
-      api = "clientApi";
+      analytics.sendEvent(self, kind);
     }
+  };
 
-    requestOptions = {
-      method: options.method,
-      graphQL: self._graphQL,
-      timeout: options.timeout,
-      metadata: self._configuration.analyticsMetadata,
-    };
-
-    if (api === "clientApi") {
-      baseUrl = self._clientApiBaseUrl;
-
-      requestOptions.data = metadata.addMetadata(
-        self._configuration,
-        options.data
-      );
-    } else if (api === "graphQLApi") {
-      baseUrl =
-        GRAPHQL_URLS[self._configuration.gatewayConfiguration.environment];
-      options.endpoint = "";
-      requestOptions.method = "post";
-      requestOptions.data = assign(
-        {
-          clientSdkMetadata: {
-            platform: self._configuration.analyticsMetadata.platform,
-            source: self._configuration.analyticsMetadata.source,
-            integration: self._configuration.analyticsMetadata.integration,
-            sessionId: self._configuration.analyticsMetadata.sessionId,
-            version: VERSION,
-          },
-        },
-        options.data
-      );
-
-      requestOptions.headers = getAuthorizationHeadersForGraphQL(
-        self._configuration
-      );
-    } else {
-      throw new BraintreeError({
-        type: errors.CLIENT_OPTION_INVALID.type,
-        code: errors.CLIENT_OPTION_INVALID.code,
-        message: "options.api is invalid.",
-      });
-    }
-
-    requestOptions.url = baseUrl + options.endpoint;
-    requestOptions.sendAnalyticsEvent = function (kind, extraFields) {
-      if (extraFields) {
-        analytics.sendEventPlus(self, kind, extraFields);
-      } else {
-        analytics.sendEvent(self, kind);
-      }
-    };
-
+  return new Promise(function (resolve, reject) {
     self._request(requestOptions, function (err, data, status) {
       var resolvedData, requestError;
 
-      requestError = formatRequestError(status, err);
+      if (api === "graphQLApi") {
+        analytics.sendEvent(self, "graphql.status." + status);
+      }
+
+      requestError = classifyRequestError(status, err, data);
 
       if (requestError) {
         reject(requestError);
-
-        return;
-      }
-
-      if (api === "graphQLApi" && data.errors) {
-        reject(
-          convertToBraintreeError(data.errors, {
-            type: errors.CLIENT_GRAPHQL_REQUEST_ERROR.type,
-            code: errors.CLIENT_GRAPHQL_REQUEST_ERROR.code,
-            message: errors.CLIENT_GRAPHQL_REQUEST_ERROR.message,
-          })
-        );
-
         return;
       }
 
       resolvedData = assign({ _httpStatus: status }, data);
 
-      if (
-        shouldCollectData &&
-        resolvedData.creditCards &&
-        resolvedData.creditCards.length > 0
-      ) {
-        self._findOrCreateFraudnetJSON(resolvedData.creditCards[0].nonce);
-
-        assets.loadScript({
-          src: FRAUDNET_URL,
-          forceScriptReload: true,
-        });
-      }
       resolve(resolvedData);
     });
   });
-
-  if (typeof callback === "function") {
-    callback = once(deferred(callback));
-
-    requestPromise
-      .then(function (response) {
-        callback(null, response, response._httpStatus);
-      })
-      .catch(function (err) {
-        var status = err && err.details && err.details.httpStatus;
-
-        callback(err, null, status);
-      });
-
-    return;
-  }
-
-  return requestPromise; // eslint-disable-line consistent-return
 };
-
-// eslint-disable-next-line consistent-return
-function formatRequestError(status, err) {
-  var requestError;
-
-  if (status === -1) {
-    requestError = new BraintreeError(errors.CLIENT_REQUEST_TIMEOUT);
-  } else if (status === 401) {
-    requestError = new BraintreeError(errors.CLIENT_AUTHORIZATION_INVALID);
-  } else if (status === 403) {
-    requestError = new BraintreeError(errors.CLIENT_AUTHORIZATION_INSUFFICIENT);
-  } else if (status === 429) {
-    requestError = new BraintreeError(errors.CLIENT_RATE_LIMITED);
-  } else if (status >= 500) {
-    requestError = new BraintreeError(errors.CLIENT_GATEWAY_NETWORK);
-  } else if (status < 200 || status >= 400) {
-    requestError = convertToBraintreeError(err, {
-      type: errors.CLIENT_REQUEST_ERROR.type,
-      code: errors.CLIENT_REQUEST_ERROR.code,
-      message: errors.CLIENT_REQUEST_ERROR.message,
-    });
-  }
-
-  if (requestError) {
-    requestError.details = requestError.details || {};
-    requestError.details.httpStatus = status;
-
-    return requestError;
-  }
-}
 
 Client.prototype.toJSON = function () {
   return this.getConfiguration();
@@ -460,15 +281,15 @@ Client.prototype.toJSON = function () {
 /**
  * Returns the Client version.
  * @public
- * @returns {String} The created client's version.
+ * @returns {string} The created client's version.
  * @example
- * var createClient = require('braintree-web/client').create;
+ * const createClient = require('braintree-web/client').create;
  *
- * createClient({
+ * const clientInstance = await createClient({
  *   authorization: CLIENT_AUTHORIZATION
- * }, function (createErr, clientInstance) {
- *   console.log(clientInstance.getVersion()); // Ex: 1.0.0
  * });
+ *
+ * console.log(clientInstance.getVersion()); // Ex: 1.0.0
  */
 Client.prototype.getVersion = function () {
   return VERSION;
@@ -477,23 +298,18 @@ Client.prototype.getVersion = function () {
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/client.create|create}.
  * @public
- * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @example
- * clientInstance.teardown();
- * @example <caption>With callback</caption>
- * clientInstance.teardown(function () {
+ * clientInstance.teardown().then(function () {
  *   // teardown is complete
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves once teardown is complete.
  */
-Client.prototype.teardown = wrapPromise(function () {
-  var self = this;
-
-  delete cachedClients[self.getConfiguration().authorization];
-  convertMethodsToError(self, methods(Client.prototype));
+Client.prototype.teardown = function () {
+  delete cachedClients[this.getConfiguration().authorization];
+  convertMethodsToError(this, methods(Client.prototype));
 
   return Promise.resolve();
-});
+};
 
 function getAuthorizationHeadersForGraphQL(configuration) {
   var token =
@@ -505,4 +321,4 @@ function getAuthorizationHeadersForGraphQL(configuration) {
   };
 }
 
-module.exports = Client;
+export default Client;

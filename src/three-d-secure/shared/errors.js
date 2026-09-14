@@ -1,22 +1,21 @@
-"use strict";
+import BraintreeError from "../../lib/braintree-error";
 
 /**
  * @name BraintreeError.3D Secure - Creation Error Codes
  * @description Errors that occur when [creating the 3D Secure component](./module-braintree-web_three-d-secure.html#.create).
  * @property {MERCHANT} THREEDS_NOT_ENABLED Occurs when 3D Secure is not enabled in the Braintree control panel.
  * @property {MERCHANT} THREEDS_CAN_NOT_USE_TOKENIZATION_KEY Occurs when 3D Secure component is created without a Client Token.
- * @property {MERCHANT} THREEDS_HTTPS_REQUIRED Occurs when 3D Secure component is created in production over HTTPS.
- * @property {MERCHANT} THREEDS_NOT_ENABLED_FOR_V2 Occurs when 3D Secure component is created with version 2 parameter, but merchant is not enabled to use version 2.
- * @property {MERCHANT} THREEDS_UNRECOGNIZED_VERSION Occurs when unrecognized version enum is passed into the create call.
+ * @property {MERCHANT} THREEDS_HTTPS_REQUIRED Occurs when 3D Secure component is created in production without HTTPS.
+ * @property {MERCHANT} THREEDS_NOT_ENABLED_FOR_V2 Occurs when the 3D Secure component is created but the merchant is not enabled for Cardinal 3D Secure.
+ * @property {MERCHANT} THREEDS_CHALLENGE_DISPLAY_INVALID Occurs when an unrecognized challengeDisplay value is passed into the create call.
  * @property {UNKNOWN} THREEDS_CARDINAL_SDK_SETUP_FAILED Occurs when Cardinal's Songbird.js library fails to setup for an unknown reason.
- * @property {NETWORK} THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED Occurs when using version 2 and Cardinal's Songbird.js script could not be loaded.
+ * @property {NETWORK} THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED Occurs when Cardinal's Songbird.js script could not be loaded.
  * @property {UNKNOWN} THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT Occurs when Cardinal's Songbird.js library takes longer than 60 seconds to set up.
  * @property {UNKNOWN} THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT Occurs when Cardinal sends a response indicating a timeout on /Validate, /Confirm, or /Continue.
  * @property {MERCHANT} THREEDS_CARDINAL_SDK_BAD_CONFIG Occurs when there is no JWT in the request. Also when there's some other malformed aspect of config.
  * @property {MERCHANT} THREEDS_CARDINAL_SDK_BAD_JWT Occurs when a malformed config causes a either a missing response JWT or a malformed Cardinal response.
  * @property {UNKNOWN} THREEDS_CARDINAL_SDK_ERROR Occurs when a "general error" or a Cardinal hosted fields error happens. Description contains more details.
  * @property {CUSTOMER} THREEDS_CARDINAL_SDK_CANCELED Occurs when customer cancels the transaction mid-flow, usually with alt-pays that have their own cancel buttons.
- * @property {MERCHANT} THREEDS_UNSUPPORTED_VERSION Occurs when 3D Secure component is created with version 1 (or default version) parameter.
  */
 
 /**
@@ -43,13 +42,10 @@
  * @name BraintreeError.3D Secure - Internal Error Codes
  * @ignore
  * @description Errors that occur internally
- * @property {INTERNAL} THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN Occurs when iframe is initialized on a non-verified domain.
  * @property {INTERNAL} THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED Occurs when a 3D Secure framework method is not implemented.
  */
 
-var BraintreeError = require("../../lib/braintree-error");
-
-module.exports = {
+const _default = {
   THREEDS_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
     code: "THREEDS_NOT_ENABLED",
@@ -71,9 +67,9 @@ module.exports = {
     message:
       "3D Secure version 2 is not enabled for this merchant. Contact Braintree Support for assistance at https://help.braintreepayments.com/",
   },
-  THREEDS_UNRECOGNIZED_VERSION: {
+  THREEDS_CHALLENGE_DISPLAY_INVALID: {
     type: BraintreeError.types.MERCHANT,
-    code: "THREEDS_UNRECOGNIZED_VERSION",
+    code: "THREEDS_CHALLENGE_DISPLAY_INVALID",
   },
   THREEDS_CARDINAL_SDK_SETUP_FAILED: {
     type: BraintreeError.types.UNKNOWN,
@@ -121,7 +117,7 @@ module.exports = {
   THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT: {
     type: BraintreeError.types.MERCHANT,
     code: "THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT",
-    message: "3D Secure verfication canceled by merchant.",
+    message: "3D Secure verification canceled by merchant.",
   },
   THREEDS_AUTHENTICATION_IN_PROGRESS: {
     type: BraintreeError.types.MERCHANT,
@@ -166,11 +162,6 @@ module.exports = {
     code: "THREEDS_NO_VERIFICATION_PAYLOAD",
     message: "No verification payload available.",
   },
-  THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN: {
-    type: BraintreeError.types.INTERNAL,
-    code: "THREEDS_TERM_URL_REQUIRES_BRAINTREE_DOMAIN",
-    message: "Term Url must be on a Braintree domain.",
-  },
   THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED: {
     type: BraintreeError.types.INTERNAL,
     code: "THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED",
@@ -181,10 +172,33 @@ module.exports = {
     code: "THREEDS_REQUESTED_EXEMPTION_TYPE_INVALID",
     message: "Requested Exemption Type is invalid.",
   },
-  THREEDS_UNSUPPORTED_VERSION: {
-    type: BraintreeError.types.MERCHANT,
-    code: "THREEDS_UNSUPPORTED_VERSION",
-    message:
-      "3D Secure `1` is deprecated and no longer supported. See available versions at https://braintree.github.io/braintree-web/current/module-braintree-web_three-d-secure.html#.create",
-  },
 };
+
+export const {
+  THREEDS_NOT_ENABLED,
+  THREEDS_CAN_NOT_USE_TOKENIZATION_KEY,
+  THREEDS_HTTPS_REQUIRED,
+  THREEDS_NOT_ENABLED_FOR_V2,
+  THREEDS_CHALLENGE_DISPLAY_INVALID,
+  THREEDS_CARDINAL_SDK_SETUP_FAILED,
+  THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED,
+  THREEDS_CARDINAL_SDK_SETUP_TIMEDOUT,
+  THREEDS_CARDINAL_SDK_RESPONSE_TIMEDOUT,
+  THREEDS_CARDINAL_SDK_BAD_CONFIG,
+  THREEDS_CARDINAL_SDK_BAD_JWT,
+  THREEDS_CARDINAL_SDK_ERROR,
+  THREEDS_CARDINAL_SDK_CANCELED,
+  THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT,
+  THREEDS_AUTHENTICATION_IN_PROGRESS,
+  THREEDS_MISSING_VERIFY_CARD_OPTION,
+  THREEDS_JWT_AUTHENTICATION_FAILED,
+  THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR,
+  THREEDS_LOOKUP_VALIDATION_ERROR,
+  THREEDS_LOOKUP_ERROR,
+  THREEDS_INLINE_IFRAME_DETAILS_INCORRECT,
+  THREEDS_NO_VERIFICATION_PAYLOAD,
+  THREEDS_FRAMEWORK_METHOD_NOT_IMPLEMENTED,
+  THREEDS_REQUESTED_EXEMPTION_TYPE_INVALID,
+} = _default;
+
+export default _default;

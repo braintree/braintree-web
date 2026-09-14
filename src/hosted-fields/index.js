@@ -1,18 +1,19 @@
-"use strict";
+// @ts-nocheck
 /** @module braintree-web/hosted-fields */
-
-var HostedFields = require("./external/hosted-fields");
-var basicComponentVerification = require("../lib/basic-component-verification");
-var errors = require("./shared/errors");
-var supportsInputFormatting = require("restricted-input/supports-input-formatting");
-var wrapPromise = require("@braintree/wrap-promise");
-var BraintreeError = require("../lib/braintree-error");
-var VERSION = process.env.npm_package_version;
+import HostedFields from "./external/hosted-fields";
+import basicComponentVerification from "../lib/basic-component-verification";
+import errors from "./shared/errors";
+import supportsInputFormatting from "restricted-input/supports-input-formatting";
+import BraintreeError from "../lib/braintree-error";
+/**
+ * @description The current version of the SDK, i.e. `{@pkg version}`.
+ * @type {string}
+ */
+const VERSION = __SDK_VERSION__;
 
 /**
  * Fields used in {@link module:braintree-web/hosted-fields~fieldOptions fields options}
  * @typedef {object} field
- * @property {string} selector Deprecated: Now an alias for `options.container`.
  * @property {(string|HTMLElement)} container A DOM node or CSS selector to find the container where the hosted field will be inserted.
  * @property {string} [placeholder] Will be used as the `placeholder` attribute of the input. If `placeholder` is not natively supported by the browser, it will be polyfilled.
  * @property {string} [type] Will be used as the `type` attribute of the input. To mask `cvv` input, for instance, `type: "password"` can be used.
@@ -37,7 +38,6 @@ var VERSION = process.env.npm_package_version;
  * For postal code fields, the default value is 3, representing the Icelandic postal code length. This option's primary use case is to increase the `minlength`, e.g. for US customers, the postal code `minlength` can be set to 5.
  * For cvv fields, the default value is 3. The `minlength` attribute only applies to integrations capturing a cvv without a number field.
  * @property {string} [prefill] A value to prefill the field with. For example, when creating an update card form, you can prefill the expiration date fields with the old expiration date data.
- * @property {boolean} [rejectUnsupportedCards=false] Deprecated since version 3.46.0, use `supportedCardBrands` instead. Only allow card types that your merchant account is able to process. Unsupported card types will invalidate the card form. e.g. if you only process Visa cards, a customer entering a American Express card would get an invalid card field. This can only be used for the `number` field.
  * @property {object} [supportedCardBrands] Override card brands that are supported by the card form. Pass `'card-brand-id': true` to override the default in the merchant configuration and enable a card brand. Pass `'card-brand-id': false` to disable a card brand. Unsupported card types will invalidate the card form. e.g. if you only process Visa cards, a customer entering an American Express card would get an invalid card field. This can only be used for the  `number` field. (Note: only allow card types that your merchant account is actually able to process.)
  *
  * Valid card brand ids are:
@@ -47,7 +47,6 @@ var VERSION = process.env.npm_package_version;
  * * diners-club
  * * discover
  * * jcb
- * * union-pay
  * * maestro
  * * elo
  * * mir
@@ -133,8 +132,7 @@ var VERSION = process.env.npm_package_version;
  * @param {boolean} [options.preventAutofill=false] When true, browsers will not try to prompt the customer to autofill their credit card information.
  * @param {number} [options.binVerificationLength=6] The number of digits to use for BIN verification. Must be either 6 or 8. Default is 6.
  * @param {string} [options.sessionId] Used in specific cases where associating SDK events with a specific external id is required.
- * @param {callback} [callback] The second argument, `data`, is the {@link HostedFields} instance. If no callback is provided, `create` returns a promise that resolves with the {@link HostedFields} instance.
- * @returns {void}
+ * @returns {Promise<HostedFields>} Returns a promise that resolves with the {@link HostedFields} instance.
  * @example
  * braintree.hostedFields.create({
  *   client: clientInstance,
@@ -162,7 +160,7 @@ var VERSION = process.env.npm_package_version;
  *       container: '#expiration-date'
  *     }
  *   }
- * }, callback);
+ * });
  * @example <caption>With cardholder name</caption>
  * braintree.hostedFields.create({
  *   client: clientInstance,
@@ -180,7 +178,7 @@ var VERSION = process.env.npm_package_version;
  *       container: '#expiration-date'
  *     }
  *   }
- * }, callback);
+ * });
  * @example <caption>Applying styles with a class name</caption>
  * // in document head
  * <style>
@@ -212,7 +210,7 @@ var VERSION = process.env.npm_package_version;
  *     },
  *     // etc...
  *   }
- * }, callback);
+ * });
  * @example <caption>Right to Left Language Support</caption>
  * braintree.hostedFields.create({
  *   client: clientInstance,
@@ -238,7 +236,7 @@ var VERSION = process.env.npm_package_version;
  *       type: 'month'
  *     }
  *   }
- * }, callback);
+ * });
  * @example <caption>Setting up Hosted Fields to tokenize CVV only</caption>
  * braintree.hostedFields.create({
  *   client: clientInstance,
@@ -249,7 +247,7 @@ var VERSION = process.env.npm_package_version;
  *       placeholder: '•••'
  *     }
  *   }
- * }, callback);
+ * });
  * @example <caption>Creating an expiration date update form with prefilled data</caption>
  * var storedCreditCardInformation = {
  *   // get this info from your server
@@ -270,7 +268,7 @@ var VERSION = process.env.npm_package_version;
  *       prefill: storedCreditCardInformation.year
  *     }
  *   }
- * }, callback);
+ * });
  * @example <caption>Validate the card form for supported card types</caption>
  * braintree.hostedFields.create({
  *   client: clientInstance,
@@ -291,7 +289,7 @@ var VERSION = process.env.npm_package_version;
  *       type: 'month'
  *     }
  *   },
- * }, callback);
+ * });
  * @example <caption>Using 8-digit BIN support</caption>
  * braintree.hostedFields.create({
  *   client: clientInstance,
@@ -308,7 +306,7 @@ var VERSION = process.env.npm_package_version;
  *       container: '#expiration-date'
  *     }
  *   }
- * }, function(err, hostedFieldsInstance) {
+ * }).then(function(hostedFieldsInstance) {
  *   hostedFieldsInstance.on('binAvailable', function(event) {
  *     console.log('BIN:', event.bin); // Will be 8 digits when binVerificationLength is 8
  *     // Use the BIN for more accurate card identification
@@ -336,7 +334,7 @@ function create(options) {
     });
 }
 
-module.exports = {
+export default {
   /**
    * @static
    * @function supportsInputFormatting
@@ -375,13 +373,9 @@ module.exports = {
    *     // Styles
    *   },
    *   fields: fields
-   * }, callback);
+   * });
    */
-  supportsInputFormatting: supportsInputFormatting,
-  create: wrapPromise(create),
-  /**
-   * @description The current version of the SDK, i.e. `{@pkg version}`.
-   * @type {string}
-   */
-  VERSION: VERSION,
+  supportsInputFormatting,
+  create,
+  VERSION,
 };

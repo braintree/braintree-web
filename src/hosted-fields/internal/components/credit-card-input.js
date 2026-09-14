@@ -1,7 +1,6 @@
-"use strict";
-
-var BaseInput = require("./base-input").BaseInput;
-var getCardTypes = require("../../shared/get-card-types");
+// @ts-nocheck
+import { BaseInput } from "./base-input";
+import creditCardType from "credit-card-type";
 
 var DEFAULT_CARD_LENGTH_FOR_PATTERN = 16;
 var DEFAULT_MAX_LENGTH = 22;
@@ -59,8 +58,8 @@ function CreditCardInput() {
 
   this.model.on(
     "change:possibleCardTypes",
-    function (possibleCardTypes) {
-      var result = this._parseCardTypes(possibleCardTypes);
+    function (payload) {
+      var result = this._parseCardTypes(payload.value);
 
       this.setPattern(result.card);
       this.updateModel("value", this.formatter.getUnformattedValue());
@@ -106,7 +105,7 @@ CreditCardInput.prototype.maskValue = function (value) {
 };
 
 CreditCardInput.prototype._getCardObjectFromString = function (cardNumber) {
-  var possibleCardTypes = getCardTypes(cardNumber);
+  var possibleCardTypes = creditCardType(cardNumber);
   var result = this._parseCardTypes(possibleCardTypes);
 
   return result.card;
@@ -146,6 +145,8 @@ CreditCardInput.prototype._createRestrictedInputOptions = function (options) {
   return baseConfig;
 };
 
-module.exports = {
-  CreditCardInput: CreditCardInput,
+export { CreditCardInput };
+
+export default {
+  CreditCardInput,
 };

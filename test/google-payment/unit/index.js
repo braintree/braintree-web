@@ -1,14 +1,12 @@
-"use strict";
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/create-deferred-client");
 
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/lib/create-deferred-client");
-
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const googlePayment = require("../../../src/google-payment");
-const GooglePayment = require("../../../src/google-payment/google-payment");
-const { fake, wait } = require("../../helpers");
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import googlePayment from "../../../src/google-payment";
+import GooglePayment from "../../../src/google-payment/google-payment";
+import { fake, wait } from "../../helpers";
 
 describe("googlePayment", () => {
   let testContext;
@@ -21,17 +19,16 @@ describe("googlePayment", () => {
     beforeEach(() => {
       const configuration = fake.configuration();
 
-      configuration.gatewayConfiguration.androidPay = {
-        enabled: true,
-        googleAuthorizationFingerprint: "fingerprint",
-        supportedNetworks: ["visa", "amex"],
+      configuration.gatewayConfiguration.googlePay = {
+        googleAuthorization: "fingerprint",
+        supportedCardBrands: ["VISA", "AMERICAN_EXPRESS"],
       };
 
       testContext.fakeClient = fake.client({ configuration: configuration });
       testContext.fakeClient._request = () => {};
-      jest
-        .spyOn(createDeferredClient, "create")
-        .mockResolvedValue(testContext.fakeClient);
+      vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+        testContext.fakeClient
+      );
     });
 
     it("verifies with basicComponentVerification", async () => {
@@ -68,7 +65,7 @@ describe("googlePayment", () => {
         });
       });
 
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       const instance = await googlePayment.create({
         authorization: fake.clientToken,
@@ -87,7 +84,7 @@ describe("googlePayment", () => {
 
       expect(instance).toBeInstanceOf(GooglePayment);
 
-      await jest.advanceTimersByTime(11);
+      await vi.advanceTimersByTime(11);
 
       expect(clientIsReady).toBe(true);
     });
@@ -103,14 +100,14 @@ describe("googlePayment", () => {
         });
       });
 
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       const promise = googlePayment.create({
         authorization: fake.clientToken,
         debug: true,
       });
 
-      await jest.advanceTimersByTime(1);
+      await vi.advanceTimersByTime(1);
 
       expect(clientIsReady).toBe(false);
       expect(createDeferredClient.create).toBeCalledTimes(1);
@@ -123,7 +120,7 @@ describe("googlePayment", () => {
 
       expect(clientIsReady).toBe(false);
 
-      await jest.advanceTimersByTime(11);
+      await vi.advanceTimersByTime(11);
       await promise;
 
       expect(clientIsReady).toBe(true);
@@ -132,7 +129,7 @@ describe("googlePayment", () => {
     it("returns error if android pay is not enabled", async () => {
       const client = fake.client();
 
-      jest.spyOn(createDeferredClient, "create").mockResolvedValue(client);
+      vi.spyOn(createDeferredClient, "create").mockResolvedValue(client);
 
       await expect(
         googlePayment.create({
@@ -149,27 +146,11 @@ describe("googlePayment", () => {
       googlePayment
         .create({
           client: testContext.fakeClient,
-          googlePayVersion: 2,
           googleMerchantId: "some-merchant-id",
         })
         .then((instance) => {
           expect(instance).toBeInstanceOf(GooglePayment);
-          expect(instance._googlePayVersion).toBe(2);
           expect(instance._googleMerchantId).toBe("some-merchant-id");
         }));
-
-    it("errors if an unsupported Google Pay API version is passed", () =>
-      expect(
-        googlePayment.create({
-          client: testContext.fakeClient,
-          googlePayVersion: 9001,
-          googleMerchantId: "some-merchant-id",
-        })
-      ).rejects.toMatchObject({
-        code: "GOOGLE_PAYMENT_UNSUPPORTED_VERSION",
-        type: "MERCHANT",
-        message:
-          "The Braintree SDK does not support Google Pay version 9001. Please upgrade the version of your Braintree SDK and contact support if this error persists.",
-      }));
   });
 });

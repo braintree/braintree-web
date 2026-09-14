@@ -1,13 +1,9 @@
-"use strict";
-
-const {
-  BaseInput,
-} = require("../../../../../src/hosted-fields/internal/components/base-input");
-const constants = require("../../../../../src/hosted-fields/shared/constants");
-const browserDetection = require("../../../../../src/hosted-fields/shared/browser-detection");
-const RestrictedInput = require("restricted-input");
-const FakeRestrictedInput = require("../../../../../src/lib/fake-restricted-input");
-const { triggerEvent } = require("../../helpers");
+import { BaseInput } from "../../../../../src/hosted-fields/internal/components/base-input";
+import constants from "../../../../../src/hosted-fields/shared/constants";
+import browserDetection from "../../../../../src/hosted-fields/shared/browser-detection";
+import RestrictedInput from "restricted-input";
+import FakeRestrictedInput from "../../../../../src/lib/fake-restricted-input";
+import { triggerEvent } from "../../helpers";
 
 describe("Base Input", () => {
   let testContext;
@@ -21,22 +17,20 @@ describe("Base Input", () => {
       const config = {};
 
       testContext.config = config;
-      jest
-        .spyOn(BaseInput.prototype, "getConfiguration")
-        .mockReturnValue(config);
+      vi.spyOn(BaseInput.prototype, "getConfiguration").mockReturnValue(config);
 
-      jest
-        .spyOn(BaseInput.prototype, "addDOMEventListeners")
-        .mockReturnValue(null);
-      jest
-        .spyOn(BaseInput.prototype, "addModelEventListeners")
-        .mockReturnValue(null);
-      jest.spyOn(BaseInput.prototype, "render").mockReturnValue(null);
+      vi.spyOn(BaseInput.prototype, "addDOMEventListeners").mockReturnValue(
+        null
+      );
+      vi.spyOn(BaseInput.prototype, "addModelEventListeners").mockReturnValue(
+        null
+      );
+      vi.spyOn(BaseInput.prototype, "render").mockReturnValue(null);
 
       testContext.model = {
         configuration: {},
-        on: jest.fn(),
-        set: jest.fn(),
+        on: vi.fn(),
+        set: vi.fn(),
       };
       testContext.type = key;
 
@@ -55,9 +49,9 @@ describe("Base Input", () => {
         let instance;
 
         BaseInput.prototype.getConfiguration.mockRestore();
-        jest
-          .spyOn(BaseInput.prototype, "getConfiguration")
-          .mockReturnValue({ formatInput: false });
+        vi.spyOn(BaseInput.prototype, "getConfiguration").mockReturnValue({
+          formatInput: false,
+        });
 
         instance = new BaseInput({
           model: testContext.model,
@@ -135,16 +129,15 @@ describe("Base Input", () => {
 
         describe("masking", () => {
           beforeEach(() => {
-            jest
-              .spyOn(BaseInput.prototype, "updateModel")
-              .mockReturnValue(null);
+            vi.spyOn(BaseInput.prototype, "updateModel").mockReturnValue(null);
             // prevents adding listeners to document
             // when calling _addDOMFocusListeners
             // and polluting other tests
-            jest
-              .spyOn(document.documentElement, "addEventListener")
-              .mockReturnValue(null);
-            jest.spyOn(document, "addEventListener").mockReturnValue(null);
+            vi.spyOn(
+              document.documentElement,
+              "addEventListener"
+            ).mockReturnValue(null);
+            vi.spyOn(document, "addEventListener").mockReturnValue(null);
           });
 
           it("applies if provided", () => {
@@ -198,7 +191,7 @@ describe("Base Input", () => {
           it('uses "text" with pattern for iOS', () => {
             let instance;
 
-            jest.spyOn(browserDetection, "isIos").mockReturnValue(true);
+            vi.spyOn(browserDetection, "isIos").mockReturnValue(true);
             instance = new BaseInput({
               model: testContext.model,
               type: testContext.type,
@@ -289,9 +282,10 @@ describe("Base Input", () => {
 
         describe("setAttribute", () => {
           beforeEach(() => {
-            jest
-              .spyOn(testContext.instance.element, "setAttribute")
-              .mockReturnValue(null);
+            vi.spyOn(
+              testContext.instance.element,
+              "setAttribute"
+            ).mockReturnValue(null);
           });
 
           it("calls element.setAttribute", () => {
@@ -368,9 +362,10 @@ describe("Base Input", () => {
 
         describe("removeAttribute", () => {
           beforeEach(() => {
-            jest
-              .spyOn(testContext.instance.element, "removeAttribute")
-              .mockReturnValue(null);
+            vi.spyOn(
+              testContext.instance.element,
+              "removeAttribute"
+            ).mockReturnValue(null);
           });
 
           it("calls element.removeAttribute", () => {
@@ -394,9 +389,10 @@ describe("Base Input", () => {
           });
 
           it("does not call element.removeAttribute when attribute is not allowed", () => {
-            jest
-              .spyOn(testContext.instance.element, "removeAttribute")
-              .mockReturnValue(null);
+            vi.spyOn(
+              testContext.instance.element,
+              "removeAttribute"
+            ).mockReturnValue(null);
 
             testContext.instance.removeAttribute(testContext.type, "maxlength");
 
@@ -480,7 +476,7 @@ describe("Base Input", () => {
 
         instance.element.value = "old-value";
 
-        jest.spyOn(instance, "updateModel");
+        vi.spyOn(instance, "updateModel");
         expect(instance.render).not.toBeCalled();
 
         cb("new-value");
@@ -503,7 +499,7 @@ describe("Base Input", () => {
           return args[0] === eventName;
         })[1];
 
-        jest.spyOn(instance, "maskValue");
+        vi.spyOn(instance, "maskValue");
 
         cb("new-value");
 
@@ -517,7 +513,7 @@ describe("Base Input", () => {
         expect(instance.maskValue).toBeCalledWith("even-newer-value");
       });
 
-      it("resets the placeholder after applying autofill if placedholder exists", () => {
+      it("resets the placeholder after applying autofill if placeholder exists", () => {
         const instance = new BaseInput({
           model: testContext.model,
           type: testContext.type,
@@ -528,7 +524,7 @@ describe("Base Input", () => {
           return args[0] === eventName;
         })[1];
 
-        jest.spyOn(instance.element, "setAttribute");
+        vi.spyOn(instance.element, "setAttribute");
 
         cb("new-value");
 
@@ -558,7 +554,7 @@ describe("Base Input", () => {
         instance.element.value = "foo";
         instance.element.setSelectionRange(1, 2);
 
-        const spy = jest.spyOn(instance.element, "setSelectionRange");
+        const spy = vi.spyOn(instance.element, "setSelectionRange");
 
         instance.applySafariFocusFix();
 
@@ -575,7 +571,7 @@ describe("Base Input", () => {
 
         instance.element.setSelectionRange(1, 2);
 
-        const spy = jest.spyOn(instance.element, "setSelectionRange");
+        const spy = vi.spyOn(instance.element, "setSelectionRange");
 
         instance.applySafariFocusFix();
 

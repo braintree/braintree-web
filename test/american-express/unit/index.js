@@ -1,16 +1,17 @@
-"use strict";
+import _e13 from "../../../src/american-express";
 
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/lib/create-deferred-client");
+const { create } = _e13;
 
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const { create } = require("../../../src/american-express");
-const AmericanExpress = require("../../../src/american-express/american-express");
-const {
-  fake: { client: fakeClient, clientToken },
-} = require("../../helpers");
+import AmericanExpress from "../../../src/american-express/american-express";
+import * as basicComponentVerification from "../../../src/lib/basic-component-verification";
+import * as createDeferredClient from "../../../src/lib/create-deferred-client";
+import { fake } from "../../helpers";
+
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/create-deferred-client");
+
+const { client: fakeClient, clientToken } = fake;
 
 describe("americanExpress", () => {
   let testContext = {};
@@ -22,15 +23,15 @@ describe("americanExpress", () => {
   describe("create", () => {
     beforeEach(() => {
       testContext.fakeClient = fakeClient();
-      jest
-        .spyOn(createDeferredClient, "create")
-        .mockResolvedValue(testContext.fakeClient);
+      vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+        testContext.fakeClient
+      );
     });
 
     it("returns a promise", () => {
       const promise = create({ client: testContext.fakeClient });
 
-      expect(promise).resolves.toBeInstanceOf(AmericanExpress);
+      return expect(promise).resolves.toBeInstanceOf(AmericanExpress);
     });
 
     it("verifies with basicComponentVerification", () => {

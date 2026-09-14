@@ -1,6 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/html";
+import { isIntegrationCoverageRun } from "../../utils/integration-coverage";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
+import { getBraintree } from "../../utils/braintree-globals";
+import type {
+  IHostedFieldsCreateOptions,
+  IHostedFieldsEventData,
+  IHostedFieldsInstance,
+} from "../../types/global";
 import { TEST_CARDS } from "../../utils/test-data";
 import { SUCCESS_MESSAGES } from "../../constants";
 import "./hostedFields.css";
@@ -23,7 +30,9 @@ Each field is rendered in a secure iframe that can be styled to match your appli
 
 export default meta;
 
-const createHostedFieldsForm = (args?: Record<string, string>): HTMLElement => {
+const createHostedFieldsForm = (args?: {
+  includePostalCode?: boolean;
+}): HTMLElement => {
   const container = document.createElement("div");
 
   // Use args to conditionally include postal code field
@@ -138,14 +147,19 @@ const createHostedFieldsForm = (args?: Record<string, string>): HTMLElement => {
 };
 
 const setupBraintreeHostedFields = (
-  container,
-  args?: Record<string, string | boolean | number>,
+  container: HTMLElement,
+  args?: {
+    autoFillTestData?: boolean;
+    cardType?: string;
+    includePostalCode?: boolean;
+    binVerificationLength?: 6 | 8;
+  },
   debugMode?: boolean
 ) => {
   const authorization = getAuthorizationToken();
 
-  window.braintree.client
-    .create({
+  getBraintree()
+    .client.create({
       authorization: authorization,
       ...(debugMode !== undefined && { debug: debugMode }),
     })
@@ -154,21 +168,21 @@ const setupBraintreeHostedFields = (
       // Configure fields based on args
       const fields = {
         number: {
-          selector: "#card-number",
+          container: "#card-number",
           placeholder: "4111 1111 1111 1111",
           prefill: args?.autoFillTestData
             ? TEST_CARDS[args.cardType as keyof typeof TEST_CARDS]?.number
             : "",
         },
         cvv: {
-          selector: "#cvv",
+          container: "#cvv",
           placeholder: "123",
           prefill: args?.autoFillTestData
             ? TEST_CARDS[args.cardType as keyof typeof TEST_CARDS]?.cvv
             : "",
         },
         expirationDate: {
-          selector: "#expiration-date",
+          container: "#expiration-date",
           placeholder: "MM/YY",
           prefill: args?.autoFillTestData
             ? TEST_CARDS[args.cardType as keyof typeof TEST_CARDS]
@@ -176,18 +190,21 @@ const setupBraintreeHostedFields = (
             : "",
         },
         // Only include postal code field if specified in args
-        ...(args?.includePostalCode && {
-          postalCode: {
-            selector: "#postal-code",
-            placeholder: "12345",
-            prefill: args?.autoFillTestData
-              ? TEST_CARDS[args.cardType as keyof typeof TEST_CARDS]?.postalCode
-              : "",
-          },
-        }),
+        ...(args?.includePostalCode
+          ? {
+              postalCode: {
+                container: "#postal-code",
+                placeholder: "12345",
+                prefill: args?.autoFillTestData
+                  ? TEST_CARDS[args.cardType as keyof typeof TEST_CARDS]
+                      ?.postalCode
+                  : "",
+              },
+            }
+          : {}),
       };
 
-      const hostedFieldsConfig: Record<string, unknown> = {
+      const hostedFieldsConfig: IHostedFieldsCreateOptions = {
         client: clientInstance,
         styles: {
           input: {
@@ -207,22 +224,35 @@ const setupBraintreeHostedFields = (
         fields: fields,
       };
 
-      if (args?.binVerificationLength) {
+      if (
+        args?.binVerificationLength === 6 ||
+        args?.binVerificationLength === 8
+      ) {
         hostedFieldsConfig.binVerificationLength = args.binVerificationLength;
       }
 
-      return window.braintree.hostedFields.create(hostedFieldsConfig);
+      return getBraintree().hostedFields.create(hostedFieldsConfig);
     })
-    .then((hostedFieldsInstance) => {
+    .then((hostedFieldsInstance: IHostedFieldsInstance) => {
       const form = container.querySelector("#checkout-form") as HTMLElement;
-      const emptyEventContainer = container.querySelector("#emptyEvent");
-      const notEmptyEventContainer = container.querySelector("#notEmptyEvent");
-      const focusEventContainer = container.querySelector("#focus");
-      const blurEventContainer = container.querySelector("#blur");
-      const binAvailableContainer = container.querySelector("#binAvailable");
+      const emptyEventContainer = container.querySelector(
+        "#emptyEvent"
+      ) as HTMLElement;
+      const notEmptyEventContainer = container.querySelector(
+        "#notEmptyEvent"
+      ) as HTMLElement;
+      const focusEventContainer = container.querySelector(
+        "#focus"
+      ) as HTMLElement;
+      const blurEventContainer = container.querySelector(
+        "#blur"
+      ) as HTMLElement;
+      const binAvailableContainer = container.querySelector(
+        "#binAvailable"
+      ) as HTMLElement;
       const inputSubmitRequestContainer = container.querySelector(
         "#inputSubmitRequest"
-      );
+      ) as HTMLElement;
       const submitButton = container.querySelector(
         "#submit-button"
       ) as HTMLButtonElement;
@@ -230,68 +260,90 @@ const setupBraintreeHostedFields = (
       const teardownButton = container.querySelector(
         "#teardown-button"
       ) as HTMLButtonElement;
-      const teardownStatus = container.querySelector("#teardown-status");
+      const teardownStatus = container.querySelector(
+        "#teardown-status"
+      ) as HTMLElement;
 
-      hostedFieldsInstance.on("validityChange", (event) => {
-        const allFieldsValid = Object.keys(event.fields).every((key) => {
-          return event.fields[key].isValid;
-        });
+      hostedFieldsInstance.on(
+        "validityChange",
+        (event: IHostedFieldsEventData) => {
+          const allFieldsValid = (
+            Object.keys(event.fields) as Array<keyof typeof event.fields>
+          ).every((key) => event.fields[key]?.isValid ?? true);
 
-        submitButton.disabled = !allFieldsValid;
-        if (allFieldsValid) {
-          submitButton.classList.add("submit-button--success");
-        } else {
-          submitButton.classList.remove("submit-button--success");
+          submitButton.disabled = !allFieldsValid;
+          if (allFieldsValid) {
+            submitButton.classList.add("submit-button--success");
+          } else {
+            submitButton.classList.remove("submit-button--success");
+          }
         }
-      });
+      );
 
       // Enable the teardown button now that the hosted fields are fully initialized
       teardownButton.disabled = false;
 
-      hostedFieldsInstance.on("cardTypeChange", (event) => {
-        const cardTypeContainer = container.querySelector("#card-type");
-        if (!event.fields.number.isEmpty) {
-          cardTypeContainer.innerHTML =
-            "Detected Card Type: " + event.cards[0].niceType;
-        } else {
-          cardTypeContainer.innerHTML = "";
+      hostedFieldsInstance.on(
+        "cardTypeChange",
+        (event: IHostedFieldsEventData) => {
+          const cardTypeContainer = container.querySelector("#card-type")!;
+          if (!event.fields.number?.isEmpty) {
+            cardTypeContainer.innerHTML =
+              "Detected Card Type: " + event.cards[0].niceType;
+          } else {
+            cardTypeContainer.innerHTML = "";
+          }
         }
-      });
+      );
 
-      hostedFieldsInstance.on("empty", (event) => {
+      hostedFieldsInstance.on("empty", (event: IHostedFieldsEventData) => {
         emptyEventContainer.classList.add(event.emittedBy);
         notEmptyEventContainer.classList.remove(event.emittedBy);
       });
 
-      hostedFieldsInstance.on("notEmpty", (event) => {
+      hostedFieldsInstance.on("notEmpty", (event: IHostedFieldsEventData) => {
         notEmptyEventContainer.classList.add(event.emittedBy);
         emptyEventContainer.classList.remove(event.emittedBy);
       });
 
-      hostedFieldsInstance.on("focus", (event) => {
+      hostedFieldsInstance.on("focus", (event: IHostedFieldsEventData) => {
         focusEventContainer.classList.add(event.emittedBy);
         blurEventContainer.classList.remove(event.emittedBy);
       });
 
-      hostedFieldsInstance.on("blur", (event) => {
+      hostedFieldsInstance.on("blur", (event: IHostedFieldsEventData) => {
         blurEventContainer.classList.add(event.emittedBy);
         focusEventContainer.classList.remove(event.emittedBy);
       });
 
-      hostedFieldsInstance.on("inputSubmitRequest", (event) => {
-        inputSubmitRequestContainer.classList.add(event.emittedBy);
-      });
+      hostedFieldsInstance.on(
+        "inputSubmitRequest",
+        (event: IHostedFieldsEventData) => {
+          inputSubmitRequestContainer.classList.add(event.emittedBy);
+        }
+      );
 
-      hostedFieldsInstance.on("binAvailable", (event) => {
-        binAvailableContainer.setAttribute("binAvailable", "true");
-        binAvailableContainer.setAttribute("data-bin", event.bin);
-        binAvailableContainer.textContent =
-          "BIN Available: " + event.bin + " (" + event.bin.length + " digits)";
-      });
+      hostedFieldsInstance.on(
+        "binAvailable",
+        (event: IHostedFieldsEventData) => {
+          binAvailableContainer.setAttribute("binAvailable", "true");
+          binAvailableContainer.setAttribute("data-bin", event.bin ?? "");
+          binAvailableContainer.textContent =
+            "BIN Available: " +
+            event.bin +
+            " (" +
+            event.bin?.length +
+            " digits)";
+        }
+      );
 
       // Add clear field button functionality
-      const clearFieldButton = container.querySelector("#clear-field-button");
-      const fieldToClearSelect = container.querySelector("#field-to-clear");
+      const clearFieldButton = container.querySelector(
+        "#clear-field-button"
+      ) as HTMLButtonElement;
+      const fieldToClearSelect = container.querySelector(
+        "#field-to-clear"
+      ) as HTMLSelectElement;
 
       clearFieldButton.addEventListener("click", () => {
         const fieldToClear = fieldToClearSelect.value;
@@ -301,10 +353,16 @@ const setupBraintreeHostedFields = (
       // Add class button functionality
       const classActionFieldSelect = container.querySelector(
         "#class-action-field"
-      );
-      const classNameInput = container.querySelector("#class-name-input");
-      const addClassButton = container.querySelector("#add-class-button");
-      const removeClassButton = container.querySelector("#remove-class-button");
+      ) as HTMLSelectElement;
+      const classNameInput = container.querySelector(
+        "#class-name-input"
+      ) as HTMLInputElement;
+      const addClassButton = container.querySelector(
+        "#add-class-button"
+      ) as HTMLButtonElement;
+      const removeClassButton = container.querySelector(
+        "#remove-class-button"
+      ) as HTMLButtonElement;
 
       addClassButton.addEventListener("click", () => {
         const field = classActionFieldSelect.value;
@@ -318,19 +376,21 @@ const setupBraintreeHostedFields = (
         hostedFieldsInstance.removeClass(field, className);
       });
 
-      const attributeFieldSelect = container.querySelector("#attribute-field");
+      const attributeFieldSelect = container.querySelector(
+        "#attribute-field"
+      ) as HTMLSelectElement;
       const attributeNameInput = container.querySelector(
         "#attribute-name-input"
-      );
+      ) as HTMLInputElement;
       const attributeValueInput = container.querySelector(
         "#attribute-value-input"
-      );
+      ) as HTMLInputElement;
       const setAttributeButton = container.querySelector(
         "#set-attribute-button"
-      );
+      ) as HTMLButtonElement;
       const removeAttributeButton = container.querySelector(
         "#remove-attribute-button"
-      );
+      ) as HTMLElement;
 
       setAttributeButton.addEventListener("click", () => {
         const field = attributeFieldSelect.value;
@@ -354,16 +414,24 @@ const setupBraintreeHostedFields = (
         });
       });
 
-      const focusFieldButton = container.querySelector("#focus-field-button");
-      const focusFieldSelect = container.querySelector("#focus-field");
+      const focusFieldButton = container.querySelector(
+        "#focus-field-button"
+      ) as HTMLButtonElement;
+      const focusFieldSelect = container.querySelector(
+        "#focus-field"
+      ) as HTMLSelectElement;
 
       focusFieldButton.addEventListener("click", () => {
         const fieldToFocus = focusFieldSelect.value;
         hostedFieldsInstance.focus(fieldToFocus);
       });
 
-      const getStateButton = container.querySelector("#get-state-button");
-      const stateContainer = container.querySelector("#state-container");
+      const getStateButton = container.querySelector(
+        "#get-state-button"
+      ) as HTMLButtonElement;
+      const stateContainer = container.querySelector(
+        "#state-container"
+      ) as HTMLElement;
 
       getStateButton.addEventListener("click", () => {
         const state = hostedFieldsInstance.getState();
@@ -430,15 +498,16 @@ const setupBraintreeHostedFields = (
     });
 };
 
-const setupSeparateExpirationFields = (container) => {
+const setupSeparateExpirationFields = (container: HTMLElement) => {
   const authorization = getAuthorizationToken();
 
-  window.braintree.client
-    .create({
+  getBraintree()
+    .client.create({
       authorization: authorization,
+      ...(isIntegrationCoverageRun() && { debug: true }),
     })
     .then((clientInstance) => {
-      return window.braintree.hostedFields.create({
+      return getBraintree().hostedFields.create({
         client: clientInstance,
         styles: {
           input: {
@@ -457,19 +526,19 @@ const setupSeparateExpirationFields = (container) => {
         },
         fields: {
           number: {
-            selector: "#card-number",
+            container: "#card-number",
             placeholder: "4111 1111 1111 1111",
           },
           cvv: {
-            selector: "#cvv",
+            container: "#cvv",
             placeholder: "123",
           },
           expirationMonth: {
-            selector: "#expiration-month",
+            container: "#expiration-month",
             placeholder: "06",
           },
           expirationYear: {
-            selector: "#expiration-year",
+            container: "#expiration-year",
             placeholder: "2025",
             select: true,
           },
@@ -483,16 +552,19 @@ const setupSeparateExpirationFields = (container) => {
       ) as HTMLButtonElement;
       const resultDiv = container.querySelector("#result") as HTMLElement;
 
-      hostedFieldsInstance.on("validityChange", (event) => {
-        const allFieldsValid = Object.keys(event.fields).every((key) => {
-          return event.fields[key].isValid;
-        });
+      hostedFieldsInstance.on(
+        "validityChange",
+        (event: IHostedFieldsEventData) => {
+          const allFieldsValid = (
+            Object.keys(event.fields) as Array<keyof typeof event.fields>
+          ).every((key) => event.fields[key]?.isValid ?? true);
 
-        submitButton.disabled = !allFieldsValid;
-        submitButton.style.backgroundColor = allFieldsValid
-          ? "#28a745"
-          : "#007bff";
-      });
+          submitButton.disabled = !allFieldsValid;
+          submitButton.style.backgroundColor = allFieldsValid
+            ? "#28a745"
+            : "#007bff";
+        }
+      );
 
       form.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -537,7 +609,11 @@ export const StandardHostedFields: StoryObj = {
     (container, args) => {
       const formContainer = createHostedFieldsForm(args);
       container.appendChild(formContainer);
-      setupBraintreeHostedFields(formContainer, args);
+      setupBraintreeHostedFields(
+        formContainer,
+        args,
+        isIntegrationCoverageRun() ? true : undefined
+      );
     },
     ["client.min.js", "hosted-fields.min.js"]
   ),
@@ -627,7 +703,7 @@ export const HostedFieldsCSPTest: StoryObj = {
       // Read useMinified from URL params to control which iframe HTML file loads
       const urlParams = new URLSearchParams(window.location.search);
       const useMinified = urlParams.get("useMinified") === "true";
-      const debugMode = !useMinified; // debug=true loads .html, debug=false loads .min.html
+      const debugMode = isIntegrationCoverageRun() ? true : !useMinified; // debug=true loads .html, debug=false loads .min.html
 
       const formContainer = createHostedFieldsForm(args);
       container.appendChild(formContainer);

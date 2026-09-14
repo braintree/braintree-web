@@ -1,13 +1,14 @@
-/* eslint-env jest */
-"use strict";
+// Framebus must be a vi.fn() constructor so that:
+// - instanceof checks work (_bus instanceof Framebus in FrameService tests)
+// - mockImplementation() works (venmo-desktop.js tests)
+// - prototype methods are vi.fn() for toHaveBeenCalled() assertions
+var Framebus = vi.fn();
 
-function Framebus(options) {
-  this.channel = options.channel;
-}
-Framebus.prototype.on = jest.fn();
-Framebus.prototype.off = jest.fn();
-Framebus.prototype.emit = jest.fn();
-Framebus.prototype.target = jest.fn().mockReturnThis();
-Framebus.prototype.teardown = jest.fn();
+Framebus.prototype.on = vi.fn();
+Framebus.prototype.off = vi.fn();
+Framebus.prototype.emit = vi.fn();
+Framebus.prototype.target = vi.fn().mockReturnThis();
+Framebus.prototype.teardown = vi.fn();
+Framebus.prototype.addTargetFrame = vi.fn();
 
-module.exports = Framebus;
+export default Framebus;

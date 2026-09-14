@@ -1,7 +1,5 @@
-"use strict";
-
-var uuid = require("@braintree/uuid");
-var findRootNode = require("./find-root-node");
+import uuid from "@braintree/uuid";
+import findRootNode from "./find-root-node";
 
 // based on https://github.com/krakenjs/belter/blob/cdddc4f8ddb172d29db9e7e1ad1eeeacfb93e215/src/dom.js#L981-L1031
 // thanks @bluepnume
@@ -53,8 +51,10 @@ function transformToSlot(element, styles) {
   return slotProvider;
 }
 
-module.exports = {
-  isShadowElement: isShadowElement,
-  getShadowHost: getShadowHost,
-  transformToSlot: transformToSlot,
+export { isShadowElement, getShadowHost, transformToSlot };
+
+export default {
+  isShadowElement,
+  getShadowHost,
+  transformToSlot,
 };

@@ -1,7 +1,5 @@
-"use strict";
+import removeIgnorableCharacters from "./remove-ignorable-characters";
 
-var removeIgnorableCharacters = require("./remove-ignorable-characters");
-
-module.exports = function normalizeCardType(type) {
+export default function normalizeCardType(type) {
   return removeIgnorableCharacters(type).toLowerCase();
-};
+}

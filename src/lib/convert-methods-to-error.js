@@ -1,9 +1,7 @@
-"use strict";
+import BraintreeError from "./braintree-error";
+import * as sharedErrors from "./errors";
 
-var BraintreeError = require("./braintree-error");
-var sharedErrors = require("./errors");
-
-module.exports = function (instance, methodNames) {
+export default function (instance, methodNames) {
   methodNames.forEach(function (methodName) {
     instance[methodName] = function () {
       throw new BraintreeError({
@@ -13,4 +11,4 @@ module.exports = function (instance, methodNames) {
       });
     };
   });
-};
+}

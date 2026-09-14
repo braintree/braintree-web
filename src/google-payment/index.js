@@ -1,17 +1,20 @@
-"use strict";
+// @ts-nocheck
 /**
  * @module braintree-web/google-payment
  * @description A component to integrate with Google Pay. The majority of the integration uses [Google's pay.js JavaScript file](https://pay.google.com/gp/p/js/pay.js). The Braintree component generates the configuration object necessary for Google Pay to initiate the Payment Request and parse the returned data to retrieve the payment method nonce which is used to process the transaction on the server.
  */
 
-var GooglePayment = require("./google-payment");
-var BraintreeError = require("../lib/braintree-error");
-var createAssetsUrl = require("../lib/create-assets-url");
-var createDeferredClient = require("../lib/create-deferred-client");
-var basicComponentVerification = require("../lib/basic-component-verification");
-var wrapPromise = require("@braintree/wrap-promise");
-var VERSION = process.env.npm_package_version;
-var errors = require("./errors");
+import GooglePayment from "./google-payment";
+import BraintreeError from "../lib/braintree-error";
+import createAssetsUrl from "../lib/create-assets-url";
+import createDeferredClient from "../lib/create-deferred-client";
+import basicComponentVerification from "../lib/basic-component-verification";
+/**
+ * @description The current version of the SDK, i.e. `{@pkg version}`.
+ * @type {string}
+ */
+import errors from "./errors";
+const VERSION = __SDK_VERSION__;
 
 /**
  * @static
@@ -19,13 +22,14 @@ var errors = require("./errors");
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {boolean} [options.useDeferredClient] Used in conjunction with `authorization`, allows the Google Payment instance to be available right away by fetching the client configuration in the background. When this option is used, {@link GooglePayment#createPaymentDataRequest} will return a promise that resolves with the configuration instead of returning synchronously.
- * @param {number} [options.googlePayVersion] The version of the Google Pay API to use. Value of 2 is required to accept parameters documented [by Google](https://developers.google.com/pay/api/web/reference/object). Omit this parameter to use the deprecated Google Pay Version 1.
+ * @param {boolean} [options.useDeferredClient] Used in conjunction with `authorization`, allows the Google Payment instance to be available right away by fetching the client configuration in the background.
  * @param {string} [options.googleMerchantId] A Google merchant identifier issued after your website is approved by Google. Required when PaymentsClient is initialized with an environment property of PRODUCTION, but may be omitted in TEST environment.
- * @param {callback} [callback] The second argument, `data`, is the {@link GooglePayment} instance. If no callback is provided, `create` returns a promise that resolves with the {@link GooglePayment} instance.
  * @example <caption>Simple Example</caption>
  * // include https://pay.google.com/gp/p/js/pay.js in a script tag
  * // on your page to load the `google.payments.api.PaymentsClient` global object.
+ * //
+ * // IMPORTANT: The Braintree SDK Google Pay component only supports Google Pay API version 2.
+ * // You MUST set apiVersion: 2 in all Google Pay API calls (isReadyToPay, loadPaymentData) to avoid errors and unexpected behavior.
  *
  * var paymentButton = document.querySelector('#google-pay-button');
  * var paymentsClient = new google.payments.api.PaymentsClient({
@@ -37,7 +41,6 @@ var errors = require("./errors");
  * }).then(function (clientInstance) {
  *   return braintree.googlePayment.create({
  *     client: clientInstance,
- *      googlePayVersion: 2,
  *      googleMerchantId: 'your-merchant-id-from-google'
  *   });
  * }).then(function (googlePaymentInstance) {
@@ -103,11 +106,10 @@ var errors = require("./errors");
  * }).then(function (clientInstance) {
  *   return braintree.googlePayment.create({
  *     client: clientInstance,
- *     googlePayVersion: 2,
  *     googleMerchantId: 'your-merchant-id-from-google'
  *   });
  * }).then(function (googlePaymentInstance) {
- *
+ *   // IMPORTANT: apiVersion MUST be set to 2 to match the Braintree SDK Google Pay component.
  *   return paymentsClient.isReadyToPay({
  *     // see https://developers.google.com/pay/api/web/reference/object#IsReadyToPayRequest for all options
  *     apiVersion: 2,
@@ -123,7 +125,7 @@ var errors = require("./errors");
  *   // handle setup errors
  * });
  *
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with the {@link GooglePayment} instance.
  */
 function create(options) {
   var name = "Google Pay";
@@ -149,10 +151,8 @@ function create(options) {
           var configuration = client.getConfiguration();
 
           options.client = client;
-          if (!configuration.gatewayConfiguration.androidPay) {
-            return Promise.reject(
-              new BraintreeError(errors.GOOGLE_PAYMENT_NOT_ENABLED)
-            );
+          if (!configuration.gatewayConfiguration.googlePay) {
+            throw new BraintreeError(errors.GOOGLE_PAYMENT_NOT_ENABLED);
           }
 
           return client;
@@ -173,11 +173,7 @@ function create(options) {
     });
 }
 
-module.exports = {
-  create: wrapPromise(create),
-  /**
-   * @description The current version of the SDK, i.e. `{@pkg version}`.
-   * @type {string}
-   */
-  VERSION: VERSION,
+export default {
+  create,
+  VERSION,
 };

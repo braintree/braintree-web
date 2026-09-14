@@ -1,5 +1,3 @@
-"use strict";
-
 function assembleIFrames(win) {
   var i, frame;
   var frames = [];
@@ -20,6 +18,8 @@ function assembleIFrames(win) {
   return frames;
 }
 
-module.exports = {
-  assembleIFrames: assembleIFrames,
+export { assembleIFrames };
+
+export default {
+  assembleIFrames,
 };

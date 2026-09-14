@@ -1,6 +1,4 @@
-"use strict";
-
-module.exports = function (method, body) {
+export default function (method, body) {
   if (typeof method !== "string") {
     throw new Error("Method must be a string");
   }
@@ -10,4 +8,4 @@ module.exports = function (method, body) {
   }
 
   return body;
-};
+}

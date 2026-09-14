@@ -7,31 +7,35 @@ Throughout this page, replace `<component>` with the name of any SDK component (
 - [Development Notes](#development-notes)
   - [Table of Contents](#table-of-contents)
   - [Project Structure](#project-structure)
+  - [Prerequisites](#prerequisites)
   - [Project Environment](#project-environment)
   - [Building](#building)
-    - [SJCL](#sjcl)
   - [Linting](#linting)
   - [Testing](#testing)
   - [Generating Documentation](#generating-documentation)
   - [Storybook Integration](#storybook-integration)
-  - [Releasing](#releasing)
 
 ## Project Structure
 
-```
+```sh
 braintree.js
 ├── dist/hosted        <- assets output
 ├── dist/npm/          <- npm package output
-├── publishing/        <- npm-specific sources
 ├── scripts/           <- build helper scripts
 ├── src/               <- source code
 │   ├── <component>/
 │   └── ...
-├── tasks/             <- gulp tasks
 └── test/              <- testing suite
     ├── <component>/
     └── ...
 ```
+
+## Prerequisites
+
+- Grab [nvm](https://github.com/nvm-sh/nvm) if you don't have it
+- `nvm install && nvm use`
+- `npm install`
+- `.npmrc` blocks auto git hooks, run `npx husky` once.
 
 ## Project Environment
 
@@ -41,7 +45,7 @@ This library makes use of environment variables specified in a `.env` file. This
 
 Here's an example `.env` file:
 
-```
+```sh
 BRAINTREE_JS_API_HOST=development.gateway.hostname
 BRAINTREE_JS_API_PORT=443
 BRAINTREE_JS_API_PROTOCOL=https
@@ -57,159 +61,97 @@ BRAINTREE_JS_SOURCE_DEST=/absolute/path/to/braintree-web/repository
 
 ## Building
 
-For all components
-
-```
+```sh
 npm run build
-```
-
-For a single component
-
-```
-npm run build <component>
 ```
 
 This will create the following `dist` structure:
 
-```
+```sh
 ├── dist/npm/
 │   └── ... (mirrors src/)
 └── dist/hosted/
     └── web/
-        ├── 3.0.0/
+        ├── x.y.z/
         │   ├── css/
         │   ├── html/
         │   ├── images/
         │   └── js/
-        └── dev@ -> 3.0.0/
+        └── dev@ -> x.y.z/
 ```
 
 `dist/npm` contains the pre-processed src tree that is published to npm, ready for use within a CommonJS environment.
 
-`dist/hosted` has a file structure that mirrors what will be available at https://assets.braintreegateway.com. All component libraries' `js`, `css`, and `html` will be merged under a common, versioned path at https://assets.braintreegateway.com:
+`dist/hosted` has a file structure that mirrors what will be available at <https://assets.braintreegateway.com>. All component libraries' `js`, `css`, and `html` will be merged under a common, versioned path at <https://assets.braintreegateway.com>:
 
-```
+```sh
 https://assets.braintreegateway.com/
 └── web/
-    └── 3.0.0/
+    └── x.y.z/
         ├── css/
         ├── html/
         ├── images/
         └── js/
 ```
 
-The `web/dev` symlink will be a copy of one of the versioned directories, such as `web/3.0.0`. It will only be present during development and never deployed.
-
-### SJCL
-
-The Data Collector component uses a crypto library called [SJCL](https://github.com/bitwiseshiftleft/sjcl). We include a custom build that only includes the pieces we need.
-
-To do this build yourself, do the following:
-
-1. Clone [the SJCL repo](https://github.com/bitwiseshiftleft/sjcl) outside of any Braintree.js directory.
-1. Check out a stable version. For example, if the latest stable SJCL version is `1.0.6`, run `git checkout 1.0.6`. We are using `1.0.6`.
-1. Run `./configure --without-all --with-random --with-codecHex` to configure our special build.
-1. Run `make sjcl.js` to build and minify the file.
-1. Copy the newly-modified `sjcl.js` file into `/path/to/braintree.js/src/data-collector/vendor`.
+The `web/dev` symlink will be a copy of one of the versioned directories, such as `web/x.y.z`. It will only be present during development and never deployed.
 
 ## Linting
 
 For all code
 
-```
+```sh
 npm run lint
 ```
 
 For a single component
 
-```
-npm run lint <component>
+```sh
+npm run lint src/<component>
 ```
 
 ## Testing
 
 For all tests
 
-```
+```sh
 npm test
 ```
 
 For a single component
 
-```
+```sh
 npm test <component>
-```
-
-For the lib directory
-
-```
-npm test lib
 ```
 
 For one test file
 
-First install jest:
-
-```
-npm install jest --global
-```
-
-To run test:
-
-```
-jest <path to file>
-Example: jest test/apple-pay/unit/apple-pay.js
+```sh
+npm test test/apple-pay/unit/apple-pay.js
 ```
 
 ## Generating Documentation
 
-```
+```sh
 npm run jsdoc
 ```
 
 This will populate the `./dist/jsdoc/<version>/` directory, with `index.html` being the home page..
 
-In a new tmux window, under the `js-sdk-integration` repo, run
-
-```
-npm run assets
-```
-
-This will serve the currently built JSDocs on port `9292`, and can be reached at `pairXX.chi.braintreepayments.com:9292/<version>`.
-
 ## Storybook Integration
 
-To build and integrate with Storybook for local development and testing:
+For interactive local development, run Storybook against your local build:
 
-```
-npm run build:integration
-```
-
-This will:
-
-1. Build the SDK
-2. Copy local build files to Storybook's static directory
-3. Build Storybook
-4. Start an HTTPS server
-
-After running this command, you can access Storybook at https://127.0.0.1:8080 and test with your local SDK build.
-
-## Releasing
-
-The following will build and copy all appropriate files into `BRAINTREE_JS_HOSTED_DEST`
-
-```
-npm run release -- hosted
+```sh
+npm run storybook
 ```
 
-The following will build and deploy the appropriate [JSDocs](https://braintree.github.io/braintree-web/).
+This builds the SDK's `.js`/`.mjs` bundles, copies them into Storybook, and starts the dev server on port 6006.
 
-```
-npm run release -- jsdoc
+To build the integration bundle used by the Playwright suite (coverage SDK build, local-build symlink, static Storybook, and SSL certs):
+
+```sh
+npm run playwright:build
 ```
 
-The following will prepare source changes for release to [braintree-web](https://github.com/braintree/braintree-web)
-
-```
-npm run release -- source
-```
+This produces `storybook-static/` and `.storybook/certs/`; it does not start a server. Run `npm run playwright:test` to build and then drive the Chromium Playwright suite.

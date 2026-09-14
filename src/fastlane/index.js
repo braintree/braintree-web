@@ -1,14 +1,16 @@
-"use strict";
-
+// @ts-nocheck
 /** @module braintree-web/fastlane */
 
-var basicComponentVerification = require("../lib/basic-component-verification");
-var fastlane = require("./fastlane");
-var createAssetsUrl = require("../lib/create-assets-url");
-var createDeferredClient = require("../lib/create-deferred-client");
-var wrapPromise = require("@braintree/wrap-promise");
-var VERSION = process.env.npm_package_version;
-var assign = require("../lib/assign").assign;
+import basicComponentVerification from "../lib/basic-component-verification";
+import fastlane from "./fastlane";
+import createAssetsUrl from "../lib/create-assets-url";
+import createDeferredClient from "../lib/create-deferred-client";
+/**
+ * @description The current version of the SDK, i.e. `{@pkg version}`.
+ * @type {string}
+ */
+import { assign } from "../lib/assign";
+const VERSION = __SDK_VERSION__;
 
 /**
  * @static
@@ -16,7 +18,7 @@ var assign = require("../lib/assign").assign;
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {string} [options.deviceData] A {@link DataCollector} instance.
+ * @param {string} [options.deviceData] The device data string from a {@link DataCollector} instance.
  * @example
  * braintree.fastlane.create({
  *   client: clientInstance,
@@ -37,7 +39,7 @@ var assign = require("../lib/assign").assign;
  * }).catch(function (createErr) {
  *   console.error('Error creating fastlane instance', createErr);
  * });
- * @returns {(Promise|void)} Returns the fastlane instance.
+ * @returns {Promise} Returns the fastlane instance.
  */
 
 function create(options) {
@@ -69,11 +71,8 @@ function create(options) {
       );
     });
 }
-module.exports = {
-  create: wrapPromise(create),
-  /**
-   * @description The current version of the SDK, i.e. `{@pkg version}`.
-   * @type {string}
-   */
-  VERSION: VERSION,
+
+export default {
+  create,
+  VERSION,
 };

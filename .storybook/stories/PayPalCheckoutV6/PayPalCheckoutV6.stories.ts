@@ -1,8 +1,23 @@
 import type { Meta, StoryObj } from "@storybook/html";
-import type { IPayPalV6ApproveData, IBraintreeError } from "../../types/global";
+import type {
+  IPayPalV6ApproveData,
+  IPayPalV6ShippingAddressChangeData,
+  IPayPalV6ShippingOptionsChangeData,
+  IPayPalCheckoutV6Instance,
+  IPayPalCheckoutV6OneTimePaymentOptions,
+  IPayPalCheckoutV6PayLaterOptions,
+  IBraintreeError,
+} from "../../types/global";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getClientToken } from "../../utils/sdk-config";
 import { getBraintreeSDK } from "../../utils/braintree-sdk";
+import {
+  FUNDING_SOURCE_CONFIG,
+  createPayPalButton,
+  showSimpleError,
+  showDetailedError,
+} from "./common";
+import { TEST_SHIPPING_ADDRESS } from "../../constants";
 import "../../css/main.css";
 import "../PayPalCheckout/payPalCheckout.css";
 
@@ -52,140 +67,18 @@ const getOrderId = (data: { orderID?: string; orderId?: string }): string => {
 };
 
 /**
- * Extract all properties from an error object, including nested ones
- * This handles various error structures from Braintree/PayPal
+ * Arguments for OneTimePayment story
  */
-const extractErrorDetails = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  errorObj: any,
-  prefix = ""
-): string[] => {
-  const parts: string[] = [];
-
-  if (!errorObj || typeof errorObj !== "object") {
-    return parts;
-  }
-
-  // Common error properties to extract
-  const propsToCheck = [
-    "message",
-    "error",
-    "name",
-    "code",
-    "type",
-    "description",
-    "debug_id",
-    "debugId",
-    "httpStatus",
-    "statusCode",
-    "status",
-    "reason",
-    "errorName",
-    "errorMessage",
-  ];
-
-  for (const prop of propsToCheck) {
-    if (errorObj[prop] !== undefined && errorObj[prop] !== null) {
-      const label = prefix ? `${prefix}.${prop}` : prop;
-      parts.push(`${label}: ${errorObj[prop]}`);
-    }
-  }
-
-  // Check nested objects
-  const nestedProps = [
-    "details",
-    "originalError",
-    "error",
-    "data",
-    "body",
-    "response",
-  ];
-  for (const prop of nestedProps) {
-    if (
-      errorObj[prop] &&
-      typeof errorObj[prop] === "object" &&
-      !Array.isArray(errorObj[prop])
-    ) {
-      const nested = extractErrorDetails(
-        errorObj[prop],
-        prefix ? `${prefix}.${prop}` : prop
-      );
-      parts.push(...nested);
-    }
-  }
-
-  return parts;
-};
-
-/**
- * Display detailed error information for debugging
- * Extracts error details from various possible locations in the error object
- */
-const showDetailedError = (
-  resultDiv: HTMLElement,
-  title: string,
-  err: IBraintreeError
-): void => {
-  const errorCode = err.code || "UNKNOWN";
-  const errorMessage = err.message || "An error occurred";
-  const errorType = err.type || "Unknown";
-
-  // Extract all nested error details
-  const extractedDetails = extractErrorDetails(err);
-
-  // Try to serialize the full error object for complete visibility
-  let fullErrorJson = "";
-  try {
-    fullErrorJson = JSON.stringify(err, null, 2);
-    if (fullErrorJson === "{}") {
-      // Error objects often don't serialize well, try getting own properties
-      const errorProps: Record<string, unknown> = {};
-      for (const key of Object.getOwnPropertyNames(err)) {
-        // Use Record<string, unknown> for type-safe dynamic property access
-        errorProps[key] = (err as Record<string, unknown>)[key];
-      }
-      // Also check for details
-      if (err.details) {
-        errorProps["details"] = err.details;
-      }
-      fullErrorJson = JSON.stringify(errorProps, null, 2);
-    }
-  } catch {
-    fullErrorJson = "[Could not serialize error]";
-  }
-
-  resultDiv.className =
-    "shared-result shared-result--visible shared-result--error";
-  resultDiv.innerHTML = `
-    <strong>${title}</strong><br>
-    <small><strong>Code:</strong> ${errorCode}</small><br>
-    <small><strong>Type:</strong> ${errorType}</small><br>
-    <small><strong>Message:</strong> ${errorMessage}</small><br>
-    ${
-      extractedDetails.length > 0
-        ? `<small><strong>Details:</strong></small>
-    <pre style="margin: 5px 0; white-space: pre-wrap; font-size: 11px; background: #f5f5f5; padding: 8px; border-radius: 4px; overflow-x: auto; max-height: 200px; overflow-y: auto;">${extractedDetails.join("\n")}</pre>`
-        : ""
-    }
-    <details style="margin-top: 10px;">
-      <summary style="cursor: pointer; font-size: 12px; color: #666;">Show Full Error Object</summary>
-      <pre style="margin: 5px 0; white-space: pre-wrap; font-size: 10px; background: #f0f0f0; padding: 8px; border-radius: 4px; overflow-x: auto; max-height: 300px; overflow-y: auto;">${fullErrorJson}</pre>
-    </details>
-  `;
-
-  // Also log full error to console for debugging
-  // eslint-disable-next-line no-console
-  console.error(`${title}:`, err);
-  // eslint-disable-next-line no-console
-  console.error("Error details:", err.details);
-  // eslint-disable-next-line no-console
-  console.error("Full error keys:", Object.keys(err));
-  // eslint-disable-next-line no-console
-  console.error(
-    "Full error own property names:",
-    Object.getOwnPropertyNames(err)
-  );
-};
+interface OneTimePaymentArgs {
+  commit?: boolean;
+  fundingSource?: string;
+  locale?: string;
+  landingPageType?: string;
+  userAction?: string;
+  enableShippingAddress?: boolean;
+  shippingAddressEditable?: boolean;
+  riskCorrelationId?: string;
+}
 
 // One-Time Payment Story
 const createOneTimePaymentForm = (): HTMLElement => {
@@ -197,7 +90,7 @@ const createOneTimePaymentForm = (): HTMLElement => {
       <div class="paypal-description">
         <p class="shared-description">
           Click the PayPal button below to pay with PayPal or a credit/debit card.
-          This example demonstrates using updatePayment in onShippingAddressChange.
+          This example demonstrates using updatePayment in onShippingAddressChange and onShippingOptionsChange callbacks.
         </p>
       </div>
 
@@ -214,7 +107,244 @@ const createOneTimePaymentForm = (): HTMLElement => {
   return container;
 };
 
-const setupOneTimePayment = async (container: HTMLElement): Promise<void> => {
+/**
+ * Shared mutable state for shipping callbacks so both handlers stay in sync.
+ */
+interface ShippingState {
+  currentCity: string;
+}
+
+/**
+ * Shows the update-payment result section with a success or error message.
+ */
+const showUpdateResult = (
+  updateResultDiv: HTMLElement,
+  html: string,
+  isSuccess: boolean
+): void => {
+  const section = document.querySelector(
+    "#update-payment-section"
+  ) as HTMLElement | null;
+
+  if (section) {
+    section.style.display = "block";
+  }
+  updateResultDiv.className = `shared-result shared-result--visible shared-result--${isSuccess ? "success" : "error"}`;
+  updateResultDiv.innerHTML = html;
+};
+
+/**
+ * Builds the onShippingAddressChange handler for the one-time payment story.
+ */
+const createShippingAddressChangeHandler = (
+  paypalCheckoutV6Instance: IPayPalCheckoutV6Instance,
+  updateResultDiv: HTMLElement,
+  shippingState: ShippingState
+) => {
+  return function (data: IPayPalV6ShippingAddressChangeData) {
+    const isChicago = data.shippingAddress.city === "Chicago";
+
+    shippingState.currentCity = data.shippingAddress.city || "";
+    const shippingCost = isChicago ? 10.0 : 5.0;
+    const itemTotal = 100.0;
+    const newTotal = itemTotal + shippingCost;
+
+    return paypalCheckoutV6Instance
+      .updatePayment({
+        paymentId: getOrderId(data),
+        amount: newTotal.toFixed(2),
+        currency: "USD",
+        lineItems: [
+          {
+            quantity: "1",
+            unitAmount: itemTotal.toFixed(2),
+            name: "Test Item",
+            kind: "debit",
+          },
+        ],
+        shippingOptions: [
+          {
+            id: "standard",
+            label: "Standard Shipping",
+            selected: !isChicago,
+            type: "SHIPPING",
+            amount: { currency: "USD", value: "5.00" },
+          },
+          {
+            id: "chicago-express",
+            label: "Chicago Express",
+            selected: isChicago,
+            type: "SHIPPING",
+            amount: { currency: "USD", value: "10.00" },
+          },
+        ],
+        amountBreakdown: {
+          itemTotal: itemTotal.toFixed(2),
+          shipping: shippingCost.toFixed(2),
+          handling: "0.0",
+          taxTotal: "0.0",
+          insurance: "0.0",
+          shippingDiscount: "0.0",
+          discount: "0.0",
+        },
+      })
+      .then(function (response) {
+        showUpdateResult(
+          updateResultDiv,
+          `<strong>Payment Updated</strong><br>
+          <small>Applied ${isChicago ? "Chicago" : "standard"} shipping rate: $${shippingCost}</small><br>
+          <small>New Total: $${newTotal.toFixed(2)}</small>`,
+          true
+        );
+        return response;
+      })
+      .catch(function (error) {
+        showUpdateResult(
+          updateResultDiv,
+          `<strong>Update Failed:</strong> ${error.message}`,
+          false
+        );
+      });
+  };
+};
+
+/**
+ * Builds the onShippingOptionsChange handler for the one-time payment story.
+ */
+const createShippingOptionsChangeHandler = (
+  paypalCheckoutV6Instance: IPayPalCheckoutV6Instance,
+  updateResultDiv: HTMLElement,
+  shippingState: ShippingState
+) => {
+  return function (data: IPayPalV6ShippingOptionsChangeData) {
+    const selectedOption = data.selectedShippingOption;
+    const isChicago = shippingState.currentCity === "Chicago";
+
+    if (selectedOption?.id === "chicago-express" && !isChicago) {
+      showUpdateResult(
+        updateResultDiv,
+        `<strong>Shipping Option Rejected</strong><br>
+        <small>Chicago Express is only available for Chicago addresses</small><br>
+        <small>Please select a different shipping option</small>`,
+        false
+      );
+      throw new Error(data.errors.METHOD_UNAVAILABLE);
+    }
+
+    const validatedOptionId = selectedOption?.id || "standard";
+    const validatedShippingCost = selectedOption
+      ? parseFloat(selectedOption.amount.value)
+      : 5.0;
+    const itemTotal = 100.0;
+    const newTotal = itemTotal + validatedShippingCost;
+    const label =
+      validatedOptionId === "standard"
+        ? "Standard Shipping"
+        : "Chicago Express";
+
+    return paypalCheckoutV6Instance
+      .updatePayment({
+        paymentId: getOrderId(data),
+        amount: newTotal.toFixed(2),
+        currency: "USD",
+        lineItems: [
+          {
+            quantity: "1",
+            unitAmount: itemTotal.toFixed(2),
+            name: "Test Item",
+            kind: "debit",
+          },
+        ],
+        shippingOptions: [
+          {
+            id: "standard",
+            label: "Standard Shipping",
+            selected: validatedOptionId === "standard",
+            type: "SHIPPING",
+            amount: { currency: "USD", value: "5.00" },
+          },
+          {
+            id: "chicago-express",
+            label: "Chicago Express",
+            selected: validatedOptionId === "chicago-express",
+            type: "SHIPPING",
+            amount: { currency: "USD", value: "10.00" },
+          },
+        ],
+        amountBreakdown: {
+          itemTotal: itemTotal.toFixed(2),
+          shipping: validatedShippingCost.toFixed(2),
+          handling: "0.0",
+          taxTotal: "0.0",
+          insurance: "0.0",
+          shippingDiscount: "0.0",
+          discount: "0.0",
+        },
+      })
+      .then(function (response) {
+        showUpdateResult(
+          updateResultDiv,
+          `<strong>Payment Updated</strong><br>
+          <small>Selected shipping: ${label} ($${validatedShippingCost.toFixed(2)})</small><br>
+          <small>New Total: $${newTotal.toFixed(2)}</small>`,
+          true
+        );
+        return response;
+      })
+      .catch(function (error) {
+        showUpdateResult(
+          updateResultDiv,
+          `<strong>Update Failed:</strong> ${error.message}`,
+          false
+        );
+      });
+  };
+};
+
+/**
+ * Applies experience-profile and risk args from Storybook controls onto sessionOptions.
+ */
+const applyOneTimePaymentArgs = (
+  sessionOptions: Record<string, unknown>,
+  args?: OneTimePaymentArgs
+): void => {
+  if (!args) return;
+
+  const {
+    locale,
+    landingPageType,
+    userAction,
+    enableShippingAddress,
+    shippingAddressEditable,
+    riskCorrelationId,
+  } = args;
+
+  if (locale !== undefined) sessionOptions.locale = locale;
+  if (landingPageType !== undefined)
+    sessionOptions.landingPageType = landingPageType;
+  if (userAction !== undefined) sessionOptions.userAction = userAction;
+  if (enableShippingAddress !== undefined) {
+    sessionOptions.enableShippingAddress = enableShippingAddress;
+  }
+
+  if (shippingAddressEditable === false) {
+    sessionOptions.enableShippingAddress = true;
+    sessionOptions.shippingAddressOverride = TEST_SHIPPING_ADDRESS;
+    sessionOptions.shippingAddressEditable = false;
+  } else if (shippingAddressEditable === true) {
+    if (enableShippingAddress === true) {
+      sessionOptions.shippingAddressOverride = TEST_SHIPPING_ADDRESS;
+    }
+    sessionOptions.shippingAddressEditable = true;
+  }
+
+  if (riskCorrelationId) sessionOptions.riskCorrelationId = riskCorrelationId;
+};
+
+const setupOneTimePayment = async (
+  container: HTMLElement,
+  args?: OneTimePaymentArgs
+): Promise<void> => {
   const clientToken = await getClientToken();
   const resultDiv = container.querySelector("#result") as HTMLElement;
   const updateResultDiv = container.querySelector(
@@ -222,12 +352,11 @@ const setupOneTimePayment = async (container: HTMLElement): Promise<void> => {
   ) as HTMLElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 
@@ -243,107 +372,68 @@ const setupOneTimePayment = async (container: HTMLElement): Promise<void> => {
 
     await paypalCheckoutV6Instance.loadPayPalSDK();
 
-    const session = paypalCheckoutV6Instance.createOneTimePaymentSession({
-      amount: "10.00",
+    const eligibilityResult =
+      await paypalCheckoutV6Instance.findEligibleMethods({
+        amount: "100.00",
+        currency: "USD",
+      });
+
+    const selectedFundingSource = args?.fundingSource || "PayPal";
+    const fundingSourceConfig =
+      FUNDING_SOURCE_CONFIG[selectedFundingSource as string];
+
+    if (!fundingSourceConfig) {
+      showSimpleError(
+        resultDiv,
+        "Invalid Funding Source",
+        `The funding source "${selectedFundingSource}" is not supported.`
+      );
+      return;
+    }
+
+    const { fundingSource, componentTag } = fundingSourceConfig;
+    const isEligible = eligibilityResult[fundingSource];
+
+    if (!isEligible) {
+      showSimpleError(
+        resultDiv,
+        `${selectedFundingSource} Not Available`,
+        `${selectedFundingSource} is not eligible for this transaction.`
+      );
+      return;
+    }
+
+    const fundingSourceDetails =
+      eligibilityResult.getDetails(fundingSource) || {};
+    const shippingState: ShippingState = { currentCity: "" };
+
+    const sessionOptions: Record<string, unknown> = {
+      amount: "100.00",
       currency: "USD",
-      intent: "capture",
-
-      onShippingAddressChange: function (data) {
-        const isChicago = data.shippingAddress?.city === "Chicago";
-        const shippingCost = isChicago ? 10.0 : 5.0;
-        const itemTotal = 10.0;
-        const newTotal = itemTotal + shippingCost;
-        const currentOrderId = getOrderId(data);
-        return paypalCheckoutV6Instance
-          .updatePayment({
-            paymentId: currentOrderId,
-            amount: newTotal.toFixed(2),
-            currency: "USD",
-            lineItems: [
-              {
-                quantity: "1",
-                unitAmount: itemTotal.toFixed(2),
-                name: "Test Item",
-                kind: "debit",
-              },
-            ],
-            shippingOptions: [
-              {
-                id: "standard",
-                label: "Standard Shipping",
-                selected: !isChicago,
-                type: "SHIPPING",
-                amount: {
-                  currency: "USD",
-                  value: "5.00",
-                },
-              },
-              {
-                id: "chicago-express",
-                label: "Chicago Express",
-                selected: isChicago,
-                type: "SHIPPING",
-                amount: {
-                  currency: "USD",
-                  value: "10.00",
-                },
-              },
-            ],
-            amountBreakdown: {
-              itemTotal: itemTotal.toFixed(2),
-              shipping: shippingCost.toFixed(2),
-              handling: "0.0",
-              taxTotal: "0.0",
-              insurance: "0.0",
-              shippingDiscount: "0.0",
-              discount: "0.0",
-            },
-          })
-          .then(function (response) {
-            const updatePaymentSection = document.querySelector(
-              "#update-payment-section"
-            );
-            if (updatePaymentSection) {
-              updatePaymentSection.style.display = "block";
-            }
-            updateResultDiv.className =
-              "shared-result shared-result--visible shared-result--success";
-            updateResultDiv.innerHTML = `
-              <strong>Payment Updated</strong><br>
-              <small>Applied ${isChicago ? "Chicago" : "standard"} shipping rate: $${shippingCost}</small><br>
-              <small>New Total: $${newTotal.toFixed(2)}</small>
-            `;
-
-            return response;
-          })
-          .catch(function (error) {
-            updateResultDiv.className =
-              "shared-result shared-result--visible shared-result--error";
-            updateResultDiv.innerHTML = `
-              <strong>Update Failed:</strong> ${error.message}
-            `;
-          });
-      },
-
+      intent: "capture" as const,
+      commit: args?.commit ?? true,
+      onShippingAddressChange: createShippingAddressChangeHandler(
+        paypalCheckoutV6Instance,
+        updateResultDiv,
+        shippingState
+      ),
+      onShippingOptionsChange: createShippingOptionsChangeHandler(
+        paypalCheckoutV6Instance,
+        updateResultDiv,
+        shippingState
+      ),
       onApprove: async (data: IPayPalV6ApproveData) => {
-        // Normalize data - PayPal V6 returns camelCase (payerId/orderId)
-        const tokenizeData = {
-          payerID: data.payerID || data.payerId || data.PayerID,
-          orderID: getOrderId(data),
-        };
+        const payload = await paypalCheckoutV6Instance.tokenizePayment(data);
 
-        const payload =
-          await paypalCheckoutV6Instance.tokenizePayment(tokenizeData);
         resultDiv.className =
           "shared-result shared-result--visible shared-result--success";
         resultDiv.innerHTML = `
           <strong>PayPal payment authorized!</strong><br>
           <small>Nonce: ${payload.nonce}</small><br>
           <small>Payer Email: ${payload.details.email}</small><br>
-          <small>Amount: $10.00</small>
+          <small>Amount: $100.00</small>
         `;
       },
-
       onCancel: () => {
         resultDiv.className = "shared-result shared-result--visible";
         resultDiv.innerHTML = `
@@ -351,34 +441,35 @@ const setupOneTimePayment = async (container: HTMLElement): Promise<void> => {
           <small>Customer cancelled the PayPal flow.</small>
         `;
       },
-
       onError: (err: IBraintreeError) => {
         showDetailedError(resultDiv, "PayPal Error", err);
       },
-    });
+    };
 
-    // Render PayPal button
+    applyOneTimePaymentArgs(sessionOptions, args);
+
+    let session;
+
+    if (fundingSource === "paylater") {
+      session = paypalCheckoutV6Instance.createPayLaterSession(
+        sessionOptions as unknown as IPayPalCheckoutV6PayLaterOptions
+      );
+    } else if (fundingSource === "credit") {
+      session = paypalCheckoutV6Instance.createOneTimePaymentSession({
+        ...(sessionOptions as unknown as IPayPalCheckoutV6OneTimePaymentOptions),
+        offerCredit: true,
+      });
+    } else {
+      session = paypalCheckoutV6Instance.createOneTimePaymentSession(
+        sessionOptions as unknown as IPayPalCheckoutV6OneTimePaymentOptions
+      );
+    }
+    session.start();
+
     const paypalButtonContainer = container.querySelector(
       "#paypal-button"
     ) as HTMLElement;
-    const button = document.createElement("button");
-    button.textContent = "Pay with PayPal";
-    button.className = "paypal-button";
-    button.style.cssText = `
-      background-color: #0070ba;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 16px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 500;
-      width: 100%;
-    `;
-
-    button.addEventListener("click", () => {
-      session.start();
-    });
+    const button = createPayPalButton(componentTag, fundingSourceDetails);
 
     paypalButtonContainer.appendChild(button);
   } catch (error) {
@@ -398,12 +489,11 @@ const setupRecurringBilling = async (container: HTMLElement): Promise<void> => {
   ) as HTMLInputElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 
@@ -536,13 +626,90 @@ const setupRecurringBilling = async (container: HTMLElement): Promise<void> => {
 
 export const OneTimePayment: StoryObj = {
   render: createSimpleBraintreeStory(
-    async (container) => {
+    async (container, args) => {
       const formContainer = createOneTimePaymentForm();
       container.appendChild(formContainer);
-      await setupOneTimePayment(formContainer);
+      await setupOneTimePayment(formContainer, args as OneTimePaymentArgs);
     },
     ["client.min.js", "paypal-checkout-v6.min.js"]
   ),
+  argTypes: {
+    commit: {
+      control: { type: "boolean" },
+      description:
+        'Controls the PayPal flow type: true for "Pay Now" (immediate payment), false for "Continue" (review and confirm)',
+      table: {
+        category: "Payment Options",
+        type: { summary: "boolean" },
+        defaultValue: { summary: "true" },
+      },
+    },
+    fundingSource: {
+      control: { type: "select" },
+      options: ["PayPal", "PayPal Credit", "PayPal Pay Later"],
+      description: "Payment method to display",
+      table: {
+        category: "Payment Options",
+        type: { summary: "string" },
+        defaultValue: { summary: "'PayPal'" },
+      },
+    },
+    locale: {
+      control: { type: "select" },
+      options: [
+        undefined,
+        "en_US",
+        "es_ES",
+        "fr_FR",
+        "de_DE",
+        "pt_BR",
+        "zh_CN",
+        "ja_JP",
+        "ko_KR",
+        "nl_NL",
+        "ru_RU",
+        "en_GB",
+      ],
+      description: "Locale code to customize PayPal UI language and format",
+      table: { category: "Experience Profile" },
+    },
+    landingPageType: {
+      control: { type: "select" },
+      options: [undefined, "login", "billing"],
+      description:
+        "Landing page shown when the PayPal window opens: 'login' (PayPal login) or 'billing' (guest checkout)",
+      table: { category: "Experience Profile" },
+    },
+    userAction: {
+      control: { type: "select" },
+      options: [undefined, "continue", "pay_now"],
+      description:
+        "Call-to-action on the PayPal review page: 'continue' defers commitment, 'pay_now' triggers immediate payment",
+      table: { category: "Experience Profile" },
+    },
+    enableShippingAddress: {
+      control: { type: "boolean" },
+      description:
+        "When true, shows a shipping address section in the PayPal flow. Defaults to false (shipping hidden). Must be true for shippingAddressEditable to have any effect.",
+      table: { category: "Experience Profile" },
+    },
+    shippingAddressEditable: {
+      control: { type: "boolean" },
+      description:
+        "Locks the shipping address so the customer cannot change it. Requires enableShippingAddress: true AND a shippingAddressOverride to be provided — without both, this has no visible effect.",
+      table: { category: "Experience Profile" },
+    },
+    riskCorrelationId: {
+      control: { type: "text" },
+      description:
+        "Risk correlation ID for advanced fraud protection, used during tokenization",
+      table: { category: "Advanced" },
+    },
+  },
+  args: {
+    commit: true,
+    fundingSource: "PayPal",
+  },
 };
 
 export const RecurringBillingAgreement: StoryObj = {
@@ -781,12 +948,11 @@ const setupLineItemsPayment = async (container: HTMLElement): Promise<void> => {
   ) as HTMLElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 
@@ -874,7 +1040,7 @@ const setupLineItemsPayment = async (container: HTMLElement): Promise<void> => {
     const session = paypalCheckoutV6Instance.createOneTimePaymentSession({
       amount: initialTotals.total.toFixed(2),
       currency: "USD",
-      intent: "capture",
+      intent: "capture" as const,
       lineItems: SAMPLE_LINE_ITEMS,
       shippingOptions: getShippingOptions("standard", "USD"),
       amountBreakdown: getAmountBreakdown(
@@ -882,7 +1048,9 @@ const setupLineItemsPayment = async (container: HTMLElement): Promise<void> => {
         DEFAULT_SHIPPING_COST
       ),
 
-      onShippingAddressChange: function (data) {
+      onShippingAddressChange: function (
+        data: IPayPalV6ShippingAddressChangeData
+      ) {
         const city = data.shippingAddress?.city || "";
         const state = data.shippingAddress?.state || "";
 
@@ -960,7 +1128,9 @@ const setupLineItemsPayment = async (container: HTMLElement): Promise<void> => {
           });
       },
 
-      onShippingOptionsChange: function (data) {
+      onShippingOptionsChange: function (
+        data: IPayPalV6ShippingOptionsChangeData
+      ) {
         const selectedOption = data.selectedShippingOption;
         const shippingCost = selectedOption
           ? parseFloat(selectedOption.amount.value)
@@ -1130,7 +1300,7 @@ const createCheckoutWithVaultForm = (): HTMLElement => {
 const CHECKOUT_WITH_VAULT_BASIC = {
   amount: "10.00",
   currency: "USD",
-  intent: "capture",
+  intent: "capture" as const,
   billingAgreementDetails: {
     description: "Monthly subscription to Totally Real Products!",
   },
@@ -1139,7 +1309,7 @@ const CHECKOUT_WITH_VAULT_BASIC = {
 const CHECKOUT_WITH_VAULT_ADVANCED = {
   amount: "20.00",
   currency: "USD",
-  intent: "capture",
+  intent: "capture" as const,
   billingAgreementDetails: {
     description: "Premium subscription service with initial payment",
   },
@@ -1189,12 +1359,11 @@ const setupCheckoutWithVault = async (
   ) as HTMLInputElement;
 
   if (!clientToken) {
-    resultDiv.className =
-      "shared-result shared-result--visible shared-result--error";
-    resultDiv.innerHTML = `
-      <strong>Configuration Error</strong><br>
-      <small>Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file</small>
-    `;
+    showSimpleError(
+      resultDiv,
+      "Configuration Error",
+      "Please add STORYBOOK_BRAINTREE_CLIENT_TOKEN to your .env file"
+    );
     return;
   }
 

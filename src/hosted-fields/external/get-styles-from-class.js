@@ -1,8 +1,6 @@
-"use strict";
+import { allowedStyles } from "../shared/constants";
 
-var allowedStyles = require("../shared/constants").allowedStyles;
-
-module.exports = function getStylesFromClass(cssClass) {
+export default function getStylesFromClass(cssClass) {
   var element = document.createElement("input");
   var styles = {};
   var computedStyles;
@@ -31,4 +29,4 @@ module.exports = function getStylesFromClass(cssClass) {
   document.body.removeChild(element);
 
   return styles;
-};
+}

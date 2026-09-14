@@ -1,107 +1,112 @@
-"use strict";
+import request from "./request";
+import uuid from "@braintree/uuid";
+import constants from "../lib/constants";
+import { assign } from "../lib/assign";
+import { GRAPHQL_URLS } from "../lib/constants";
+import { classifyRequestError } from "./request/request-error";
+import { buildClientSdkMetadata } from "./request/graphql/client-sdk-metadata";
+import clientConstants from "./constants";
+const BRAINTREE_VERSION = clientConstants.BRAINTREE_VERSION;
+const CONFIGURATION_QUERY = clientConstants.CONFIGURATION_QUERY;
+const CONFIGURATION_OPERATION_NAME =
+  clientConstants.CONFIGURATION_OPERATION_NAME;
 
-var BraintreeError = require("../lib/braintree-error");
-var wrapPromise = require("@braintree/wrap-promise");
-var request = require("./request");
-var uuid = require("@braintree/uuid");
-var constants = require("../lib/constants");
-var errors = require("./errors");
-var GraphQL = require("./request/graphql");
-var GRAPHQL_URLS = require("../lib/constants").GRAPHQL_URLS;
-var isDateStringBeforeOrOn = require("../lib/is-date-string-before-or-on");
+// A client token that carries its own graphQL.url uses it (supports
+// merchant-specific/proxy endpoints); everything else resolves to the
+// environment's default GraphQL endpoint.
+function getGraphQLUrl(authData) {
+  if (authData.attrs.authorizationFingerprint && authData.graphQL) {
+    return authData.graphQL.url;
+  }
 
-var BRAINTREE_VERSION = require("./constants").BRAINTREE_VERSION;
+  return GRAPHQL_URLS[authData.environment];
+}
+
+function buildGraphQLRequestOptions(authData, analyticsMetadata, graphQLUrl) {
+  const { attrs } = authData;
+  const authorization = attrs.authorizationFingerprint || attrs.tokenizationKey;
+
+  return {
+    url: graphQLUrl,
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${authorization}`,
+      "Braintree-Version": BRAINTREE_VERSION,
+    },
+    data: buildGraphQLBody(analyticsMetadata),
+  };
+}
+
+function buildGraphQLBody(analyticsMetadata) {
+  return {
+    query: CONFIGURATION_QUERY,
+    operationName: CONFIGURATION_OPERATION_NAME,
+    clientSdkMetadata: buildClientSdkMetadata(analyticsMetadata),
+  };
+}
+
+function adaptGraphQLConfigurationResponse(responseBody, graphQLUrl) {
+  const configuration = responseBody?.data?.clientConfiguration;
+
+  if (!configuration) {
+    return null;
+  }
+
+  return assign({}, configuration, {
+    environment: configuration.environment.toLowerCase(),
+    graphQL: {
+      url: graphQLUrl,
+    },
+  });
+}
 
 function getConfiguration(authData, inputSessionId) {
-  return new Promise(function (resolve, reject) {
-    var configuration, attrs, configUrl, reqOptions;
-    var sessionId = inputSessionId || uuid();
-    var analyticsMetadata = {
-      merchantAppId: window.location.host,
-      platform: constants.PLATFORM,
-      sdkVersion: constants.VERSION,
-      source: constants.SOURCE,
-      // NEXT_MAJOR_VERSION remove one of these to not duplicate data. Target parity with mobile platforms approach.
-      integration: constants.INTEGRATION,
-      integrationType: constants.INTEGRATION,
-      sessionId: sessionId,
-    };
+  const { attrs } = authData;
+  const graphQLUrl = getGraphQLUrl(authData);
+  const sessionId = inputSessionId || uuid();
+  const analyticsMetadata = {
+    merchantAppId: window.location.host,
+    platform: constants.PLATFORM,
+    sdkVersion: constants.VERSION,
+    source: constants.SOURCE,
+    integration: constants.INTEGRATION,
+    sessionId,
+  };
 
-    attrs = authData.attrs;
-    configUrl = authData.configUrl;
+  const reqOptions = buildGraphQLRequestOptions(
+    authData,
+    analyticsMetadata,
+    graphQLUrl
+  );
 
-    attrs._meta = analyticsMetadata;
-    attrs.braintreeLibraryVersion = constants.BRAINTREE_LIBRARY_VERSION;
-    attrs.configVersion = "3";
+  return new Promise((resolve, reject) => {
+    request(reqOptions, (err, response, status) => {
+      const requestError = classifyRequestError(status, err, response);
 
-    reqOptions = {
-      url: configUrl,
-      method: "GET",
-      data: attrs,
-    };
-
-    if (attrs.authorizationFingerprint && authData.graphQL) {
-      if (isDateStringBeforeOrOn(authData.graphQL.date, BRAINTREE_VERSION)) {
-        reqOptions.graphQL = new GraphQL({
-          graphQL: {
-            url: authData.graphQL.url,
-            features: ["configuration"],
-          },
-        });
-      }
-
-      reqOptions.metadata = analyticsMetadata;
-    } else if (attrs.tokenizationKey) {
-      reqOptions.graphQL = new GraphQL({
-        graphQL: {
-          url: GRAPHQL_URLS[authData.environment],
-          features: ["configuration"],
-        },
-      });
-
-      reqOptions.metadata = analyticsMetadata;
-    }
-
-    request(reqOptions, function (err, response, status) {
-      var errorTemplate;
-
-      if (err) {
-        if (status === 403) {
-          errorTemplate = errors.CLIENT_AUTHORIZATION_INSUFFICIENT;
-        } else if (status === 401) {
-          errorTemplate = errors.CLIENT_AUTHORIZATION_INVALID;
-        } else {
-          errorTemplate = errors.CLIENT_GATEWAY_NETWORK;
-        }
-
-        reject(
-          new BraintreeError({
-            type: errorTemplate.type,
-            code: errorTemplate.code,
-            message: errorTemplate.message,
-            details: {
-              originalError: err,
-            },
-          })
-        );
+      if (requestError) {
+        reject(requestError);
 
         return;
       }
 
-      configuration = {
+      resolve({
         authorizationType: attrs.tokenizationKey
           ? "TOKENIZATION_KEY"
           : "CLIENT_TOKEN",
         authorizationFingerprint: attrs.authorizationFingerprint,
-        analyticsMetadata: analyticsMetadata,
-        gatewayConfiguration: response,
-      };
-
-      resolve(configuration);
+        paymentMethodIdJwt: authData.paymentMethodIdJwt,
+        analyticsMetadata,
+        gatewayConfiguration: adaptGraphQLConfigurationResponse(
+          response,
+          graphQLUrl
+        ),
+      });
     });
   });
 }
 
-module.exports = {
-  getConfiguration: wrapPromise(getConfiguration),
+export { getConfiguration };
+
+export default {
+  getConfiguration,
 };

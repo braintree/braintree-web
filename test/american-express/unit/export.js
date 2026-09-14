@@ -1,7 +1,5 @@
-"use strict";
-
-const americanExpress = require("../../../src/american-express");
-const { version: packageVersion } = require("../../../package.json");
+import americanExpress from "../../../src/american-express";
+import { version as packageVersion } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

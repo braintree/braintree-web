@@ -1,8 +1,4 @@
-"use strict";
-
-const {
-  getFrameName,
-} = require("../../../../src/hosted-fields/internal/get-frame-name");
+import { getFrameName } from "../../../../src/hosted-fields/internal/get-frame-name";
 
 describe("getFrameName", () => {
   let testContext;

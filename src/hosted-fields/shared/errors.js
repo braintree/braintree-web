@@ -1,12 +1,12 @@
-"use strict";
+import BraintreeError from "../../lib/braintree-error";
 
 /**
  * @name BraintreeError.Hosted Fields - Creation Error Codes
  * @description Errors that occur when [creating the Hosted Fields component](./module-braintree-web_hosted-fields.html#.create).
  * @property {UNKNOWN} HOSTED_FIELDS_TIMEOUT Occurs when Hosted Fields does not finish setting up within 60 seconds.
  * @property {MERCHANT} HOSTED_FIELDS_INVALID_FIELD_KEY Occurs when Hosted Fields is instantiated with an invalid Field option.
- * @property {MERCHANT} HOSTED_FIELDS_INVALID_FIELD_SELECTOR Occurs when Hosted Fields given a field selector that is not valid.
- * @property {MERCHANT} HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME Occurs when Hosted Fields given a field selector that already contains an iframe.
+ * @property {MERCHANT} HOSTED_FIELDS_INVALID_FIELD_SELECTOR Occurs when Hosted Fields given a field container that is not valid.
+ * @property {MERCHANT} HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME Occurs when Hosted Fields given a field container that already contains an iframe.
  * @property {MERCHANT} HOSTED_FIELDS_FIELD_PROPERTY_INVALID Occurs when a field configuration option is not valid.
  */
 
@@ -33,12 +33,10 @@
  * @property {CUSTOMER} HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED Occurs when cvv verification is turned on in the Braintree control panel.
  * @property {CUSTOMER} HOSTED_FIELDS_FAILED_TOKENIZATION Occurs when the credit card details were sent to Braintree, but failed to tokenize.
  * @property {CUSTOMER} HOSTED_FIELDS_FIELDS_EMPTY Occurs when all the Hosted Fields inputs are empty.
- * @property {CUSTOMER} HOSTED_FIELDS_FIELDS_INVALID Occurs when one ore more fields are invalid.
+ * @property {CUSTOMER} HOSTED_FIELDS_FIELDS_INVALID Occurs when one or more fields are invalid.
  */
 
-var BraintreeError = require("../../lib/braintree-error");
-
-module.exports = {
+const _default = {
   HOSTED_FIELDS_TIMEOUT: {
     type: BraintreeError.types.UNKNOWN,
     code: "HOSTED_FIELDS_TIMEOUT",
@@ -51,7 +49,7 @@ module.exports = {
   HOSTED_FIELDS_INVALID_FIELD_SELECTOR: {
     type: BraintreeError.types.MERCHANT,
     code: "HOSTED_FIELDS_INVALID_FIELD_SELECTOR",
-    message: "Selector does not reference a valid DOM node.",
+    message: "'container' must reference a valid DOM node.",
   },
   HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME: {
     type: BraintreeError.types.MERCHANT,
@@ -110,3 +108,23 @@ module.exports = {
     code: "HOSTED_FIELDS_FIELD_PROPERTY_INVALID",
   },
 };
+
+export const {
+  HOSTED_FIELDS_TIMEOUT,
+  HOSTED_FIELDS_INVALID_FIELD_KEY,
+  HOSTED_FIELDS_INVALID_FIELD_SELECTOR,
+  HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME,
+  HOSTED_FIELDS_FIELD_INVALID,
+  HOSTED_FIELDS_FIELD_NOT_PRESENT,
+  HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR,
+  HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE,
+  HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED,
+  HOSTED_FIELDS_FAILED_TOKENIZATION,
+  HOSTED_FIELDS_FIELDS_EMPTY,
+  HOSTED_FIELDS_FIELDS_INVALID,
+  HOSTED_FIELDS_ATTRIBUTE_NOT_SUPPORTED,
+  HOSTED_FIELDS_ATTRIBUTE_VALUE_NOT_ALLOWED,
+  HOSTED_FIELDS_FIELD_PROPERTY_INVALID,
+} = _default;
+
+export default _default;

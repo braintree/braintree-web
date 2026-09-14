@@ -1,6 +1,4 @@
-"use strict";
-
-module.exports = function (body) {
+export default function (body) {
   try {
     body = JSON.parse(body);
     // eslint-disable-next-line no-unused-vars
@@ -9,4 +7,4 @@ module.exports = function (body) {
   }
 
   return body;
-};
+}

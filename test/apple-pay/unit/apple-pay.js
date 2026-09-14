@@ -1,35 +1,130 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
+vi.mock("../../../src/lib/in-iframe");
+vi.mock("../../../src/lib/assets");
 
-jest.mock("../../../src/lib/analytics");
-jest.mock("../../../src/lib/in-iframe");
-
-const analytics = require("../../../src/lib/analytics");
-const methods = require("../../../src/lib/methods");
-const inIframe = require("../../../src/lib/in-iframe");
-const ApplePay = require("../../../src/apple-pay/apple-pay");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const { fake } = require("../../helpers");
+import analytics from "../../../src/lib/analytics";
+import methods from "../../../src/lib/methods";
+import inIframe from "../../../src/lib/in-iframe";
+import assets from "../../../src/lib/assets";
+import ApplePay from "../../../src/apple-pay/apple-pay";
+import BraintreeError from "../../../src/lib/braintree-error";
+import { fake } from "../../helpers";
 
 describe("ApplePay", () => {
   let testContext;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     const configuration = fake.configuration();
 
     testContext = {};
-    jest.spyOn(analytics, "sendEvent").mockImplementation();
-    jest.spyOn(analytics, "sendEventPlus").mockImplementation();
+    vi.spyOn(analytics, "sendEvent").mockImplementation();
+    vi.spyOn(analytics, "sendEventPlus").mockImplementation();
     testContext.configuration = configuration;
     testContext.client = fake.client({
       configuration,
     });
-    jest.spyOn(testContext.client, "request").mockResolvedValue(null);
+    vi.spyOn(testContext.client, "request").mockResolvedValue(null);
+    assets.loadScript.mockResolvedValue(document.createElement("script"));
     testContext.applePay = new ApplePay({
       createPromise: Promise.resolve(testContext.client),
       client: testContext.client,
       displayName: "Awesome Merchant",
+    });
+  });
+
+  describe("Apple Pay SDK loading", () => {
+    beforeEach(() =>
+      // Flush the load kicked off by the shared instance, then reset so each
+      // test starts from a clean slate.
+      testContext.applePay._sdkLoadPromise.then(() => {
+        assets.loadScript.mockClear();
+        analytics.sendEvent.mockClear();
+      })
+    );
+
+    it("injects Apple's Apple Pay JS SDK on construction", () => {
+      const instance = new ApplePay({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client,
+      });
+
+      return instance._sdkLoadPromise.then(() => {
+        expect(assets.loadScript).toHaveBeenCalledWith({
+          src: "https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js",
+          crossorigin: "anonymous",
+        });
+      });
+    });
+
+    it("sends started and succeeded analytics events", () => {
+      const instance = new ApplePay({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client,
+      });
+
+      return instance._sdkLoadPromise.then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "applepay.sdk.load.started"
+        );
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "applepay.sdk.load.succeeded"
+        );
+      });
+    });
+
+    it("does not load the SDK when loadApplePaySDK is false", () => {
+      const instance = new ApplePay({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client,
+        loadApplePaySDK: false,
+      });
+
+      return instance._sdkLoadPromise.then(() => {
+        expect(assets.loadScript).not.toHaveBeenCalled();
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "applepay.sdk.load.skipped"
+        );
+      });
+    });
+
+    it("sends a failed analytics event and resolves when the SDK fails to load", () => {
+      assets.loadScript.mockRejectedValueOnce(new Error("cdn unreachable"));
+
+      const instance = new ApplePay({
+        createPromise: Promise.resolve(testContext.client),
+        client: testContext.client,
+      });
+
+      return instance._sdkLoadPromise.then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "applepay.sdk.load.failed"
+        );
+        expect(analytics.sendEvent).not.toHaveBeenCalledWith(
+          testContext.client,
+          "applepay.sdk.load.succeeded"
+        );
+      });
+    });
+
+    it("does not load the SDK when the deferred client fails", () => {
+      const instance = new ApplePay({
+        createPromise: Promise.reject(new Error("client failed")),
+        useDeferredClient: true,
+      });
+
+      return instance._sdkLoadPromise.then(() => {
+        expect(assets.loadScript).not.toHaveBeenCalled();
+        expect(analytics.sendEvent).not.toHaveBeenCalledWith(
+          expect.anything(),
+          "applepay.sdk.load.started"
+        );
+      });
     });
   });
 
@@ -55,6 +150,159 @@ describe("ApplePay", () => {
     );
   });
 
+  describe("applePayCapabilities", () => {
+    let originalApplePaySession;
+    let hadApplePaySession;
+
+    beforeEach(() => {
+      hadApplePaySession = "ApplePaySession" in window;
+      originalApplePaySession = window.ApplePaySession;
+    });
+
+    afterEach(() => {
+      if (hadApplePaySession) {
+        window.ApplePaySession = originalApplePaySession;
+      } else {
+        delete window.ApplePaySession;
+      }
+    });
+
+    it("resolves with Apple's capability result using the merchantIdentifier", () => {
+      const result = { paymentCredentialStatus: "paymentCredentialsAvailable" };
+
+      window.ApplePaySession = {
+        applePayCapabilities: vi.fn().mockResolvedValue(result),
+      };
+
+      return testContext.applePay.applePayCapabilities().then((res) => {
+        expect(res).toBe(result);
+        expect(
+          window.ApplePaySession.applePayCapabilities
+        ).toHaveBeenCalledWith("com.example.test-merchant-identifier");
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "applepay.capabilities.succeeded"
+        );
+      });
+    });
+
+    it("calls Apple only after the SDK load promise resolves", async () => {
+      const events = [];
+      let resolveLoad;
+
+      window.ApplePaySession = {
+        applePayCapabilities: vi.fn(() => {
+          events.push("apple-called");
+
+          return Promise.resolve({
+            paymentCredentialStatus: "applePayUnsupported",
+          });
+        }),
+      };
+      testContext.applePay._sdkLoadPromise = new Promise((resolve) => {
+        resolveLoad = resolve;
+      });
+
+      const promise = testContext.applePay.applePayCapabilities();
+
+      // Macrotask boundary drains all pending microtasks, so only the pending
+      // _sdkLoadPromise can be holding the Apple call back.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(
+        window.ApplePaySession.applePayCapabilities
+      ).not.toHaveBeenCalled();
+
+      events.push("load-resolved");
+      resolveLoad();
+
+      await promise;
+      expect(events).toEqual(["load-resolved", "apple-called"]);
+      expect(window.ApplePaySession.applePayCapabilities).toHaveBeenCalledTimes(
+        1
+      );
+    });
+
+    it("rejects with APPLE_PAY_SDK_NOT_LOADED when ApplePaySession is missing", () => {
+      delete window.ApplePaySession;
+
+      return testContext.applePay.applePayCapabilities().then(
+        () => {
+          throw new Error("should not resolve");
+        },
+        (err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("APPLE_PAY_SDK_NOT_LOADED");
+        }
+      );
+    });
+
+    it("rejects with APPLE_PAY_SDK_NOT_LOADED when applePayCapabilities is not a function", () => {
+      window.ApplePaySession = {};
+
+      return testContext.applePay.applePayCapabilities().then(
+        () => {
+          throw new Error("should not resolve");
+        },
+        (err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("APPLE_PAY_SDK_NOT_LOADED");
+        }
+      );
+    });
+
+    it("propagates a rejection from Apple's applePayCapabilities", () => {
+      const appleError = new Error("apple boom");
+
+      window.ApplePaySession = {
+        applePayCapabilities: vi.fn().mockRejectedValue(appleError),
+      };
+
+      return testContext.applePay.applePayCapabilities().then(
+        () => {
+          throw new Error("should not resolve");
+        },
+        (err) => {
+          expect(err).toBe(appleError);
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "applepay.capabilities.failed"
+          );
+        }
+      );
+    });
+
+    it("rejects (not silently resolves applePayUnsupported) when a deferred client is not Apple Pay enabled", () => {
+      const notEnabled = new BraintreeError({
+        type: BraintreeError.types.MERCHANT,
+        code: "APPLE_PAY_NOT_ENABLED",
+        message: "Apple Pay is not enabled for this merchant.",
+      });
+
+      window.ApplePaySession = {
+        applePayCapabilities: vi.fn().mockResolvedValue({
+          paymentCredentialStatus: "applePayUnsupported",
+        }),
+      };
+
+      const applePay = new ApplePay({
+        createPromise: Promise.reject(notEnabled),
+        useDeferredClient: true,
+      });
+
+      return applePay.applePayCapabilities().then(
+        () => {
+          throw new Error("should not resolve");
+        },
+        (err) => {
+          expect(err).toBe(notEnabled);
+          expect(
+            window.ApplePaySession.applePayCapabilities
+          ).not.toHaveBeenCalled();
+        }
+      );
+    });
+  });
+
   describe("createPaymentRequest", () => {
     beforeEach(() => {
       testContext.paymentRequest = {
@@ -69,7 +317,7 @@ describe("ApplePay", () => {
           countryCode: "decorated",
           currencyCode: "decorated",
           merchantCapabilities: ["decorated"],
-          supportedNetworks: ["visa", "amex", "mastercard"],
+          supportedCardBrands: ["VISA", "AMERICAN_EXPRESS", "MASTERCARD"],
         },
       };
 
@@ -78,14 +326,14 @@ describe("ApplePay", () => {
       });
     });
 
-    it("returns a promise that resolves with the data request object if instance was instanitated with an authorization", () => {
+    it("returns a promise that resolves with the data request object if instance was instantiated with an authorization", () => {
       const ap = new ApplePay({
         useDeferredClient: true,
         createPromise: Promise.resolve(testContext.client),
       });
 
-      return ap.createPaymentRequest({}).then((dataRquest) => {
-        expect(dataRquest).toMatchObject({
+      return ap.createPaymentRequest({}).then((dataRequest) => {
+        expect(dataRequest).toMatchObject({
           countryCode: "decorated",
           currencyCode: "decorated",
           merchantCapabilities: ["decorated"],
@@ -132,10 +380,22 @@ describe("ApplePay", () => {
       ).toEqual(["supports3DS"]);
     });
 
-    it("applies supportedNetworks when undefined", () => {
+    it("maps supportedCardBrands to Apple Pay supportedNetworks when undefined", () => {
       expect(
         testContext.applePay.createPaymentRequest({}).supportedNetworks
       ).toEqual(["visa", "amex", "masterCard"]);
+    });
+
+    it("omits supportedCardBrands with no Apple Pay network equivalent", () => {
+      testContext.gatewayConfiguration.applePayWeb.supportedCardBrands = [
+        "VISA",
+        "SOME_UNKNOWN_BRAND",
+        "ELO",
+      ];
+
+      expect(
+        testContext.applePay.createPaymentRequest({}).supportedNetworks
+      ).toEqual(["visa", "elo"]);
     });
 
     it("does not apply countryCode when defined", () => {
@@ -338,7 +598,7 @@ describe("ApplePay", () => {
 
       expect(testContext.applePay._client).toBe(testContext.client);
 
-      testContext.client.request = jest.fn().mockImplementation((options) => {
+      testContext.client.request = vi.fn().mockImplementation((options) => {
         expect(options.method).toBe("post");
         expect(options.endpoint).toBe("apple_pay_web/sessions");
         expect(options.data._meta.source).toBe("apple-pay");
@@ -480,7 +740,7 @@ describe("ApplePay", () => {
       beforeEach(() => {
         testClient = {
           _client: testContext.client,
-          _waitForClient: jest.fn().mockResolvedValue(testContext.client),
+          _waitForClient: vi.fn().mockResolvedValue(testContext.client),
         };
         token = {
           token: "token",
@@ -508,7 +768,7 @@ describe("ApplePay", () => {
           .call(
             {
               _client: testContext.client,
-              _waitForClient: jest.fn().mockResolvedValue(testContext.client),
+              _waitForClient: vi.fn().mockResolvedValue(testContext.client),
             },
             {
               validationURL: "validationURL",
@@ -530,7 +790,7 @@ describe("ApplePay", () => {
           .call(
             {
               _client: testContext.client,
-              _waitForClient: jest.fn().mockResolvedValue(testContext.client),
+              _waitForClient: vi.fn().mockResolvedValue(testContext.client),
             },
             {
               validationURL: "validationURL",
@@ -553,7 +813,7 @@ describe("ApplePay", () => {
         beforeEach(() => {
           testClient = {
             _client: testContext.client,
-            _waitForClient: jest.fn().mockResolvedValue(testContext.client),
+            _waitForClient: vi.fn().mockResolvedValue(testContext.client),
           };
           token = {
             token: "token",
@@ -590,7 +850,7 @@ describe("ApplePay", () => {
           .call(
             {
               _client: testContext.client,
-              _waitForClient: jest.fn().mockResolvedValue(testContext.client),
+              _waitForClient: vi.fn().mockResolvedValue(testContext.client),
             },
             {
               token: "token",
@@ -607,29 +867,30 @@ describe("ApplePay", () => {
   });
 
   describe("teardown", () => {
-    it("replaces all methods so error is thrown when methods are invoked", (done) => {
-      const instance = testContext.applePay;
+    it("replaces all methods so error is thrown when methods are invoked", () =>
+      new Promise((resolve) => {
+        const instance = testContext.applePay;
 
-      instance.teardown(() => {
-        methods(ApplePay.prototype).forEach((method) => {
-          let err;
+        instance.teardown().then(() => {
+          methods(ApplePay.prototype).forEach((method) => {
+            let err;
 
-          try {
-            instance[method]();
-          } catch (e) {
-            err = e;
-          }
+            try {
+              instance[method]();
+            } catch (e) {
+              err = e;
+            }
 
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe(BraintreeError.types.MERCHANT);
-          expect(err.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
-          expect(err.message).toBe(
-            `${method} cannot be called after teardown.`
-          );
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe(BraintreeError.types.MERCHANT);
+            expect(err.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
+            expect(err.message).toBe(
+              `${method} cannot be called after teardown.`
+            );
+          });
+
+          resolve();
         });
-
-        done();
-      });
-    });
+      }));
   });
 });

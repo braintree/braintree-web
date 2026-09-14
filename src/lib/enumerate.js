@@ -1,6 +1,4 @@
-"use strict";
-
-function enumerate(values, prefix) {
+export default function enumerate(values, prefix) {
   prefix = prefix == null ? "" : prefix;
 
   return values.reduce(function (enumeration, value) {
@@ -9,5 +7,3 @@ function enumerate(values, prefix) {
     return enumeration;
   }, {});
 }
-
-module.exports = enumerate;

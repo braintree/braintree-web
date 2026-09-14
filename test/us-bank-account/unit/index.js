@@ -1,15 +1,16 @@
-"use strict";
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/create-deferred-client");
 
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/lib/create-deferred-client");
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import _e5 from "../../../src/us-bank-account";
 
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const { create } = require("../../../src/us-bank-account");
-const USBankAccount = require("../../../src/us-bank-account/us-bank-account");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const { fake } = require("../../helpers");
+const { create } = _e5;
+
+import USBankAccount from "../../../src/us-bank-account/us-bank-account";
+import BraintreeError from "../../../src/lib/braintree-error";
+import { fake } from "../../helpers";
 
 describe("usBankAccount component", () => {
   let testContext;
@@ -18,18 +19,16 @@ describe("usBankAccount component", () => {
     testContext = {};
     testContext.configuration = fake.configuration();
     testContext.configuration.gatewayConfiguration.usBankAccount = {
-      plaid: {
-        publicKey: "abc123",
-      },
+      routeId: "route_id",
     };
 
     testContext.fakeClient = fake.client({
       configuration: testContext.configuration,
     });
-    testContext.fakeClient._request = jest.fn();
-    jest
-      .spyOn(createDeferredClient, "create")
-      .mockResolvedValue(testContext.fakeClient);
+    testContext.fakeClient._request = vi.fn();
+    vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+      testContext.fakeClient
+    );
   });
 
   describe("create", () => {

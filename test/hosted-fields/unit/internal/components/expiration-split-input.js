@@ -1,11 +1,5 @@
-"use strict";
-
-const {
-  BaseInput,
-} = require("../../../../../src/hosted-fields/internal/components/base-input");
-const {
-  ExpirationSplitInput,
-} = require("../../../../../src/hosted-fields/internal/components/expiration-split-input");
+import { BaseInput } from "../../../../../src/hosted-fields/internal/components/base-input";
+import { ExpirationSplitInput } from "../../../../../src/hosted-fields/internal/components/expiration-split-input";
 
 describe("Expiration Split Input", () => {
   let testContext;
@@ -39,7 +33,7 @@ describe("Expiration Split Input", () => {
     it("calls BaseInput's setPlaceholder if there is no `select` configuration", () => {
       delete testContext.configuration.select;
 
-      jest.spyOn(BaseInput.prototype, "setPlaceholder").mockReturnValue(null);
+      vi.spyOn(BaseInput.prototype, "setPlaceholder").mockReturnValue(null);
 
       ExpirationSplitInput.prototype.setPlaceholder.call(
         testContext.context,

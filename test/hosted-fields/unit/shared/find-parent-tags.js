@@ -1,6 +1,4 @@
-"use strict";
-
-const findParentTags = require("../../../../src/hosted-fields/shared/find-parent-tags");
+import findParentTags from "../../../../src/hosted-fields/shared/find-parent-tags";
 
 describe("findParentTags", () => {
   it("returns an empty array for an element that has no parents", () => {

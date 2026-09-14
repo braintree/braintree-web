@@ -1,23 +1,21 @@
-"use strict";
-
-var analytics = require("../lib/analytics");
-var assign = require("../lib/assign").assign;
-var createDeferredClient = require("../lib/create-deferred-client");
-var createAssetsUrl = require("../lib/create-assets-url");
-var ExtendedPromise = require("@braintree/extended-promise");
-var wrapPromise = require("@braintree/wrap-promise");
-var BraintreeError = require("../lib/braintree-error");
-var convertToBraintreeError = require("../lib/convert-to-braintree-error");
-var errors = require("./errors");
-var constants = require("../paypal/shared/constants");
-var frameService = require("../lib/frame-service/external");
-var createAuthorizationData = require("../lib/create-authorization-data");
-var methods = require("../lib/methods");
-var useMin = require("../lib/use-min");
-var convertMethodsToError = require("../lib/convert-methods-to-error");
-var querystring = require("../lib/querystring");
-var VERSION = process.env.npm_package_version;
-var INTEGRATION_TIMEOUT_MS = require("../lib/constants").INTEGRATION_TIMEOUT_MS;
+// @ts-nocheck
+import analytics from "../lib/analytics";
+import { assign } from "../lib/assign";
+import createDeferredClient from "../lib/create-deferred-client";
+import createAssetsUrl from "../lib/create-assets-url";
+import ExtendedPromise from "@braintree/extended-promise";
+import BraintreeError from "../lib/braintree-error";
+import convertToBraintreeError from "../lib/convert-to-braintree-error";
+import errors from "./errors";
+import constants from "./constants";
+import frameService from "../lib/frame-service/external";
+import createAuthorizationData from "../lib/create-authorization-data";
+import methods from "../lib/methods";
+import useMin from "../lib/use-min";
+import convertMethodsToError from "../lib/convert-methods-to-error";
+import querystring from "../lib/querystring";
+import { INTEGRATION_TIMEOUT_MS } from "../lib/constants";
+const VERSION = __SDK_VERSION__;
 
 var REQUIRED_PARAMS_FOR_START_VAULT_INITIATED_CHECKOUT = [
   "amount",
@@ -191,7 +189,7 @@ ExtendedPromise.suppressUnhandledPromiseMessage = true;
  * }).then(function (paypalCheckoutInstance) {
  *   const buttons = paypal.Buttons({
  *
- *      appSwitchPreference: { launchPaypalApp: true }, // Need an indicator to trigger app switch
+ *     appSwitchWhenAvailable: true, // Need an indicator to trigger App Switch
  *
  *     createOrder: function () {
  *       return paypalCheckoutInstance.createPayment({
@@ -232,54 +230,10 @@ ExtendedPromise.suppressUnhandledPromiseMessage = true;
  *  console.error('Error!', err);
  * });
  * ```
- *
- * #### Integrate with Checkout.js (deprecated PayPal SDK)
- *
- * If you are creating a new PayPal integration, please follow the previous integration guide to use the current version of the PayPal SDK. Use this integration guide only as a reference if you are already integrated with Checkout.js.
- *
- * You must have PayPal's Checkout.js script loaded on your page.
- *
- * ```html
- * <script src="https://www.paypalobjects.com/api/checkout.js" data-version-4 log-level="warn"></script>
- * ```
- *
- * ```javascript
- * braintree.client.create({
- *   authorization: 'authorization'
- * }).then(function (clientInstance) {
- *   return braintree.paypalCheckout.create({
- *     client: clientInstance
- *   });
- * }).then(function (paypalCheckoutInstance) {
- *   return paypal.Button.render({
- *     env: 'production', // or 'sandbox'
- *
- *     payment: function () {
- *       return paypalCheckoutInstance.createPayment({
- *         // your createPayment options here
- *       });
- *     },
- *
- *     onAuthorize: function (data, actions) {
- *       // some logic here before tokenization happens below
- *       return paypalCheckoutInstance.tokenizePayment(data).then(function (payload) {
- *         // Submit payload.nonce to your server
- *       });
- *     }
- *   }, '#paypal-button');
- * }).catch(function (err) {
- *  console.error('Error!', err);
- * });
- * ```
  */
 function PayPalCheckout(options) {
   this._merchantAccountId = options.merchantAccountId;
-  // eslint-disable-next-line no-warning-comments
-  // TODO remove this requirement for it to be opt in.
-  // This feature is not yet GA, so we're intentionally making
-  // it opt in and not publicly documenting it yet. Once it's
-  // GA, we can remove the requirement to opt in to it
-  this._autoSetDataUserIdToken = Boolean(options.autoSetDataUserIdToken);
+  this._autoSetDataUserIdToken = options.autoSetDataUserIdToken !== false;
 }
 
 PayPalCheckout.prototype._initialize = function (options) {
@@ -315,7 +269,7 @@ PayPalCheckout.prototype._initialize = function (options) {
         // passed in, because the default merchant account
         // may not have paypal enabled
         if (!this._merchantAccountId) {
-          if (!this._configuration.gatewayConfiguration.paypalEnabled) {
+          if (!this._configuration.gatewayConfiguration.paypal) {
             this._setupError = new BraintreeError(errors.PAYPAL_NOT_ENABLED);
           } else if (
             this._configuration.gatewayConfiguration.paypal
@@ -328,11 +282,13 @@ PayPalCheckout.prototype._initialize = function (options) {
         }
 
         if (this._setupError) {
-          return Promise.reject(this._setupError);
+          throw this._setupError;
         }
 
         analytics.sendEvent(client, "paypal-checkout.initialized");
         this._frameServicePromise = this._setupFrameService(client);
+        this._billingAgreementJwtPromise =
+          this._createBillingAgreementJwt(client);
 
         return client;
       }.bind(this)
@@ -349,6 +305,47 @@ PayPalCheckout.prototype._initialize = function (options) {
   }
 
   return Promise.resolve(this);
+};
+
+PayPalCheckout.prototype._createBillingAgreementJwt = function (client) {
+  var self = this;
+  var paymentMethodIdJwt = this._configuration.paymentMethodIdJwt;
+
+  if (!paymentMethodIdJwt) {
+    return Promise.resolve();
+  }
+
+  return client
+    .request({
+      api: "graphQLApi",
+      data: {
+        query: constants.CREATE_BILLING_AGREEMENT_JWT_MUTATION,
+        variables: {
+          input: {
+            paymentMethodJwt: paymentMethodIdJwt,
+          },
+        },
+      },
+    })
+    .then(function (response) {
+      self._billingAgreementJwt = response.data.createBillingAgreementJwt.jwt;
+      analytics.sendEvent(
+        client,
+        "paypal-checkout.create-billing-agreement-jwt.succeeded"
+      );
+    })
+    .catch(function (err) {
+      self._billingAgreementJwtError = new BraintreeError({
+        type: errors.PAYPAL_BILLING_AGREEMENT_JWT_FAILED.type,
+        code: errors.PAYPAL_BILLING_AGREEMENT_JWT_FAILED.code,
+        message: errors.PAYPAL_BILLING_AGREEMENT_JWT_FAILED.message,
+        details: { originalError: err },
+      });
+      analytics.sendEvent(
+        client,
+        "paypal-checkout.create-billing-agreement-jwt.failed"
+      );
+    });
 };
 
 PayPalCheckout.prototype._setupFrameService = function (client) {
@@ -452,11 +449,10 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
 
 /**
  * Creates a PayPal payment ID or billing token using the given options. This is meant to be passed to the PayPal JS SDK.
- * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the PayPal JS SDK. Otherwise, it returns a Promise that resolves with the id.
  * @public
  * @param {object} options All options for the PayPalCheckout component.
  * @param {string} options.flow Set to 'checkout' for one-time payment flow, or 'vault' for Vault flow. If 'vault' is used with a client token generated with a customer ID, the PayPal account will be added to that customer as a saved payment method.
- * @param {string} [options.intent=authorize]
+ * @param {string} [options.intent=capture]
  * * `authorize` - Submits the transaction for authorization but not settlement.
  * * `order` - Validates the transaction without an authorization (i.e. without holding funds). Useful for authorizing and capturing funds up to 90 days after the order has been placed. Only available for Checkout flow.
  * * `capture` - Payment will be immediately submitted for settlement upon creating a transaction. `sale` can be used as an alias for this value.
@@ -470,7 +466,9 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.billingAgreementDetails.description] Description of the billing agreement to display to the customer.
  * @param {string} [options.vaultInitiatedCheckoutPaymentMethodToken] Use the payment method nonce representing a PayPal account with a Billing Agreement ID to create the payment and redirect the customer to select a new financial instrument. This option is only applicable to the `checkout` flow.
  * @param {shippingOption[]} [options.shippingOptions] List of shipping options offered by the payee or merchant to the payer to ship or pick up their items.
+ * * Note: `shippingOptions` cannot be combined with either `enableShippingAddress: false` or `shippingAddressEditable: false`. The PayPal Orders API does not support combining shipping options with `NO_SHIPPING` or `SET_PROVIDED_ADDRESS` shipping preferences. When `shippingOptions` are provided alongside either of those settings, the gateway overrides the address restrictions to prevent a PayPal API error, meaning the shipping address will remain editable regardless of those settings.
  * @param {boolean} [options.enableShippingAddress=false] Returns a shipping address object in {@link PayPal#tokenize}.
+ * * Note: When `enableShippingAddress` is set to `false`, it is mutually exclusive with `shippingOptions`. In that configuration, if both are provided, the gateway overrides `enableShippingAddress: false` in favor of `shippingOptions`. See `shippingOptions` for details.
  * @param {string} [options.contactPreference] Optional field but required if using different recipient via `shippingAddressOverride`. Can be 'NO_CONTACT_INFO', 'RETAIN_CONTACT_INFO' or 'UPDATE_CONTACT_INFO'. If null, will default to 'NO_CONTACT_INFO'.
  * * Note: this feature is currently available for US-based merchants only; see https://developer.paypal.com/docs/checkout/standard/customize/contact-module/#availability for up-to-date regional availability.
  * @param {object} [options.shippingAddressOverride] Allows you to pass a shipping address you have already collected into the PayPal payment flow.
@@ -486,6 +484,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.shippingAddressOverride.internationalPhone.countryCode] Phone country code of the recipient.
  * @param {string} [options.shippingAddressOverride.internationalPhone.nationalNumber] Phone national number of the recipient.
  * @param {boolean} [options.shippingAddressEditable=true] Set to false to disable user editing of the shipping address.
+ * * Note: Setting this to `false` is not compatible with `shippingOptions`. When both are provided, the gateway overrides this setting in favor of `shippingOptions`. See `shippingOptions` for details.
  * @param {string} [options.billingAgreementDescription] Use this option to set the description of the preapproved payment agreement visible to customers in their PayPal profile during Vault flows. Max 255 characters.
  * @param {string} [options.landingPageType] Use this option to specify the PayPal page to display when a user lands on the PayPal site to complete the payment.
  * * `login` - A PayPal account login page is used.
@@ -495,13 +494,12 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.planType] Determines the charge pattern for the Recurring Billing Agreement. Can be 'RECURRING', 'SUBSCRIPTION', 'UNSCHEDULED', or 'INSTALLMENTS'.
  * @param {planMetadata} [options.planMetadata] When plan type is defined, allows for {@link PayPalCheckout~planMetadata|plan metadata} to be set for the Billing Agreement.
  * @param {string} [options.userAuthenticationEmail] Optional merchant-provided buyer email, used to streamline the sign-in process for both one-time checkout and vault flows.
- * @param {string} [options.returnUrl] The URL that the PayPal app will open after a successful authentication in the app switch flow
- * @param {string} [options.cancelUrl] The URL that the PayPal app will open after an unsuccessful authentication in the app switch flow
- * @param {object} [options.appSwitchPreference] Sets options for the app switch flow. Must use `returnUrl` and `cancelUrl` with this option.
- * @param {boolean} options.appSwitchPreference.launchPaypalApp Opts into the app switch flow.
+ * @param {string} [options.returnUrl] The URL that the PayPal app will open after a successful authentication in the app switch flow. Required when using `appSwitchWhenAvailable: true` on `paypal.Buttons()`.
+ * @param {string} [options.cancelUrl] The URL that the PayPal app will open after an unsuccessful authentication in the app switch flow. Required when using `appSwitchWhenAvailable: true` on `paypal.Buttons()`.
  * @param {string} [options.shippingCallbackUrl] Optional server side shipping callback URL to be notified when a customer updates their shipping address or options. A callback request will be sent to the merchant server at this URL.
  * @param {string} [options.riskCorrelationId] Optional merchant-provided risk correlation ID. This ID is used for tracking risk management.
  * @param {string} [options.paymentReadySessionId] Optional session identifier returned from PaymentReady.createCustomerSession that can be used to track a specific checkout attempt. This ID is used for analytics and to connect multiple API calls associated with a single checkout flow.
+ * @param {boolean} [options.editBillingAgreement] When `true`, initiates the Edit FI (funding instrument) flow for a returning buyer with a vaulted Billing Agreement. Requires the client token to have been generated with a `preferredPaymentMethodToken`. Only applicable to the `checkout` flow.
  * @param {string} [options.userAction=CONTINUE] Changes the call-to-action on the PayPal review page
  *  * `CONTINUE` - Shows the default call-to-action text on the PayPal Express Checkout page.
  *  * `COMMIT` - Shows a deterministic call-to-action for the PayPal Checkout flow.
@@ -514,7 +512,6 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  * @param {string} [options.amountBreakdown.insurance] Insurance amount. Not accepted with {@link PayPalCheckout~planMetadata|plan metadata}
  * @param {string} [options.amountBreakdown.shippingDiscount] Shipping discount amount. Not accepted with {@link PayPalCheckout~planMetadata|plan metadata}
  * @param {string} [options.amountBreakdown.discount] Discount amount. Not accepted with {@link PayPalCheckout~planMetadata|plan metadata}
- * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
  * @example
  * // this paypal object is created by the PayPal JS SDK
  * // see https://github.com/paypal/paypal-checkout-components
@@ -679,7 +676,7 @@ PayPalCheckout.prototype._setupFrameService = function (client) {
  *   }
  * }).render('#paypal-button');
  *
- * @returns {(promise|void)} returns a promise if no callback is provided.
+ * @returns {Promise} Returns a Promise that resolves with the id to be used with the PayPal JS SDK.
  */
 PayPalCheckout.prototype.createPayment = function (options) {
   var self = this;
@@ -726,6 +723,14 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
 
   return this._clientPromise
     .then(function (client) {
+      return Promise.all([
+        client,
+        self._billingAgreementJwtPromise || Promise.resolve(),
+      ]);
+    })
+    .then(function (results) {
+      var client = results[0];
+
       return client
         .request({
           endpoint: endpoint,
@@ -742,37 +747,32 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
       var status;
 
       if (self._setupError) {
-        return Promise.reject(self._setupError);
+        throw self._setupError;
       }
 
       status = err.details && err.details.httpStatus;
 
       if (status === 422) {
-        return Promise.reject(
-          new BraintreeError({
-            type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
-            code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
-            message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
-            details: {
-              originalError: err,
-            },
-          })
-        );
+        throw convertToBraintreeError(err, {
+          type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
+          code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
+          message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
+          details: {
+            originalError: err,
+          },
+        });
       }
 
-      return Promise.reject(
-        convertToBraintreeError(err, {
-          type: errors.PAYPAL_FLOW_FAILED.type,
-          code: errors.PAYPAL_FLOW_FAILED.code,
-          message: errors.PAYPAL_FLOW_FAILED.message,
-        })
-      );
+      throw convertToBraintreeError(err, {
+        type: errors.PAYPAL_FLOW_FAILED.type,
+        code: errors.PAYPAL_FLOW_FAILED.code,
+        message: errors.PAYPAL_FLOW_FAILED.message,
+      });
     });
 };
 
 /**
  * Use this function to update {@link PayPalCheckout~lineItem|line items} and/or {@link PayPalCheckout~shippingOption|shipping options} associated with a PayPalCheckout flow (`paymentId`).
- * When a {@link callback} is defined, this function returns undefined and invokes the callback. The second callback argument, <code>data</code>, is the returned server data. If no callback is provided, `updatePayment` returns a promise that resolves with the server data.
  * @public
  * @param {object} options All options for the PayPalCheckout component.
  * @param {string} options.paymentId This should be PayPal `paymentId`.
@@ -790,8 +790,7 @@ PayPalCheckout.prototype._createPaymentResource = function (options, config) {
  * @param {string} [options.amountBreakdown.insurance] Optional, insurance amount
  * @param {string} [options.amountBreakdown.shippingDiscount] Optional, shipping discount amount
  * @param {string} [options.amountBreakdown.discount] Optional, discount amount
- * @param {callback} [callback] The second argument is a PayPal `paymentId` or `billingToken` string, depending on whether `options.flow` is `checkout` or `vault`. This is also what is resolved by the promise if no callback is provided.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with the server data.
  * @example
  * // this paypal object is created by the PayPal JS SDK
  * // see https://github.com/paypal/paypal-checkout-components
@@ -911,16 +910,14 @@ PayPalCheckout.prototype.updatePayment = function (options) {
           }
         );
 
-        return Promise.reject(
-          new BraintreeError({
-            type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
-            code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
-            message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
-            details: {
-              originalError: err,
-            },
-          })
-        );
+        throw convertToBraintreeError(err, {
+          type: errors.PAYPAL_INVALID_PAYMENT_OPTION.type,
+          code: errors.PAYPAL_INVALID_PAYMENT_OPTION.code,
+          message: errors.PAYPAL_INVALID_PAYMENT_OPTION.message,
+          details: {
+            originalError: err,
+          },
+        });
       }
 
       analytics.sendEventPlus(
@@ -932,19 +929,16 @@ PayPalCheckout.prototype.updatePayment = function (options) {
         }
       );
 
-      return Promise.reject(
-        convertToBraintreeError(err, {
-          type: errors.PAYPAL_FLOW_FAILED.type,
-          code: errors.PAYPAL_FLOW_FAILED.code,
-          message: errors.PAYPAL_FLOW_FAILED.message,
-        })
-      );
+      throw convertToBraintreeError(err, {
+        type: errors.PAYPAL_FLOW_FAILED.type,
+        code: errors.PAYPAL_FLOW_FAILED.code,
+        message: errors.PAYPAL_FLOW_FAILED.message,
+      });
     });
 };
 
 /**
- * Initializes the PayPal checkout flow with a payment method nonce that represents a vaulted PayPal account.
- * When a {@link callback} is defined, the function returns undefined and invokes the callback with the id to be used with the PayPal JS SDK. Otherwise, it returns a Promise that resolves with the id.
+ * Initializes the PayPal checkout flow with a payment method nonce that represents a vaulted PayPal account..
  * @public
  * @ignore
  * @param {object} options These options are identical to the {@link PayPalCheckout#createPayment|options for creating a payment resource}, except for the following:
@@ -952,7 +946,6 @@ PayPalCheckout.prototype.updatePayment = function (options) {
  * * `amount`, `currency`, and `vaultInitiatedCheckoutPaymentMethodToken` are required instead of optional
  * * Additional configuration is available (listed below)
  * @param {boolean} [options.optOutOfModalBackdrop=false] By default, the webpage will darken and become unusable while the PayPal window is open. For full control of the UI, pass `true` for this option.
- * @param {callback} [callback] The second argument, <code>payload</code>, is a {@link PayPalCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, the promise resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @example
  * paypalCheckoutInstance.startVaultInitiatedCheckout({
  *   vaultInitiatedCheckoutPaymentMethodToken: 'nonce-that-represents-a-vaulted-paypal-account',
@@ -969,7 +962,7 @@ PayPalCheckout.prototype.updatePayment = function (options) {
  *   // handle other errors
  * });
  *
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a Promise that resolves with the id
  */
 PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
   var missingRequiredParam;
@@ -1039,8 +1032,31 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
           return frameCommunicationPromise;
         });
 
+      self._popupSawResume = false;
       self._frameService.open(
-        {},
+        {
+          onSuspend: function () {
+            analytics.sendEventPlus(
+              self._clientPromise,
+              "paypal-checkout.popup.suspended",
+              {
+                flow: self._flow,
+                context_id: self._contextId, // eslint-disable-line camelcase
+              }
+            );
+          },
+          onResume: function () {
+            self._popupSawResume = true;
+            analytics.sendEventPlus(
+              self._clientPromise,
+              "paypal-checkout.popup.resumed",
+              {
+                flow: self._flow,
+                context_id: self._contextId, // eslint-disable-line camelcase
+              }
+            );
+          },
+        },
         self._createFrameServiceCallback(frameCommunicationPromise)
       );
 
@@ -1060,10 +1076,8 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
           }
         );
 
-        return Promise.reject(
-          new BraintreeError(
-            errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED
-          )
+        throw new BraintreeError(
+          errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_CANCELED
         );
       }
 
@@ -1084,23 +1098,21 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
           }
         );
 
-        return Promise.reject(
-          new BraintreeError({
-            code: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED
-              .code,
-            type: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED
-              .type,
-            message:
-              errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED
-                .message,
-            details: {
-              originalError: err,
-            },
-          })
-        );
+        throw new BraintreeError({
+          code: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED
+            .code,
+          type: errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED
+            .type,
+          message:
+            errors.PAYPAL_START_VAULT_INITIATED_CHECKOUT_POPUP_OPEN_FAILED
+              .message,
+          details: {
+            originalError: err,
+          },
+        });
       }
 
-      return Promise.reject(err);
+      throw err;
     })
     .then(function (response) {
       self._frameService.close();
@@ -1115,7 +1127,7 @@ PayPalCheckout.prototype.startVaultInitiatedCheckout = function (options) {
         }
       );
 
-      return Promise.resolve(response);
+      return response;
     });
 };
 
@@ -1161,10 +1173,9 @@ PayPalCheckout.prototype._removeModalBackdrop = function () {
  * Closes the PayPal window if it is opened via `startVaultInitiatedCheckout`.
  * @public
  * @ignore
- * @param {callback} [callback] Gets called when window is closed.
  * @example
  * paypalCheckoutInstance.closeVaultInitiatedCheckoutWindow();
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves when the window is closed.
  */
 PayPalCheckout.prototype.closeVaultInitiatedCheckoutWindow = function () {
   if (this._vaultInitiatedCheckoutInProgress) {
@@ -1189,10 +1200,9 @@ PayPalCheckout.prototype.closeVaultInitiatedCheckoutWindow = function () {
  * Focuses the PayPal window if it is opened via `startVaultInitiatedCheckout`.
  * @public
  * @ignore
- * @param {callback} [callback] Gets called when window is focused.
  * @example
  * paypalCheckoutInstance.focusVaultInitiatedCheckoutWindow();
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  */
 PayPalCheckout.prototype.focusVaultInitiatedCheckoutWindow = function () {
   return this._waitForVaultInitiatedCheckoutDependencies().then(
@@ -1212,6 +1222,18 @@ PayPalCheckout.prototype._createFrameServiceCallback = function (
   // with a webview using the web SDK, we will have to add popupbridge
   // support
   return function (err, payload) {
+    if (self._popupSawResume && !err && payload) {
+      analytics.sendEventPlus(
+        self._clientPromise,
+        "paypal-checkout.popup.recovered",
+        {
+          flow: self._flow,
+          context_id: self._contextId, // eslint-disable-line camelcase
+        }
+      );
+    }
+    self._popupSawResume = false;
+
     if (err) {
       frameCommunicationPromise.reject(err);
     } else if (payload) {
@@ -1257,14 +1279,12 @@ PayPalCheckout.prototype._constructVaultCheckoutUrl = function (frameName) {
 
 /**
  * Tokenizes the authorize data from the PayPal JS SDK when completing a buyer approval flow.
- * When a {@link callback} is defined, invokes the callback with {@link PayPalCheckout~tokenizePayload|tokenizePayload} and returns undefined. Otherwise, returns a Promise that resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @public
  * @param {object} tokenizeOptions Tokens and IDs required to tokenize the payment.
  * @param {string} tokenizeOptions.payerId Payer ID returned by PayPal `onApproved` callback.
  * @param {string} [tokenizeOptions.paymentId] Payment ID returned by PayPal `onApproved` callback.
  * @param {string} [tokenizeOptions.billingToken] Billing Token returned by PayPal `onApproved` callback.
  * @param {boolean} [tokenizeOptions.vault=true] Whether or not to vault the resulting PayPal account (if using a client token generated with a customer id and the vault flow).
- * @param {callback} [callback] The second argument, <code>payload</code>, is a {@link PayPalCheckout~tokenizePayload|tokenizePayload}. If no callback is provided, the promise resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}.
  * @example <caption>Opt out of auto-vaulting behavior</caption>
  * // create the paypalCheckoutInstance with a client token generated with a customer id
  * paypal.Buttons({
@@ -1282,7 +1302,7 @@ PayPalCheckout.prototype._constructVaultCheckoutUrl = function (frameName) {
  *   // Add other options, e.g. onCancel, onError
  * }).render('#paypal-button');
  *
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with a {@link PayPalCheckout~tokenizePayload|tokenizePayload}
  */
 PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
   var self = this;
@@ -1351,7 +1371,7 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
     })
     .catch(function (err) {
       if (self._setupError) {
-        return Promise.reject(self._setupError);
+        throw self._setupError;
       }
 
       analytics.sendEventPlus(
@@ -1363,21 +1383,18 @@ PayPalCheckout.prototype.tokenizePayment = function (tokenizeOptions) {
         }
       );
 
-      return Promise.reject(
-        convertToBraintreeError(err, {
-          type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
-          code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
-          message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message,
-        })
-      );
+      throw convertToBraintreeError(err, {
+        type: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.type,
+        code: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.code,
+        message: errors.PAYPAL_ACCOUNT_TOKENIZATION_FAILED.message,
+      });
     });
 };
 
 /**
  * Resolves with the PayPal client id to be used when loading the PayPal SDK.
  * @public
- * @param {callback} [callback] The second argument, <code>id</code>, is a the PayPal client id. If no callback is provided, the promise resolves with the PayPal client id.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with the PayPal client id.
  * @example
  * paypalCheckoutInstance.getClientId().then(function (id) {
  *  var script = document.createElement('script');
@@ -1399,9 +1416,17 @@ PayPalCheckout.prototype.getClientId = function () {
 /**
  * Resolves when the PayPal SDK has been successfully loaded onto the page.
  * @public
- * @param {object} [options] A configuration object to modify the query params and data-attributes on the PayPal SDK. A subset of the parameters are listed below. For a full list of query params, see the [PayPal docs](https://developer.paypal.com/docs/checkout/reference/customize-sdk/?mark=query#query-parameters).
+ * @param {object} options A configuration object to modify the query params and data-attributes on the PayPal SDK. A subset of the parameters are listed below. For a full list of query params, see the [PayPal docs](https://developer.paypal.com/docs/checkout/reference/customize-sdk/?mark=query#query-parameters).
+ * @param {string} options.pageType The type of page the PayPal SDK is being loaded on. Sent as the `data-page-type` attribute on the PayPal SDK script tag so PayPal can accurately log interactions with the page. Required. Takes precedence over a `page-type`/`data-page-type` value passed in `options.dataAttributes`.
+ * Must be one of:
+ * * `product-listing`
+ * * `search-results`
+ * * `product-details`
+ * * `mini-cart`
+ * * `cart`
+ * * `checkout`
  * @param {string} [options.client-id] By default, this will be the client id associated with the authorization used to create the Braintree component. When used in conjunction with passing `authorization` when creating the PayPal Checkout component, you can speed up the loading of the PayPal SDK.
- * @param {string} [options.intent="authorize"] By default, the PayPal SDK defaults to an intent of `capture`. Since the default intent when calling {@link PayPalCheckout#createPayment|`createPayment`} is `authorize`, the PayPal SDK will be loaded with `intent=authorize`. If you wish to use a different intent when calling {@link PayPalCheckout#createPayment|`createPayment`}, make sure it matches here. If `sale` is used, it will be converted to `capture` for the PayPal SDK. If the `vault: true` param is used, `tokenize` will be passed as the default intent.
+ * @param {string} [options.intent="capture"] By default, this matches the default intent used by {@link PayPalCheckout#createPayment|`createPayment`} and by the PayPal SDK itself. If you wish to use a different intent when calling {@link PayPalCheckout#createPayment|`createPayment`}, make sure it matches here. If `sale` is used, it will be converted to `capture` for the PayPal SDK. If the `vault: true` param is used, `tokenize` will be passed as the default intent.
  * @param {string} [options.locale=en_US] Use this option to change the language, links, and terminology used in the PayPal flow. This locale will be used unless the buyer has set a preferred locale for their account. If an unsupported locale is supplied, a fallback locale (determined by buyer preference or browser data) will be used and no error will be thrown.
  *
  * Supported locales are:
@@ -1435,14 +1460,17 @@ PayPalCheckout.prototype.getClientId = function () {
  * @param {object} [options.dataAttributes] The data attributes to apply to the script. Any data attribute can be passed. A subset of the parameters are listed below. For a full list of data attributes, see the [PayPal docs](https://developer.paypal.com/docs/checkout/reference/customize-sdk/#script-parameters).
  * @param {string} [options.dataAttributes.client-token] The client token to use in the script. (usually not needed)
  * @param {string} [options.dataAttributes.csp-nonce] See the [PayPal docs about content security nonces](https://developer.paypal.com/docs/checkout/reference/customize-sdk/#csp-nonce).
- * @param {callback} [callback] Called when the PayPal SDK has been loaded onto the page. The second argument is the PayPal Checkout instance. If no callback is provided, the promise resolves with the PayPal Checkout instance when the PayPal SDK has been loaded onto the page.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
- * @example <caption>Without options</caption>
- * paypalCheckoutInstance.loadPayPalSDK().then(function () {
+ * @param {string} [options.dataAttributes.user-id-token] Note: do not set this attribute if you want to use the view/edit FI flow.
+ * @returns {Promise} Returns a promise that resolves with the PayPal Checkout instance when the PayPal SDK has been loaded onto the page.
+ * @example <caption>With required pageType</caption>
+ * paypalCheckoutInstance.loadPayPalSDK({
+ *   pageType: 'checkout',
+ * }).then(function () {
  *   // window.paypal.Buttons is now available to use
  * });
- * @example <caption>With options</caption>
+ * @example <caption>With additional options</caption>
  * paypalCheckoutInstance.loadPayPalSDK({
+ *   pageType: 'checkout',
  *   'client-id': 'PayPal Client Id', // Can speed up rendering time to hardcode this value
  *
  *   intent: 'capture', // Make sure this value matches the value in createPayment
@@ -1452,17 +1480,44 @@ PayPalCheckout.prototype.getClientId = function () {
  * });
  * @example <caption>With Vaulting</caption>
  * paypalCheckoutInstance.loadPayPalSDK({
+ *   pageType: 'checkout',
  *   vault: true
  * }).then(function () {
  *   // window.paypal.Buttons is now available to use
  * });
  */
+
+/**
+ * @ignore
+ * @static
+ * @function _validatePageType
+ * @param {object} options Options passed to {@link PayPalCheckout#loadPayPalSDK|loadPayPalSDK}.
+ * @returns {(string|BraintreeError)} The validated `pageType` string, or a BraintreeError if it's missing or not one of PayPal's accepted values.
+ */
+PayPalCheckout.prototype._validatePageType = function (options) {
+  if (!options || !options.pageType) {
+    return new BraintreeError(errors.PAYPAL_PAGE_TYPE_REQUIRED);
+  }
+
+  if (constants.VALID_PAGE_TYPES.indexOf(options.pageType) === -1) {
+    return new BraintreeError(errors.PAYPAL_PAGE_TYPE_INVALID);
+  }
+
+  return options.pageType;
+};
+
 PayPalCheckout.prototype.loadPayPalSDK = function (options) {
-  var idPromise, src;
+  var idPromise, src, pageType;
   var loadPromise = new ExtendedPromise();
   var dataAttributes = (options && options.dataAttributes) || {};
-  var userIdToken =
+  var merchantUserIdToken =
     dataAttributes["user-id-token"] || dataAttributes["data-user-id-token"];
+  var userIdToken = merchantUserIdToken;
+
+  pageType = this._validatePageType(options);
+  if (pageType instanceof BraintreeError) {
+    return Promise.reject(pageType);
+  }
 
   if (this._configuration) {
     dataAttributes["client-metadata-id"] = dataAttributes["client-metadata-id"]
@@ -1496,16 +1551,14 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
     options
   );
   delete options.dataAttributes;
+  // pageType is applied as a data attribute below, not a query param,
+  // so it's read into the local `pageType` var above and stripped here
+  delete options.pageType;
 
-  // NEXT_MAJOR_VERSION if merchant passes an explicit intent,
-  // currency, amount, etc, save those for use in createPayment
-  // if no explicit param of that type is passed in when calling
-  // createPayment to reduce the number of items that need to be
-  // duplicated here and in createPayment
   if (options.vault) {
     options.intent = options.intent || "tokenize";
   } else {
-    options.intent = options.intent || "authorize";
+    options.intent = options.intent || "capture";
     options.currency = options.currency || "USD";
   }
   // for internal testing only
@@ -1525,17 +1578,31 @@ PayPalCheckout.prototype.loadPayPalSDK = function (options) {
     }.bind(this)
   );
 
+  // options.pageType is required and always takes precedence over any
+  // page-type value a merchant may have also passed via dataAttributes
+  this._paypalScript.setAttribute("data-page-type", pageType);
+
   if (options["client-id"]) {
     idPromise = Promise.resolve(options["client-id"]);
   } else {
     idPromise = this.getClientId();
   }
 
-  idPromise.then(
-    function (id) {
+  Promise.all([
+    idPromise,
+    this._billingAgreementJwtPromise || Promise.resolve(),
+  ]).then(
+    function (results) {
+      var id = results[0];
+
       options["client-id"] = id;
 
-      if (this._autoSetDataUserIdToken && userIdToken) {
+      if (this._billingAgreementJwt && !merchantUserIdToken) {
+        this._paypalScript.setAttribute(
+          "data-user-id-token",
+          this._billingAgreementJwt
+        );
+      } else if (this._autoSetDataUserIdToken && userIdToken) {
         this._paypalScript.setAttribute("data-user-id-token", userIdToken);
 
         // preloading improves the rendering time of the PayPal button
@@ -1596,9 +1663,6 @@ PayPalCheckout.prototype._formatPaymentResourceData = function (
 ) {
   var self = this;
   var gatewayConfiguration = this._configuration.gatewayConfiguration;
-  // NEXT_MAJOR_VERSION default value for intent in PayPal SDK is capture
-  // but our integrations default value is authorize. Default this to capture
-  // in the next major version.
   var paymentResource = {
     // returnUrl and cancelUrl are required in hermes create_payment_resource route
     // but are not used by the PayPal sdk, except to redirect to an error page
@@ -1689,7 +1753,7 @@ PayPalCheckout.prototype._formatPaymentResourceCheckoutData = function (
   options
 ) {
   var key;
-  var intent = options.intent;
+  var intent = options.intent || "capture";
 
   if (options.flow === "checkout") {
     paymentResource.amount = options.amount;
@@ -1700,15 +1764,13 @@ PayPalCheckout.prototype._formatPaymentResourceCheckoutData = function (
       paymentResource.experienceProfile.userAction = options.userAction;
     }
 
-    if (intent) {
-      // 'sale' has been changed to 'capture' in PayPal's backend, but
-      // we use an old version with 'sale'. We provide capture as an alias
-      // to match the PayPal SDK
-      if (intent === "capture") {
-        intent = "sale";
-      }
-      paymentResource.intent = intent;
+    // 'sale' has been changed to 'capture' in PayPal's backend, but
+    // we use an old version with 'sale'. We provide capture as an alias
+    // to match the PayPal SDK
+    if (intent === "capture") {
+      intent = "sale";
     }
+    paymentResource.intent = intent;
 
     if (options.hasOwnProperty("lineItems")) {
       paymentResource.lineItems = options.lineItems;
@@ -1735,6 +1797,14 @@ PayPalCheckout.prototype._formatPaymentResourceCheckoutData = function (
 
     if (options.hasOwnProperty("billingAgreementDetails")) {
       paymentResource.billingAgreementDetails = options.billingAgreementDetails;
+    }
+
+    if (
+      options.editBillingAgreement === true &&
+      this._configuration.paymentMethodIdJwt
+    ) {
+      paymentResource.editBillingAgreementJwt =
+        this._configuration.paymentMethodIdJwt;
     }
   }
 };
@@ -1987,14 +2057,9 @@ PayPalCheckout.prototype._formatTokenizePayload = function (response) {
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/paypal-checkout.create|create}.
  * @public
- * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @example
  * paypalCheckoutInstance.teardown();
- * @example <caption>With callback</caption>
- * paypalCheckoutInstance.teardown(function () {
- *   // teardown is complete
- * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  */
 PayPalCheckout.prototype.teardown = function () {
   var self = this;
@@ -2011,11 +2076,11 @@ PayPalCheckout.prototype.teardown = function () {
     })
     .then(function () {
       if (!self._frameService) {
-        return Promise.resolve();
+        return undefined;
       }
 
       return self._frameService.teardown();
     });
 };
 
-module.exports = wrapPromise.wrapPrototype(PayPalCheckout);
+export default PayPalCheckout;

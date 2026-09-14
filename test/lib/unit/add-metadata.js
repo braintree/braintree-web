@@ -1,11 +1,11 @@
-"use strict";
+import Client from "../../../src/client/client";
+import constants from "../../../src/lib/constants";
+import metadata from "../../../src/lib/add-metadata";
+import _imp0 from "../../helpers";
 
-const Client = require("../../../src/client/client");
-var constants = require("../../../src/lib/constants");
-const metadata = require("../../../src/lib/add-metadata");
 const {
   fake: { configuration: fakeConfiguration },
-} = require("../../helpers");
+} = _imp0;
 
 function clientTokenWithFingerprint(authorizationFingerprint) {
   return btoa(JSON.stringify({ authorizationFingerprint }));

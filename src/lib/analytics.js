@@ -1,8 +1,7 @@
-"use strict";
-
-var constants = require("./constants");
-var metadata = require("./add-metadata");
-var assign = require("./assign").assign;
+// @ts-nocheck
+import constants from "./constants";
+import metadata from "./add-metadata";
+import { assign } from "./assign";
 
 function sendPaypalEvent(clientInstanceOrPromise, eventName, callback) {
   return sendPaypalEventPlusFields(
@@ -94,7 +93,11 @@ function appendExtraFieldsTo(trackingMeta, extraFields) {
   return result;
 }
 
-module.exports = {
+const _default = {
   sendEvent: sendPaypalEvent,
   sendEventPlus: sendPaypalEventPlusFields,
 };
+
+export const { sendEvent, sendEventPlus } = _default;
+
+export default _default;

@@ -1,6 +1,4 @@
-"use strict";
-
-module.exports = {
+const _default = {
   detectIncognito: function () {
     return Promise.resolve({
       isPrivate: false,
@@ -8,3 +6,7 @@ module.exports = {
     });
   },
 };
+
+export const { detectIncognito } = _default;
+
+export default _default;

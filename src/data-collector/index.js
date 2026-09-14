@@ -1,16 +1,18 @@
-"use strict";
+// @ts-nocheck
 /** @module braintree-web/data-collector */
-
-var fraudnet = require("./fraudnet");
-var BraintreeError = require("../lib/braintree-error");
-var basicComponentVerification = require("../lib/basic-component-verification");
-var createDeferredClient = require("../lib/create-deferred-client");
-var createAssetsUrl = require("../lib/create-assets-url");
-var methods = require("../lib/methods");
-var convertMethodsToError = require("../lib/convert-methods-to-error");
-var VERSION = process.env.npm_package_version;
-var wrapPromise = require("@braintree/wrap-promise");
-var errors = require("./errors");
+import fraudnet from "./fraudnet";
+import BraintreeError from "../lib/braintree-error";
+import basicComponentVerification from "../lib/basic-component-verification";
+import createDeferredClient from "../lib/create-deferred-client";
+import createAssetsUrl from "../lib/create-assets-url";
+import methods from "../lib/methods";
+import convertMethodsToError from "../lib/convert-methods-to-error";
+/**
+ * @description The current version of the SDK, i.e. `{@pkg version}`.
+ * @type {string}
+ */
+import errors from "./errors";
+const VERSION = __SDK_VERSION__;
 
 /**
  * @class
@@ -41,15 +43,12 @@ var errors = require("./errors");
  * @name teardown
  * @function
  * @description Cleanly remove anything set up by {@link module:braintree-web/data-collector.create|create}.
- * @param {callback} [callback] Called on completion. If no callback is provided, `teardown` returns a promise.
  * @instance
  * @example
- * dataCollectorInstance.teardown();
- * @example <caption>With callback</caption>
- * dataCollectorInstance.teardown(function () {
+ * dataCollectorInstance.teardown().then(function () {
  *   // teardown is complete
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves once teardown is complete.
  */
 
 /**
@@ -59,7 +58,6 @@ var errors = require("./errors");
  * @description Resolves with device data once it is ready.
  * @param {object} [options] Options for how device data is resolved.
  * @param {boolean} [options.raw=false] When set to true, the device data will resolve as an object instead of a JSON string.
- * @param {callback} [callback] Called on completion. If no callback is provided, `getDeviceData` returns a promise.
  * @instance
  * @example
  * dataCollectorInstance.getDeviceData();
@@ -75,7 +73,7 @@ var errors = require("./errors");
  *   // typeof deviceData === 'object'
  *   // for if you'd like to parse the data before sending it to your server
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with the collected device data.
  */
 
 /**
@@ -85,14 +83,10 @@ var errors = require("./errors");
  * @param {object} options Creation options:
  * @param {Client} [options.client] A {@link Client} instance.
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
- * @param {boolean} [options.useDeferredClient] Used in conjunction with `authorization`, allows the Data Collector instance to be available right away by fetching the client configuration in the background. When this option is used, {@link GooglePayment#getDeviceData} must be used to collect the device data.
- * @param {boolean} [options.paypal] *Deprecated:* PayPal fraud data collection will occur when the DataCollector instance is created.
+ * @param {boolean} [options.useDeferredClient] Used in conjunction with `authorization`, allows the Data Collector instance to be available right away by fetching the client configuration in the background. When this option is used, {@link DataCollector#getDeviceData} must be used to collect the device data.
  * @param {string} [options.riskCorrelationId] Pass a custom risk correlation id when creating the data collector.
- * @param {string} [options.clientMetadataId] Deprecated. Use `options.riskCorrelationId` instead.
- * @param {string} [options.correlationId] Deprecated. Use `options.riskCorrelationId` instead.
  * @param {string} [options.cb1] Callback name for fraudnet that will be invoked on the window object when fraudnet is finished initializing.
- * @param {callback} [callback] The second argument, `data`, is the {@link DataCollector} instance.
- * @returns {(Promise|void)} Returns a promise that resolves the {@link DataCollector} instance if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves the {@link DataCollector} instance.
  */
 function create(options) {
   var name = "Data Collector";
@@ -120,10 +114,8 @@ function create(options) {
         .then(function (client) {
           var clientConfiguration = client.getConfiguration();
           var fraudnetConfig = {
-            sessionId:
-              options.riskCorrelationId ||
-              options.clientMetadataId ||
-              options.correlationId,
+            client: client,
+            sessionId: options.riskCorrelationId,
             clientSessionId: clientConfiguration.analyticsMetadata.sessionId,
             environment: clientConfiguration.gatewayConfiguration.environment,
             cb1: options.cb1,
@@ -142,14 +134,8 @@ function create(options) {
         })
         .then(function () {
           if (result._instances.length === 0) {
-            // NEXT_MAJOR_VERSION either this should error with a specific error that
-            // no data collector instances could be set up, or we should just swallow
-            // the error and document that no device data will be returned if
-            // data collector cannot be instantiated. We can't change the error code here
-            // without possibly breaking merchant integrations relying on this inccorrect
-            // behavior.
-            return Promise.reject(
-              new BraintreeError(errors.DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS)
+            throw new BraintreeError(
+              errors.DATA_COLLECTOR_FAILED_TO_INSTANTIATE
             );
           }
 
@@ -171,7 +157,7 @@ function create(options) {
 }
 
 function createTeardownMethod(result) {
-  return wrapPromise(function teardown() {
+  return function teardown() {
     return result._createPromise.then(function () {
       result._instances.forEach(function (instance) {
         if (instance) {
@@ -181,28 +167,24 @@ function createTeardownMethod(result) {
 
       convertMethodsToError(result, methods(result));
     });
-  });
+  };
 }
 
 function createGetDeviceDataMethod(result) {
-  return wrapPromise(function getDeviceData(options) {
+  return function getDeviceData(options) {
     options = options || {};
 
     return result._createPromise.then(function () {
       if (options.raw) {
-        return Promise.resolve(result.rawDeviceData);
+        return result.rawDeviceData;
       }
 
-      return Promise.resolve(result.deviceData);
+      return result.deviceData;
     });
-  });
+  };
 }
 
-module.exports = {
-  create: wrapPromise(create),
-  /**
-   * @description The current version of the SDK, i.e. `{@pkg version}`.
-   * @type {string}
-   */
-  VERSION: VERSION,
+export default {
+  create,
+  VERSION,
 };

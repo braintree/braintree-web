@@ -1,4 +1,4 @@
-"use strict";
+import BraintreeError from "../lib/braintree-error";
 
 /**
  * @name BraintreeError.Google Payment - Creation Error Codes
@@ -13,9 +13,7 @@
  * @property {UNKNOWN} GOOGLE_PAYMENT_GATEWAY_ERROR Occurs when Google Pay could not be tokenized.
  */
 
-var BraintreeError = require("../lib/braintree-error");
-
-module.exports = {
+const _default = {
   GOOGLE_PAYMENT_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
     code: "GOOGLE_PAYMENT_NOT_ENABLED",
@@ -32,3 +30,11 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
   },
 };
+
+export const {
+  GOOGLE_PAYMENT_NOT_ENABLED,
+  GOOGLE_PAYMENT_GATEWAY_ERROR,
+  GOOGLE_PAYMENT_UNSUPPORTED_VERSION,
+} = _default;
+
+export default _default;

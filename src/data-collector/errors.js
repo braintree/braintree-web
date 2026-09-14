@@ -1,17 +1,20 @@
-"use strict";
+import BraintreeError from "../lib/braintree-error";
 
 /**
  * @name BraintreeError.Data Collector - Creation Error Codes
  * @description Errors that occur when [creating the Data Collector component](./module-braintree-web_data-collector.html#.create).
- * @property {MERCHANT} DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS Occurs when PayPal Fraudnet could not be enabled.
+ * @property {NETWORK} DATA_COLLECTOR_FAILED_TO_INSTANTIATE Occurs when PayPal Fraudnet could not be enabled.
  */
 
-var BraintreeError = require("../lib/braintree-error");
-
-module.exports = {
-  DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS: {
-    type: BraintreeError.types.MERCHANT,
-    code: "DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS",
-    message: "Data Collector must be created with Kount and/or PayPal.",
+const _default = {
+  DATA_COLLECTOR_FAILED_TO_INSTANTIATE: {
+    type: BraintreeError.types.NETWORK,
+    code: "DATA_COLLECTOR_FAILED_TO_INSTANTIATE",
+    message:
+      "Data Collector failed to instantiate. Possible network error or blocked request.",
   },
 };
+
+export const { DATA_COLLECTOR_FAILED_TO_INSTANTIATE } = _default;
+
+export default _default;

@@ -1,17 +1,9 @@
-"use strict";
-
-const Bus = require("framebus");
-const {
-  BaseInput,
-} = require("../../../../../src/hosted-fields/internal/components/base-input");
-const {
-  ExpirationYearInput,
-} = require("../../../../../src/hosted-fields/internal/components/expiration-year-input");
-const {
-  CreditCardForm,
-} = require("../../../../../src/hosted-fields/internal/models/credit-card-form");
-const constants = require("../../../../../src/hosted-fields/shared/constants");
-const { createInput } = require("../../helpers");
+import Bus from "framebus";
+import { BaseInput } from "../../../../../src/hosted-fields/internal/components/base-input";
+import { ExpirationYearInput } from "../../../../../src/hosted-fields/internal/components/expiration-year-input";
+import { CreditCardForm } from "../../../../../src/hosted-fields/internal/models/credit-card-form";
+import constants from "../../../../../src/hosted-fields/shared/constants";
+import { createInput } from "../../helpers";
 
 window.bus = new Bus({ channel: "foo" });
 
@@ -46,7 +38,7 @@ describe("Expiration Year Input", () => {
 
     describe("with a `select` option", () => {
       it("select: false calls BaseInput's constructElement", () => {
-        jest.spyOn(BaseInput.prototype, "constructElement");
+        vi.spyOn(BaseInput.prototype, "constructElement");
 
         new ExpirationYearInput({
           type: "expirationYear",

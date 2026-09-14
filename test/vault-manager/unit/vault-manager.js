@@ -1,12 +1,10 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
 
-jest.mock("../../../src/lib/analytics");
-
-const analytics = require("../../../src/lib/analytics");
-const VaultManager = require("../../../src/vault-manager/vault-manager");
-const { fake, rejectIfResolves } = require("../../helpers");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const methods = require("../../../src/lib/methods");
+import analytics from "../../../src/lib/analytics";
+import VaultManager from "../../../src/vault-manager/vault-manager";
+import { fake, rejectIfResolves } from "../../helpers";
+import BraintreeError from "../../../src/lib/braintree-error";
+import methods from "../../../src/lib/methods";
 
 describe("VaultManager", () => {
   let client, fakePaymentMethod, vaultManager;
@@ -17,7 +15,7 @@ describe("VaultManager", () => {
         authorizationType: "CLIENT_TOKEN",
       },
     });
-    jest.spyOn(client, "request").mockResolvedValue(null);
+    vi.spyOn(client, "request").mockResolvedValue(null);
     fakePaymentMethod = {
       nonce: "nonce",
       default: false,
@@ -243,7 +241,7 @@ describe("VaultManager", () => {
     });
 
     it("errors if a client token is not used", function () {
-      jest.spyOn(client, "getConfiguration").mockReturnValue({
+      vi.spyOn(client, "getConfiguration").mockReturnValue({
         authorizationType: "TOKENIZATION_KEY",
       });
 
@@ -330,7 +328,7 @@ describe("VaultManager", () => {
           path: ["deletePaymentMethodFromSingleUseToken"],
           extensions: {
             errorType: "user_error",
-            errorClass: "UNKOWN",
+            errorClass: "UNKNOWN",
             inputPath: ["input", "singleUseTokenId"],
           },
         },
@@ -357,7 +355,7 @@ describe("VaultManager", () => {
             "VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR"
           );
           expect(err.message).toBe(
-            "An unknown error occured when attempting to delete the payment method assocaited with the payment method nonce `fake-nonce`."
+            "An unknown error occurred when attempting to delete the payment method associated with the payment method nonce `fake-nonce`."
           );
           expect(err.details.originalError).toBe(graphQLErrors);
         });
@@ -376,7 +374,7 @@ describe("VaultManager", () => {
           path: ["deletePaymentMethodFromSingleUseToken"],
           extensions: {
             errorType: "user_error",
-            errorClass: "UNKOWN",
+            errorClass: "UNKNOWN",
             inputPath: ["input", "singleUseTokenId"],
           },
         },
@@ -419,28 +417,30 @@ describe("VaultManager", () => {
   });
 
   describe("teardown", () => {
-    it("replaces all methods so error is thrown when methods are invoked", function (done) {
-      const instance = vaultManager;
+    it("replaces all methods so error is thrown when methods are invoked", function () {
+      return new Promise(function (resolve) {
+        const instance = vaultManager;
 
-      instance.teardown(() => {
-        methods(VaultManager.prototype).forEach((method) => {
-          let err;
+        instance.teardown().then(() => {
+          methods(VaultManager.prototype).forEach((method) => {
+            let err;
 
-          try {
-            instance[method]();
-          } catch (e) {
-            err = e;
-          }
+            try {
+              instance[method]();
+            } catch (e) {
+              err = e;
+            }
 
-          expect(err).toBeInstanceOf(BraintreeError);
-          expect(err.type).toBe(BraintreeError.types.MERCHANT);
-          expect(err.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
-          expect(err.message).toBe(
-            method + " cannot be called after teardown."
-          );
+            expect(err).toBeInstanceOf(BraintreeError);
+            expect(err.type).toBe(BraintreeError.types.MERCHANT);
+            expect(err.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
+            expect(err.message).toBe(
+              method + " cannot be called after teardown."
+            );
+          });
+
+          resolve();
         });
-
-        done();
       });
     });
   });

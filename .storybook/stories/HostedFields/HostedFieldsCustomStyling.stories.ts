@@ -1,10 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/html";
+import { isIntegrationCoverageRun } from "../../utils/integration-coverage";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
+import { getBraintree } from "../../utils/braintree-globals";
 import { SUCCESS_MESSAGES } from "../../constants";
 
 import "../../css/main.css";
 import "./hostedFields.css";
+import { IHostedFieldsEventData } from "../../types";
 
 const meta: Meta = {
   title: "Braintree/Hosted Fields/Custom Styling",
@@ -87,37 +90,38 @@ const createCustomStyledForm = (args?: Record<string, string>): HTMLElement => {
 };
 
 const setupBraintreeHostedFields = (
-  container,
+  container: HTMLElement,
   args?: Record<string, string>
 ) => {
   const authorization = getAuthorizationToken();
   const isDarkTheme = args?.theme === "dark";
 
-  window.braintree.client
-    .create({
+  getBraintree()
+    .client.create({
       authorization: authorization,
+      ...(isIntegrationCoverageRun() && { debug: true }),
     })
     .then((clientInstance) => {
       const fields = {
         number: {
-          selector: "#card-number",
+          container: "#card-number",
           placeholder: "4111 1111 1111 1111",
         },
         cvv: {
-          selector: "#cvv",
+          container: "#cvv",
           placeholder: "123",
         },
         expirationDate: {
-          selector: "#expiration-date",
+          container: "#expiration-date",
           placeholder: "MM/YY",
         },
         postalCode: {
-          selector: "#postal-code",
+          container: "#postal-code",
           placeholder: "12345",
         },
       };
 
-      return window.braintree.hostedFields.create({
+      return getBraintree().hostedFields.create({
         client: clientInstance,
         styles: {
           input: {
@@ -151,18 +155,23 @@ const setupBraintreeHostedFields = (
       ) as HTMLButtonElement;
       const resultDiv = container.querySelector("#result") as HTMLElement;
 
-      hostedFieldsInstance.on("validityChange", (event) => {
-        const allFieldsValid = Object.keys(event.fields).every((key) => {
-          return event.fields[key].isValid;
-        });
+      hostedFieldsInstance.on(
+        "validityChange",
+        (event: IHostedFieldsEventData) => {
+          const allFieldsValid = (
+            Object.keys(event.fields) as Array<keyof typeof event.fields>
+          ).every((key) => {
+            return event.fields[key]?.isValid;
+          });
 
-        submitButton.disabled = !allFieldsValid;
-        if (allFieldsValid) {
-          submitButton.classList.add("submit-button--success");
-        } else {
-          submitButton.classList.remove("submit-button--success");
+          submitButton.disabled = !allFieldsValid;
+          if (allFieldsValid) {
+            submitButton.classList.add("submit-button--success");
+          } else {
+            submitButton.classList.remove("submit-button--success");
+          }
         }
-      });
+      );
 
       form.addEventListener("submit", (event) => {
         event.preventDefault();

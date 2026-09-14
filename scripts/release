@@ -8,7 +8,8 @@ MAGENTA="$(tput setaf 5)"
 CYAN="$(tput setaf 6)"
 RESET="$(tput sgr0)"
 YES="^(y|yes|yas)$"
-SOURCE_IGNORES="Jenkinsfile Drakefile Dockerfile .dockerignore btjsenv .github/PULL_REQUEST_TEMPLATE.md .github/CODEOWNERS"
+SOURCE_IGNORES="btjsenv .github/"
+SOURCE_KEEP=".github/workflows/unit-tests.yml"
 
 dotenv() {
   if [ ! -f .env ]; then
@@ -57,6 +58,13 @@ get_version_for_prompt() {
   fi
   set -e
   echo "$commit_or_tag"
+}
+
+confirm_no_development_in_environment() {
+  if [ "$BRAINTREE_JS_ENV" = "development" ]; then
+    echo "${RED}BRAINTREE_JS_ENV is set to 'development'. Please unset it or set it to 'production' before releasing.${RESET}"
+    exit 1
+  fi
 }
 
 confirm_destination() {
@@ -229,6 +237,9 @@ release_source() {
   cd "$current_dir"
 
   git ls-files | egrep -v "$(join '|' $SOURCE_IGNORES)" | xargs "$CP_CMD" --parents -t "$BRAINTREE_JS_SOURCE_DEST"
+  for f in $SOURCE_KEEP; do
+    "$CP_CMD" --parents -t "$BRAINTREE_JS_SOURCE_DEST" "$f"
+  done
   echo -e "Applied source changes in ${BLUE}$BRAINTREE_JS_SOURCE_DEST${RESET}."
 
   exit 0
@@ -244,18 +255,21 @@ main() {
 
   case "$TASK" in
     hosted)
+      confirm_no_development_in_environment
       confirm_destination "$BRAINTREE_JS_HOSTED_DEST"
       confirm_error_code_documentation
       reinstall_dependencies
       run_unit_tests
       confirm_changelog
       confirm_version
-      env BRAINTREE_JS_ENV=production gulp release:hosted
+      env BRAINTREE_JS_ENV=production npm run build:hosted
       ;;
     npm)
+      confirm_no_development_in_environment
       reinstall_dependencies
       confirm_version
-      env BRAINTREE_JS_ENV=production gulp release:npm
+      env BRAINTREE_JS_ENV=production npm run build:npm
+      npm run safe-publish
       ;;
     jsdoc)
       ./scripts/deploy-jsdoc

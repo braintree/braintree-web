@@ -1,15 +1,14 @@
-"use strict";
-
-const {
+import {
   VENMO_MOBILE_APP_AUTH_ONLY_URL,
   VENMO_WEB_LOGIN_SANDBOX_URL,
   VENMO_WEB_LOGIN_URL,
   VENMO_APP_OR_MOBILE_AUTH_URL,
-} = require("../../../src/venmo/shared/constants");
-const getVenmoUrl = require("../../../src/venmo/shared/get-venmo-url");
+} from "../../../src/venmo/shared/constants";
 
-jest.mock("../../../src/venmo/shared/browser-detection");
-const browserDetection = require("../../../src/venmo/shared/browser-detection");
+import getVenmoUrl from "../../../src/venmo/shared/get-venmo-url";
+
+vi.mock("../../../src/venmo/shared/browser-detection");
+import browserDetection from "../../../src/venmo/shared/browser-detection";
 
 function makeConfig(overrides = {}) {
   return {
@@ -30,14 +29,14 @@ describe("utils", () => {
     });
 
     it("returns correct url when using desktop web login flow", () => {
-      browserDetection.isAndroid = jest.fn().mockReturnValue(true);
+      browserDetection.isAndroid = vi.fn().mockReturnValue(true);
       const url = getVenmoUrl(makeConfig({ useAllowDesktopWebLogin: true }));
 
       expect(url).toEqual(VENMO_WEB_LOGIN_URL);
     });
 
     it("returns correct url when using desktop web login flow with new sandbox experience", () => {
-      browserDetection.isAndroid = jest.fn().mockReturnValue(true);
+      browserDetection.isAndroid = vi.fn().mockReturnValue(true);
       const url = getVenmoUrl(
         makeConfig({
           useAllowDesktopWebLogin: true,

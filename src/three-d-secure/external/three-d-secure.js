@@ -1,44 +1,8 @@
-"use strict";
-
-var wrapPromise = require("@braintree/wrap-promise");
-var methods = require("../../lib/methods");
-var convertMethodsToError = require("../../lib/convert-methods-to-error");
-var EventEmitter = require("@braintree/event-emitter");
-var FRAMEWORKS = require("./frameworks");
-
-/**
- * @deprecated
- * @callback ThreeDSecure~addFrameCallback
- * @param {?BraintreeError} [err] `null` or `undefined` if there was no error.
- * @param {HTMLIFrameElement} iframe An iframe element containing the bank's authentication page that you must put on your page.
- * @description **Deprecated** The callback used for options.addFrame in 3DS 1.0's {@link ThreeDSecure#verifyCard|verifyCard}.
- * @returns {void}
- */
-
-/**
- * @deprecated
- * @callback ThreeDSecure~removeFrameCallback
- * @description **Deprecated** The callback used for options.removeFrame in 3DS 1.0's {@link ThreeDSecure#verifyCard|verifyCard}.
- * @returns {void}
- */
-
-/**
- * @deprecated
- * @typedef {object} ThreeDSecure~verifyCardCustomerObject
- * @property {string} [customer.mobilePhoneNumber] The mobile phone number used for verification. Only numbers; remove dashes, parenthesis and other characters.
- * @property {string} [customer.email] The email used for verification.
- * @property {string} [customer.shippingMethod] The 2-digit string indicating the shipping method chosen for the transaction.
- * @property {string} [customer.billingAddress.firstName] The first name associated with the address.
- * @property {string} [customer.billingAddress.lastName] The last name associated with the address.
- * @property {string} [customer.billingAddress.streetAddress] Line 1 of the Address (eg. number, street, etc).
- * @property {string} [customer.billingAddress.extendedAddress] Line 2 of the Address (eg. suite, apt #, etc.).
- * @property {string} [customer.billingAddress.locality] The locality (city) name associated with the address.
- * @property {string} [customer.billingAddress.region] The 2 letter code for US states or an ISO-3166-2 country subdivision code of up to three letters.
- * @property {string} [customer.billingAddress.postalCode] The zip code or equivalent for countries that have them.
- * @property {string} [customer.billingAddress.countryCodeAlpha2] The 2 character country code.
- * @property {string} [customer.billingAddress.phoneNumber] The phone number associated with the address. Only numbers; remove dashes, parenthesis and other characters.
- * @description **Deprecated** Optional customer information to be passed to 3DS 1.0 for verification.
- */
+// @ts-nocheck
+import methods from "../../lib/methods";
+import convertMethodsToError from "../../lib/convert-methods-to-error";
+import EventEmitter from "@braintree/event-emitter";
+import FRAMEWORKS from "./frameworks";
 
 /**
  * @typedef {object} ThreeDSecure~verifyPayload
@@ -63,8 +27,6 @@ var FRAMEWORKS = require("./frameworks");
  * @property {string} binData.consumer Possible values: 'Yes', 'No', 'Unknown'.
  * @property {string} binData.purchase Possible values: 'Yes', 'No', 'Unknown'.
  * @property {string} binData.corporate Possible values: 'Yes', 'No', 'Unknown'.
- * @property {boolean} liabilityShiftPossible *Deprecated:* Use `threeDSecureInfo.liabilityShiftPossible` instead.
- * @property {boolean} liabilityShifted *Deprecated:* Use `threeDSecureInfo.liabilityShifted` instead.
  * @property {object} threeDSecureInfo 3DS information about the card. Note: This information should be verified on the server by using the [payment method nonce find method](https://developer.paypal.com/braintree/docs/reference/request/payment-method-nonce/find). The values provided here are merely for convenience. Only values looked up on the server should determine the logic about how to process a transaction.
  * @property {string} threeDSecureInfo.acsTransactionId The transaction identifier from the issuing bank.
  * @property {string} threeDSecureInfo.cavv Cardholder authentication verification value or CAVV. The main encrypted message issuers and card networks use to verify authentication has occurred. Mastercard uses an AVV message and American Express uses an AEVV message, each of which should also be passed in the cavv parameter.
@@ -76,7 +38,7 @@ var FRAMEWORKS = require("./frameworks");
  * @property {string} threeDSecureInfo.paresStatus Transaction status result identifier.
  * @property {string} threeDSecureInfo.status Indicates the outcome of the 3D Secure event.
  * @property {string} threeDSecureInfo.threeDSecureAuthenticationId ID of the 3D Secure authentication performed for this transaction. Do not provide this field as a transaction sale parameter if you are using the returned payment method nonce from the payload.
- * @property {string} threeDSecureInfo.threeDSecureServerTransactionId Transaction identifier provided by the issuing bank who recieved the 3D Secure event.
+ * @property {string} threeDSecureInfo.threeDSecureServerTransactionId Transaction identifier provided by the issuing bank who received the 3D Secure event.
  * @property {string} threeDSecureInfo.threeDSecureVersion The version of 3D Secure authentication used for the transaction.
  * @property {string} threeDSecureInfo.xid Transaction identifier resulting from 3D Secure authentication. Uniquely identifies the transaction and sometimes required in the authorization message. This is a base64-encoded value. This field will no longer be used in 3D Secure 2 authentications for Visa and Mastercard, however it will be supported by American Express.
  * @property {string} threeDSecureInfo.lookup.transStatus Error code returned from the 3D Secure MPI provider.
@@ -260,14 +222,14 @@ var FRAMEWORKS = require("./frameworks");
  *   * {@link ThreeDSecure#event:authentication-modal-close|authentication-modal-close}
  * @example
  * <caption>Listening to a 3D Secure event</caption>
- * braintree.threeDSecure.create({ ... }, function (createErr, threeDSecureInstance) {
- *   threeDSecureInstance.on('lookup-complete', function (data, next) {
- *     console.log('data from the lookup', data);
- *     next();
- *   });
- *   threeDSecureInstance.on('customer-canceled', function () {
- *     console.log('log that the customer canceled');
- *   });
+ * const threeDSecureInstance = await braintree.threeDSecure.create({ ... });
+ *
+ * threeDSecureInstance.on('lookup-complete', function (payload) {
+ *   console.log('data from the lookup', payload.data);
+ *   payload.next();
+ * });
+ * threeDSecureInstance.on('customer-canceled', function () {
+ *   console.log('log that the customer canceled');
  * });
  * @returns {void}
  */
@@ -280,36 +242,35 @@ var FRAMEWORKS = require("./frameworks");
  * @description Unsubscribes the handler function to a named event.
  * @example
  * <caption>Subscribing and then unsubscribing from a 3D Secure eld event</caption>
- * braintree.threeDSecure.create({ ... }, function (createErr, threeDSecureInstance) {
- *   var lookupCallback = function (data, next) {
- *     console.log(data);
- *     next();
- *   };
- *   var cancelCallback = function () {
- *     // log the cancelation
- *     // or update UI
- *   };
+ * const threeDSecureInstance = await braintree.threeDSecure.create({ ... });
  *
- *   threeDSecureInstance.on('lookup-complete', lookupCallback);
- *   threeDSecureInstance.on('customer-canceled', cancelCallback);
+ * const lookupCallback = function (payload) {
+ *   console.log(payload.data);
+ *   payload.next();
+ * };
+ * const cancelCallback = function () {
+ *   // log the cancelation
+ *   // or update UI
+ * };
  *
- *   // later on
- *   threeDSecureInstance.off('lookup-complete', lookupCallback);
- *   threeDSecureInstance.off('customer-canceled', cancelCallback);
- * });
+ * threeDSecureInstance.on('lookup-complete', lookupCallback);
+ * threeDSecureInstance.on('customer-canceled', cancelCallback);
+ *
+ * // later on
+ * threeDSecureInstance.off('lookup-complete', lookupCallback);
+ * threeDSecureInstance.off('customer-canceled', cancelCallback);
  * @returns {void}
  */
 
 /**
- * This event is emitted when the `2-inline-iframe` version is specified when creating the 3D Secure instance and the authentication iframe becomes available.
+ * This event is emitted when the `challengeDisplay: 'inline-iframe'` option is specified when creating the 3D Secure instance and the authentication iframe becomes available.
  * @event ThreeDSecure#authentication-iframe-available
  * @example
  * <caption>Listening for the authentication iframe to be available</caption>
- *   threeDSecureInstance.on('authentication-iframe-available', function (event, next) {
- *     document.body.appendChild(event.element); // add iframe element to page
+ * threeDSecureInstance.on('authentication-iframe-available', function (payload) {
+ *   document.body.appendChild(payload.element); // add iframe element to page
  *
- *     next(); // let the SDK know the iframe is ready
- *   });
+ *   payload.next(); // let the SDK know the iframe is ready
  * });
  */
 
@@ -318,16 +279,16 @@ var FRAMEWORKS = require("./frameworks");
  * @event ThreeDSecure#lookup-complete
  * @example
  * <caption>Listening for when the lookup request is complete</caption>
- * braintree.threeDSecure.create({
+ * const threeDSecureInstance = await braintree.threeDSecure.create({
  *   client: clientInstance,
- *   version: '2'
- * }, function (createErr, threeDSecureInstance) {
- *   threeDSecureInstance.on('lookup-complete', function (data, next) {
- *     // inspect the data
+ * });
  *
- *     // call next when ready to proceed with the challenge
- *     next();
- *   });
+ * threeDSecureInstance.on('lookup-complete', function (payload) {
+ *   // inspect the data
+ *   console.log(payload.data);
+ *
+ *   // call next when ready to proceed with the challenge
+ *   payload.next();
  * });
  */
 
@@ -336,13 +297,12 @@ var FRAMEWORKS = require("./frameworks");
  * @event ThreeDSecure#customer-canceled
  * @example
  * <caption>Listening for when the customer cancels the 3D Secure challenge</caption>
- * braintree.threeDSecure.create({
+ * const threeDSecureInstance = await braintree.threeDSecure.create({
  *   client: clientInstance,
- *   version: '2'
- * }, function (createErr, threeDSecureInstance) {
- *   threeDSecureInstance.on('customer-canceled', function () {
- *     // the customer canceled the 3D Secure challenge
- *   });
+ * });
+ *
+ * threeDSecureInstance.on('customer-canceled', function () {
+ *   // the customer canceled the 3D Secure challenge
  * });
  */
 
@@ -350,13 +310,12 @@ var FRAMEWORKS = require("./frameworks");
  * This event is emitted when using the 3D Secure 2.0 flow and the authentication modal closes, either because the authentication was completed or because the customer canceled the process.
  * @event ThreeDSecure#authentication-modal-close
  * @example
- * braintree.threeDSecure.create({
+ * const threeDSecureInstance = await braintree.threeDSecure.create({
  *   client: clientInstance,
- *   version: '2'
- * }, function (createErr, threeDSecureInstance) {
- *   threeDSecureInstance.on('authentication-modal-close', function () {
- *     // the modal was closed
- *   });
+ * });
+ *
+ * threeDSecureInstance.on('authentication-modal-close', function () {
+ *   // the modal was closed
  * });
  */
 
@@ -364,13 +323,12 @@ var FRAMEWORKS = require("./frameworks");
  * This event is emitted when using the 3D Secure 2.0 flow and the authentication modal is rendered.
  * @event ThreeDSecure#authentication-modal-render
  * @example
- * braintree.threeDSecure.create({
+ * const threeDSecureInstance = await braintree.threeDSecure.create({
  *   client: clientInstance,
- *   version: '2'
- * }, function (createErr, threeDSecureInstance) {
- *   threeDSecureInstance.on('authentication-modal-render', function () {
- *     // the modal was rendered, presenting the authentication form to the customer
- *   });
+ * });
+ *
+ * threeDSecureInstance.on('authentication-modal-render', function () {
+ *   // the modal was rendered, presenting the authentication form to the customer
  * });
  */
 
@@ -382,7 +340,7 @@ var FRAMEWORKS = require("./frameworks");
  *
  * If you use the Braintree SDK from within an iframe, you must not use the `sandbox` attribute on your iframe or the 3D Secure modal will not function correctly.
  *
- * **Note**: 3D Secure 2.0 is documented below and will become the default integration method in a future version of Braintree-web. Until then, version 1.0 will continue to be supported. To view 3D Secure 1.0 documentation, look at Braintree-web documentation from version [3.40.0](https://braintree.github.io/braintree-web/3.40.0/ThreeDSecure.html) and earlier, or upgrade your integration by referring to the [3D Secure 2.0 adoption guide](https://developer.paypal.com/braintree/docs/guides/3d-secure/migration/javascript/v3).
+ * **Note**: Only 3D Secure 2.0 is supported. Version 1.0 has been removed.
  */
 function ThreeDSecure(options) {
   var self = this;
@@ -391,13 +349,14 @@ function ThreeDSecure(options) {
   EventEmitter.call(this);
 
   this._framework = new Framework(options);
-  this._framework.setUpEventListeners(function () {
-    self._emit.apply(self, arguments);
+  this._framework.setUpEventListeners(function (eventName, payload) {
+    self.emit(eventName, payload);
   });
 }
 
-EventEmitter.createChild(ThreeDSecure);
-// NEXT_MAJOR_VERSION remove exemptionRequested entirely in favor of `requestedExemptionType`
+ThreeDSecure.prototype = Object.create(EventEmitter.prototype, {
+  constructor: { value: ThreeDSecure },
+});
 /**
  * Launch the 3D Secure login flow, returning a nonce payload.
  *
@@ -408,42 +367,31 @@ EventEmitter.createChild(ThreeDSecure);
  * @param {string} options.amount The amount of the transaction in the current merchant account's currency. This must be expressed in numbers with an optional decimal (using `.`) and precision up to the hundredths place. For example, if you're processing a transaction for 1.234,56 € then `amount` should be `1234.56`.
  * @param {string} [options.accountType] The account type for the card (if known). Accepted values: `credit` or `debit`.
  * @param {boolean} [options.cardAddChallengeRequested] If set to `true`, a card-add challenge will be requested from the issuer. If set to `false`, a card-add challenge will not be requested. If the param is missing, a card-add challenge will only be requested for $0 amount. An authentication created using this flag should only be used for vaulting operations (creation of customers' credit cards or payment methods) and not for creating transactions.
- * @param {boolean} [options.cardAdd] *Deprecated:* Use `cardAddChallengeRequested` instead.
  * @param {boolean} [options.challengeRequested] If set to true, an authentication challenge will be forced if possible.
  * @param {boolean} [options.dataOnlyRequested] Indicates whether to use the data-only 3DS flow. If data-only is not supported by the processor, card brand or the transaction is in a PSD2 regulated region, it will fallback to a normal 3DS flow.
- * @param {boolean} [options.exemptionRequested] *Deprecated:* Use `requestedExemptionType` instead.
  * @param {boolean} [options.requestVisaDAF] Request to use VISA Digital Authentication Framework. If set to true, a Visa DAF authenticated payment credential will be created and/or used for authentication if the merchant is eligible.
  * @param {string} [options.merchantName] Allows to override the merchant name that is shown in the challenge.
  * @param {string} [options.requestedExemptionType] If an exemption is requested and the exemption's conditions are satisfied, then it will be applied. The following supported exemptions are defined as per PSD2 regulation: `low_value`, `transaction_risk_analysis`
+ * @param {boolean} [options.applySmartAuthentication] If set to `true`, an AI-driven decision will be made to determine the authentication strategy which will try to balance fraud protection with a frictionless user experience. These strategies include requesting a challenge, data-only, exemptions, etc.
  * @param {object} [options.customFields] Object where each key is the name of a custom field which has been configured in the Control Panel. In the Control Panel you can configure 3D Secure Rules which trigger on certain values.
- * @param {function} [options.onLookupComplete] *Deprecated:* Use {@link ThreeDSecure#event:lookup-complete|`threeDSecureInstance.on('lookup-complete')`} instead. Function to execute when lookup completes. The first argument, `data`, is a {@link ThreeDSecure~verificationData|verificationData} object, and the second argument, `next`, is a callback. `next` must be called to continue.
+ * @param {function} [options.onLookupComplete] Function to execute when lookup completes. The first argument, `data`, is a {@link ThreeDSecure~verificationData|verificationData} object, and the second argument, `next`, is a callback. `next` must be called to continue.
  * @param {string} [options.email] The email used for verification. (maximum length 255)
  * @param {string} [options.mobilePhoneNumber] The mobile phone number used for verification. Only numbers; remove dashes, parenthesis and other characters. (maximum length 25)
  * @param {object} [options.billingAddress] An {@link ThreeDSecure~billingAddress|billingAddress} object for verification.
  * @param {object} [options.additionalInformation] An {@link ThreeDSecure~additionalInformation|additionalInformation} object for verification.
- * @param {object} [options.collectDeviceData] If set to `true`, device data such as browser screen dimensions, language and time zone is submitted with lookup data.
- * @param {object} [options.customer] **Deprecated** Customer information for use in 3DS 1.0 verifications. Can contain any subset of a {@link ThreeDSecure~verifyCardCustomerObject|verifyCardCustomerObject}. Only to be used for 3DS 1.0 integrations.
- * @param {callback} options.addFrame **Deprecated** This {@link ThreeDSecure~addFrameCallback|addFrameCallback} will be called when the bank frame needs to be added to your page. Only to be used for 3DS 1.0 integrations.
- * @param {callback} options.removeFrame **Deprecated** For use in 3DS 1.0 Flows. This {@link ThreeDSecure~removeFrameCallback|removeFrameCallback} will be called when the bank frame needs to be removed from your page. Only to be used in 3DS 1.0 integrations.
- * @param {callback} [callback] The second argument, <code>data</code>, is a {@link ThreeDSecure~verifyPayload|verifyPayload}. If no callback is provided, it will return a promise that resolves {@link ThreeDSecure~verifyPayload|verifyPayload}.
+ * @param {boolean} [options.collectDeviceData] If set to `true`, device data such as browser screen dimensions, language and time zone is submitted with lookup data.
 
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves {@link ThreeDSecure~verifyPayload|verifyPayload}.
  * @example
  * <caption>Verifying a payment method nonce with 3DS 2.0</caption>
  * var my3DSContainer;
  *
- * // set up listener after initialization
- * threeDSecure.on(('lookup-complete', function (data, next) {
- *   // use `data` here, then call `next()`
- *   next();
- * });
- *
- * // call verifyCard after tokenizing a card
- * threeDSecure.verifyCard({
+ * try {
+ *   const payload = await threeDSecure.verifyCard({
  *   amount: '123.45',
  *   nonce: hostedFieldsTokenizationPayload.nonce,
  *   bin: hostedFieldsTokenizationPayload.details.bin,
- *   email: 'test@example.com'
+ *   email: 'test@example.com',
  *   billingAddress: {
  *     givenName: 'Jill',
  *     surname: 'Doe',
@@ -466,124 +414,72 @@ EventEmitter.createChild(ThreeDSecure);
  *       region: 'CA',
  *       postalCode: '12345',
  *       countryCodeAlpha2: 'US'
- *     }
- *     shippingPhone: '8101234567'
- *   }
- * }, function (err, payload) {
- *   if (err) {
- *     console.error(err);
- *     return;
- *   }
- *
- *   if (payload.liabilityShifted) {
- *     // Liability has shifted
- *     submitNonceToServer(payload.nonce);
- *   } else if (payload.liabilityShiftPossible) {
- *     // Liability may still be shifted
- *     // Decide if you want to submit the nonce
- *   } else {
- *     // Liability has not shifted and will not shift
- *     // Decide if you want to submit the nonce
- *   }
- * });
- * @example
- * <caption>Verifying a payment method nonce with 3DS 2.0 with onLookupComplete callback</caption>
- * var my3DSContainer;
- *
- * threeDSecure.verifyCard({
- *   amount: '123.45',
- *   nonce: hostedFieldsTokenizationPayload.nonce,
- *   bin: hostedFieldsTokenizationPayload.details.bin,
- *   email: 'test@example.com'
- *   billingAddress: {
- *     givenName: 'Jill',
- *     surname: 'Doe',
- *     phoneNumber: '8101234567',
- *     streetAddress: '555 Smith St.',
- *     extendedAddress: '#5',
- *     locality: 'Oakland',
- *     region: 'CA',
- *     postalCode: '12345',
- *     countryCodeAlpha2: 'US'
- *   },
- *   additionalInformation: {
- *     workPhoneNumber: '5555555555',
- *     shippingGivenName: 'Jill',
- *     shippingSurname: 'Doe',
- *     shippingAddress: {
- *       streetAddress: '555 Smith st',
- *       extendedAddress: '#5',
- *       locality: 'Oakland',
- *       region: 'CA',
- *       postalCode: '12345',
- *       countryCodeAlpha2: 'US'
- *     }
+ *     },
  *     shippingPhone: '8101234567'
  *   },
  *   onLookupComplete: function (data, next) {
  *     // use `data` here, then call `next()`
  *     next();
- *   }
- * }, function (err, payload) {
- *   if (err) {
- *     console.error(err);
- *     return;
- *   }
+ *    }
+ *   });
  *
- *   if (payload.liabilityShifted) {
+ *   if (payload.threeDSecureInfo.liabilityShifted) {
  *     // Liability has shifted
  *     submitNonceToServer(payload.nonce);
- *   } else if (payload.liabilityShiftPossible) {
+ *   } else if (payload.threeDSecureInfo.liabilityShiftPossible) {
  *     // Liability may still be shifted
  *     // Decide if you want to submit the nonce
  *   } else {
  *     // Liability has not shifted and will not shift
  *     // Decide if you want to submit the nonce
  *   }
- * });
+ * } catch (err) {
+ *   console.error(err);
+ *   return;
+ * }
  * @example
  * <caption>Handling 3DS lookup errors</caption>
  * var my3DSContainer;
  *
  * // set up listener after initialization
- * threeDSecure.on(('lookup-complete', function (data, next) {
- *   // use `data` here, then call `next()`
- *   next();
+ * threeDSecure.on('lookup-complete', function (payload) {
+ *   // use `payload.data` here, then call `payload.next()`
+ *   payload.next();
  * });
  *
+ * try {
  * // call verifyCard after tokenizing a card
- * threeDSecure.verifyCard({
- *   amount: '123.45',
- *   nonce: hostedFieldsTokenizationPayload.nonce,
- *   bin: hostedFieldsTokenizationPayload.details.bin,
- *   email: 'test@example.com',
- *   billingAddress: billingAddressFromCustomer,
- *   additionalInformation: additionalInfoFromCustomer
- * }, function (err, payload) {
- *   if (err) {
- *     if (err.code.indexOf('THREEDS_LOOKUP') === 0) {
- *       // an error occurred during the initial lookup request
- *
- *       if (err.code === 'THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR') {
- *         // either the passed payment method nonce does not exist
- *         // or it was already consumed before the lookup call was made
- *       } else if (err.code.indexOf('THREEDS_LOOKUP_VALIDATION') === 0) {
- *         // a validation error occurred
- *         // likely some non-ascii characters were included in the billing
- *         // address given name or surname fields, or the cardholdername field
- *
- *         // Instruct your user to check their data and try again
- *       } else {
- *         // an unknown lookup error occurred
- *       }
- *     } else {
- *       // some other kind of error
- *     }
- *     return;
- *   }
- *
+ *   const payload = await threeDSecure.verifyCard({
+ *     amount: '123.45',
+ *     nonce: hostedFieldsTokenizationPayload.nonce,
+ *     bin: hostedFieldsTokenizationPayload.details.bin,
+ *     email: 'test@example.com',
+ *     billingAddress: billingAddressFromCustomer,
+ *     additionalInformation: additionalInfoFromCustomer
+ *   });
  *   // handle success
- * });
+ * } catch (err) {
+ *    if (err.code.indexOf('THREEDS_LOOKUP') === 0) {
+ *      // an error occurred during the initial lookup request
+ *
+ *      if (err.code === 'THREEDS_LOOKUP_TOKENIZED_CARD_NOT_FOUND_ERROR') {
+ *        // either the passed payment method nonce does not exist
+ *        // or it was already consumed before the lookup call was made
+ *      } else if (err.code.indexOf('THREEDS_LOOKUP_VALIDATION') === 0) {
+ *        // a validation error occurred
+ *        // likely some non-ascii characters were included in the billing
+ *        // address given name or surname fields, or the cardholdername field
+ *
+ *        // Instruct your user to check their data and try again
+ *      } else {
+ *        // an unknown lookup error occurred
+ *      }
+ *    } else {
+ *      // some other kind of error
+ *    }
+ *    return;
+ *   }
+ * }
  */
 ThreeDSecure.prototype.verifyCard = function (options) {
   var privateOptions;
@@ -607,10 +503,10 @@ ThreeDSecure.prototype.verifyCard = function (options) {
  * var my3DSContainer;
  *
  * threeDSecure.initializeChallengeWithLookupResponse(lookupResponseFromServer).then(function (payload) {
- *   if (payload.liabilityShifted) {
+ *   if (payload.threeDSecureInfo.liabilityShifted) {
  *     // Liability has shifted
  *     submitNonceToServer(payload.nonce);
- *   } else if (payload.liabilityShiftPossible) {
+ *   } else if (payload.threeDSecureInfo.liabilityShiftPossible) {
  *     // Liability may still be shifted
  *     // Decide if you want to submit the nonce
  *   } else {
@@ -636,22 +532,19 @@ ThreeDSecure.prototype.initializeChallengeWithLookupResponse = function (
  * @param {object} options Options for 3D Secure lookup.
  * @param {string} options.nonce The nonce representing the card from a tokenization payload. For example, this can be a {@link HostedFields~tokenizePayload|tokenizePayload} returned by Hosted Fields under `payload.nonce`.
  * @param {string} options.bin The numeric Bank Identification Number (bin) of the card from a tokenization payload. For example, this can be a {@link HostedFields~tokenizePayload|tokenizePayload} returned by Hosted Fields under `payload.details.bin`.
- * @param {callback} [callback] The second argument, <code>data</code>, is a {@link ThreeDSecure~prepareLookupPayload|prepareLookupPayload}. If no callback is provided, it will return a promise that resolves {@link ThreeDSecure~prepareLookupPayload|prepareLookupPayload}.
-
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves {@link ThreeDSecure~prepareLookupPayload|prepareLookupPayload}.
  * @example
  * <caption>Preparing data for a 3D Secure lookup</caption>
- * threeDSecure.prepareLookup({
- *   nonce: hostedFieldsTokenizationPayload.nonce,
- *   bin: hostedFieldsTokenizationPayload.details.bin
- * }, function (err, payload) {
- *   if (err) {
- *     console.error(err);
- *     return;
- *   }
- *
+ * try {
+ *   const payload = await threeDSecure.prepareLookup({
+ *     nonce: hostedFieldsTokenizationPayload.nonce,
+ *     bin: hostedFieldsTokenizationPayload.details.bin
+ *   });
  *   // send payload to server to do server side lookup
- * });
+ * } catch (err) {
+ *   console.error(err);
+ *   return;
+ * }
  */
 ThreeDSecure.prototype.prepareLookup = function (options) {
   return this._framework.prepareLookup(options).then(function (data) {
@@ -660,85 +553,68 @@ ThreeDSecure.prototype.prepareLookup = function (options) {
 };
 
 /**
- * Cancel the 3DS flow and return the verification payload if available. If using 3D Secure version 2, this will not close the UI of the authentication modal. It is recommended that this method only be used in the {@link ThreeDSecure#event:lookup-complete|`lookup-complete`} event or the `onLookupComplete` callback.
+ * Cancel the 3DS flow and return the verification payload if available. This will not close the UI of the authentication modal.
  * @public
- * @param {callback} [callback] The second argument is a {@link ThreeDSecure~verifyPayload|verifyPayload}. If there is no verifyPayload (the initial lookup did not complete), an error will be returned. If no callback is passed, `cancelVerifyCard` will return a promise.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves the {@link ThreeDSecure~verifyPayload|verifyPayload}. If there is no verifyPayload (the initial lookup did not complete), the promise rejects with an error.
  * @example <caption>Cancel the verification in `lookup-complete` event</caption>
  * // set up listener after instantiation
- * threeDSecure.on('lookup-complete', function (data, next) {
+ * threeDSecure.on('lookup-complete', async function (payload) {
  *   // determine if you want to call next to start the challenge,
  *   // if not, call cancelVerifyCard
- *   threeDSecure.cancelVerifyCard(function (err, verifyPayload) {
- *     if (err) {
- *       // Handle error
- *       console.log(err.message); // No verification payload available
- *       return;
- *     }
+ *   try {
+ *     const verifyPayload = await threeDSecure.cancelVerifyCard();
  *
  *     verifyPayload.nonce; // The nonce returned from the 3ds lookup call
- *     verifyPayload.liabilityShifted; // boolean
- *     verifyPayload.liabilityShiftPossible; // boolean
- *   });
+ *     verifyPayload.threeDSecureInfo.liabilityShifted; // boolean
+ *     verifyPayload.threeDSecureInfo.liabilityShiftPossible; // boolean
+ *   } catch (err) {
+ *     // Handle error
+ *     console.log(err.message); // No verification payload available
+ *   }
  * });
  *
  * // after tokenizing a credit card
- * threeDSecure.verifyCard({
- *   amount: '100.00',
- *   nonce: nonceFromTokenizationPayload,
- *   bin: binFromTokenizationPayload
- *   // other fields such as billing address
- * }, function (verifyError, payload) {
- *   if (verifyError) {
- *     if (verifyError.code === 'THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT ') {
- *       // flow was canceled by merchant, 3ds info can be found in the payload
- *       // for cancelVerifyCard
- *     }
+ * try {
+ *   const payload = await threeDSecure.verifyCard({
+ *     amount: '100.00',
+ *     nonce: nonceFromTokenizationPayload,
+ *     bin: binFromTokenizationPayload
+ *     // other fields such as billing address
+ *   });
+ * } catch (verifyError) {
+ *   if (verifyError.code === 'THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT') {
+ *     // flow was canceled by merchant, 3ds info can be found in the payload
+ *     // for cancelVerifyCard
  *   }
- * });
+ * }
  * @example <caption>Cancel the verification in onLookupComplete callback</caption>
- * threeDSecure.verifyCard({
- *   amount: '100.00',
- *   nonce: nonceFromTokenizationPayload,
- *   bin: binFromTokenizationPayload,
- *   // other fields such as billing address
- *   onLookupComplete: function (data, next) {
- *     // determine if you want to call next to start the challenge,
- *     // if not, call cancelVerifyCard
- *     threeDSecure.cancelVerifyCard(function (err, verifyPayload) {
- *       if (err) {
+ * try {
+ *   const payload = await threeDSecure.verifyCard({
+ *     amount: '100.00',
+ *     nonce: nonceFromTokenizationPayload,
+ *     bin: binFromTokenizationPayload,
+ *     // other fields such as billing address
+ *     onLookupComplete: async function (data, next) {
+ *       // determine if you want to call next to start the challenge,
+ *       // if not, call cancelVerifyCard
+ *       try {
+ *         const verifyPayload = await threeDSecure.cancelVerifyCard();
+ *
+ *         verifyPayload.nonce; // The nonce returned from the 3ds lookup call
+ *         verifyPayload.threeDSecureInfo.liabilityShifted; // boolean
+ *         verifyPayload.threeDSecureInfo.liabilityShiftPossible; // boolean
+ *       } catch (err) {
  *         // Handle error
  *         console.log(err.message); // No verification payload available
- *         return;
  *       }
- *
- *       verifyPayload.nonce; // The nonce returned from the 3ds lookup call
- *       verifyPayload.liabilityShifted; // boolean
- *       verifyPayload.liabilityShiftPossible; // boolean
- *     });
- *   }
- * }, function (verifyError, payload) {
- *   if (verifyError) {
- *     if (verifyError.code === 'THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT ') {
- *       // flow was canceled by merchant, 3ds info can be found in the payload
- *       // for cancelVerifyCard
  *     }
+ *   });
+ * } catch (verifyError) {
+ *   if (verifyError.code === 'THREEDS_VERIFY_CARD_CANCELED_BY_MERCHANT') {
+ *     // flow was canceled by merchant, 3ds info can be found in the payload
+ *     // for cancelVerifyCard
  *   }
- * });
- * @example <caption>Cancel the verification in 3D Secure version 1</caption>
- * // unlike with v2, this will not cause `verifyCard` to error, it will simply
- * // never call the callback
- * threeDSecure.cancelVerifyCard(function (err, verifyPayload) {
- *   if (err) {
- *     // Handle error
- *     console.log(err.message); // No verification payload available
- *     return;
- *   }
- *
- *   verifyPayload.nonce; // The nonce returned from the 3ds lookup call
- *   verifyPayload.liabilityShifted; // boolean
- *   verifyPayload.liabilityShiftPossible; // boolean
- * });
+ * }
  */
 ThreeDSecure.prototype.cancelVerifyCard = function () {
   return this._framework.cancelVerifyCard();
@@ -750,11 +626,11 @@ ThreeDSecure.prototype.cancelVerifyCard = function () {
  * @param {callback} [callback] Called on completion. If no callback is passed, `teardown` will return a promise.
  * @example
  * threeDSecure.teardown();
- * @example <caption>With callback</caption>
- * threeDSecure.teardown(function () {
+ * @example <caption>With a promise</caption>
+ * threeDSecure.teardown().then(() => {
  *   // teardown is complete
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves once teardown is complete.
  */
 ThreeDSecure.prototype.teardown = function () {
   var methodNames = methods(ThreeDSecure.prototype).concat(
@@ -766,4 +642,4 @@ ThreeDSecure.prototype.teardown = function () {
   return this._framework.teardown();
 };
 
-module.exports = wrapPromise.wrapPrototype(ThreeDSecure);
+export default ThreeDSecure;

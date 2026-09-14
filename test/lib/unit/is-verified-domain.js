@@ -1,15 +1,8 @@
-"use strict";
-
-const isVerifiedDomain = require("../../../src/lib/is-verified-domain");
+import isVerifiedDomain from "../../../src/lib/is-verified-domain";
 
 describe("isVerifiedDomain", () => {
   it("returns false if a non-braintree non-paypal domain is used", () => {
     expect(isVerifiedDomain("https://google.com")).toBe(false);
-  });
-
-  it("returns true if a localhost is used", () => {
-    expect(isVerifiedDomain("https://localhost")).toBe(true);
-    expect(isVerifiedDomain("https://localhost:3099")).toBe(true);
   });
 
   it("returns false if a relative path is used", () => {

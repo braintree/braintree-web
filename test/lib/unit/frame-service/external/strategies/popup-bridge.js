@@ -1,12 +1,10 @@
-"use strict";
-
-const PopupBridge = require("../../../../../../src/lib/frame-service/external/strategies/popup-bridge");
-const BraintreeError = require("../../../../../../src/lib/braintree-error");
-const { noop } = require("../../../../../helpers");
+import PopupBridge from "../../../../../../src/lib/frame-service/external/strategies/popup-bridge";
+import BraintreeError from "../../../../../../src/lib/braintree-error";
+import { noop } from "../../../../../helpers";
 
 describe("PopupBridge", () => {
   beforeEach(() => {
-    window.popupBridge = { open: jest.fn() };
+    window.popupBridge = { open: vi.fn() };
   });
 
   describe("Constructor", () => {
@@ -47,7 +45,7 @@ describe("PopupBridge", () => {
     it("calls callback with payload when onComplete is called", () => {
       const popupBridge = new PopupBridge({});
       const payload = { foo: "bar" };
-      const cb = jest.fn();
+      const cb = vi.fn();
 
       popupBridge.initialize(cb);
 
@@ -68,36 +66,38 @@ describe("PopupBridge", () => {
       expect(popupBridge.isClosed()).toBe(true);
     });
 
-    it("calls callback with error when onComplete is called with an error", (done) => {
-      const popupBridge = new PopupBridge({});
-      const error = new Error("Some error");
+    it("calls callback with error when onComplete is called with an error", () =>
+      new Promise((resolve) => {
+        const popupBridge = new PopupBridge({});
+        const error = new Error("Some error");
 
-      popupBridge.initialize((err, payload) => {
-        expect(payload).toBeFalsy();
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.message).toBe(
-          "Frame closed before tokenization could occur."
-        );
-        done();
-      });
+        popupBridge.initialize((err, payload) => {
+          expect(payload).toBeFalsy();
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.message).toBe(
+            "Frame closed before tokenization could occur."
+          );
+          resolve();
+        });
 
-      window.popupBridge.onComplete(error);
-    });
+        window.popupBridge.onComplete(error);
+      }));
 
-    it("calls callback with error when onComplete is called without an error or payload", (done) => {
-      const popupBridge = new PopupBridge({});
+    it("calls callback with error when onComplete is called without an error or payload", () =>
+      new Promise((resolve) => {
+        const popupBridge = new PopupBridge({});
 
-      popupBridge.initialize((err, payload) => {
-        expect(payload).toBeFalsy();
-        expect(err).toBeInstanceOf(BraintreeError);
-        expect(err.message).toBe(
-          "Frame closed before tokenization could occur."
-        );
-        done();
-      });
+        popupBridge.initialize((err, payload) => {
+          expect(payload).toBeFalsy();
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.message).toBe(
+            "Frame closed before tokenization could occur."
+          );
+          resolve();
+        });
 
-      window.popupBridge.onComplete();
-    });
+        window.popupBridge.onComplete();
+      }));
   });
 
   describe("open", () => {
@@ -135,7 +135,7 @@ describe("PopupBridge", () => {
       const openFrameUrl = "expected redirect url";
       const popupBridge = new PopupBridge({});
 
-      jest.spyOn(popupBridge, "open");
+      vi.spyOn(popupBridge, "open");
 
       popupBridge.redirect(openFrameUrl);
 

@@ -1,5 +1,3 @@
-"use strict";
-
 function _notEmpty(obj) {
   var key;
 
@@ -95,9 +93,11 @@ function queryify(url, params) {
   return url;
 }
 
-module.exports = {
-  parse: parse,
-  stringify: stringify,
-  queryify: queryify,
-  hasQueryParams: hasQueryParams,
+export { parse, stringify, queryify, hasQueryParams };
+
+export default {
+  parse,
+  stringify,
+  queryify,
+  hasQueryParams,
 };

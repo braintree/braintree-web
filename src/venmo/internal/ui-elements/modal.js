@@ -1,4 +1,4 @@
-"use strict";
+// @ts-nocheck
 var __extends =
   (this && this.__extends) ||
   (function () {
@@ -30,16 +30,10 @@ var __extends =
           : ((__.prototype = b.prototype), new __());
     };
   })();
-var __importDefault =
-  (this && this.__importDefault) ||
-  function (mod) {
-    return mod && mod.__esModule ? mod : { default: mod };
-  };
-Object.defineProperty(exports, "__esModule", { value: true });
-var base_1 = __importDefault(require("./base"));
-var modal_backdrop_1 = __importDefault(require("./modal-backdrop"));
-var front_view_1 = __importDefault(require("./front-view"));
-var back_view_1 = __importDefault(require("./back-view"));
+import base from "./base";
+import modalBackdrop from "./modal-backdrop";
+import frontView from "./front-view";
+import backView from "./back-view";
 var Modal = /** @class */ (function (_super) {
   __extends(Modal, _super);
   function Modal(options) {
@@ -47,12 +41,19 @@ var Modal = /** @class */ (function (_super) {
     _this.authorized = false;
     _this.viewBoxesElement = _this.$("#view-boxes");
     var viewBoxesContainerElement = _this.$("#view-boxes-container");
-    _this.frontView = front_view_1.default.create({
+    _this.frontView = frontView.create({
       container: viewBoxesContainerElement,
       onRequestNewQrCode: options.onRequestNewQrCode,
     });
-    _this.backView = back_view_1.default.create({
+    _this.backView = backView.create({
       container: viewBoxesContainerElement,
+      sendEvent: options.sendEvent,
+      onRequestNewQrCode: function (source) {
+        _this.showFrontFace();
+        if (options.onRequestNewQrCode) {
+          options.onRequestNewQrCode(source);
+        }
+      },
     });
     return _this;
   }
@@ -70,12 +71,12 @@ var Modal = /** @class */ (function (_super) {
     this.viewBoxesElement.classList.remove("is-flipped");
   };
   Modal.prototype.showBackFace = function () {
-    this.resetViews();
     this.viewBoxesElement.classList.add("is-flipped");
   };
   Modal.prototype.displayQRCode = function (url) {
     var _this = this;
     this.showFrontFace();
+
     this.frontView.generateQRCode(url, function (err) {
       if (err) {
         _this.displayError("Something went wrong: " + err.message);
@@ -107,22 +108,23 @@ var Modal = /** @class */ (function (_super) {
   };
   Modal.prototype.resetViews = function () {
     this.frontView.reset();
-    this.backView.reset();
   };
   Modal.prototype.constructElement = function () {
     var _this = this;
     var modal = document.createElement("div");
     modal.id = "venmo-desktop-modal";
     modal.innerHTML =
-      '\n    <div id="close-icon-container"></div>\n    <div id="outer-container">\n      <div id="view-boxes">\n        <div id="view-boxes-container">\n        </div>\n      </div>\n    </div>\n    ';
-    modal_backdrop_1.default.create({
+      '<div id="outer-container">' +
+      '  <div id="view-boxes">' +
+      '    <div id="view-boxes-container">' +
+      "    </div>" +
+      "  </div>" +
+      "</div>";
+    modalBackdrop.create({
       container: document.body,
-      onClick: function () {
+      onClose: function () {
         _this.close();
       },
-    });
-    modal.addEventListener("click", function () {
-      _this.close();
     });
     window.addEventListener("keydown", function (event) {
       if (event.key === "Escape") {
@@ -132,8 +134,59 @@ var Modal = /** @class */ (function (_super) {
     return modal;
   };
   Modal.prototype.getStyleConfig = function () {
-    return "\n      #venmo-desktop-modal {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        height: 100vh;\n      }\n\n      #close-icon-container.hidden {\n        display: none;\n      }\n\n      #outer-container {\n        position: absolute;\n        top: 0;\n        bottom: 0;\n        width: 100%;\n        perspective: 840px;\n        animation: 1s drop;\n      }\n\n      #outer-container.hidden {\n        display: none;\n      }\n\n      #view-boxes {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        height: 100%;\n        width: 100%;\n        perspective: 1000;\n        transition: transform 1s;\n        transform-style: preserve-3d;\n      }\n\n      #view-boxes-container {\n        display: flex;\n        align-items: center;\n        justify-content: center;\n        height: 100%;\n        width: 100%;\n        font-family: sans-serif;\n        font-style: normal;\n        font-weight: 100;\n        perspective: 1000;\n      }\n\n      .view-box {\n        display: flex;\n        max-width: 95%;\n        width: 280px;\n        height: 321px;\n        -webkit-backface-visibility: hidden; /* Safari */\n        backface-visibility: hidden;\n        transition: transform 1s;\n        transform-style: preserve-3d;\n      }\n    ";
+    return [
+      "#venmo-desktop-modal {",
+      "  display: flex;",
+      "  align-items: center;",
+      "  justify-content: center;",
+      "  height: 100vh;",
+      "}",
+      "#outer-container {",
+      "  position: absolute;",
+      "  top: 0;",
+      "  bottom: 0;",
+      "  width: 100%;",
+      "  perspective: 840px;",
+      "  animation: 1s drop;",
+      "  pointer-events: none;",
+      "}",
+      "#outer-container.hidden {",
+      "  display: none;",
+      "}",
+      "#view-boxes {",
+      "  display: flex;",
+      "  align-items: center;",
+      "  justify-content: center;",
+      "  height: 100%;",
+      "  width: 100%;",
+      "  perspective: 1000;",
+      "  transition: transform 1s;",
+      "  transform-style: preserve-3d;",
+      "}",
+      "#view-boxes-container {",
+      "  display: flex;",
+      "  align-items: center;",
+      "  justify-content: center;",
+      "  position: relative;",
+      "  height: 100%;",
+      "  width: 100%;",
+      "  font-family: sans-serif;",
+      "  font-style: normal;",
+      "  font-weight: 100;",
+      "  perspective: 1000;",
+      "}",
+      ".view-box {",
+      "  display: flex;",
+      "  position: absolute;",
+      "  max-width: 95%;",
+      "  pointer-events: auto;",
+      "  -webkit-backface-visibility: hidden; /* Safari */",
+      "  backface-visibility: hidden;",
+      "  transition: transform 1s;",
+      "  transform-style: preserve-3d;",
+      "}",
+    ].join("\n");
   };
   return Modal;
-})(base_1.default);
-exports.default = Modal;
+})(base);
+export default Modal;

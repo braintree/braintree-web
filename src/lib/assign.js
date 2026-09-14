@@ -1,5 +1,3 @@
-"use strict";
-
 var assignNormalized =
   typeof Object.assign === "function" ? Object.assign : assignPolyfill;
 
@@ -18,7 +16,7 @@ function assignPolyfill(destination) {
   return destination;
 }
 
-module.exports = {
-  assign: assignNormalized,
-  _assign: assignPolyfill,
-};
+export const assign = assignNormalized;
+export const _assign = assignPolyfill;
+
+export default { assign: assignNormalized, _assign: assignPolyfill };

@@ -1,6 +1,4 @@
-"use strict";
-
-var FrameService = require("./frame-service");
+import FrameService from "./frame-service";
 
 /**
  * @ignore
@@ -20,10 +18,9 @@ var FrameService = require("./frame-service");
  * @param {string} [options.width] The desired popup width.
  * @param {string} [options.top] The desired top value of the popup for positioning.
  * @param {string} [options.left] The desired left value of the popup for positioning.
- * @param {object} [options.state] Seems to be dead code, but allows for injecting data in to popup. NEXT_MAJOR_VERSION remove this param if no usage exists.
  * @param {function} callback The function to invoke once the frameservice is created and ready to use. FrameService instance is returned.
  */
-module.exports = {
+const _default = {
   create: function createFrameService(options, callback) {
     var frameService = new FrameService(options);
 
@@ -32,3 +29,7 @@ module.exports = {
     });
   },
 };
+
+export const { create } = _default;
+
+export default _default;

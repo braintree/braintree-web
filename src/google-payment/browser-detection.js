@@ -1,9 +1,8 @@
-"use strict";
+import supportsPaymentRequestApi from "@braintree/browser-detection/supports-payment-request-api";
+import isAndroid from "@braintree/browser-detection/is-android";
+export { isAndroid, supportsPaymentRequestApi };
 
-var supportsPaymentRequestApi = require("@braintree/browser-detection/supports-payment-request-api");
-var isAndroid = require("@braintree/browser-detection/is-android");
-
-module.exports = {
-  isAndroid: isAndroid,
-  supportsPaymentRequestApi: supportsPaymentRequestApi,
+export default {
+  isAndroid,
+  supportsPaymentRequestApi,
 };

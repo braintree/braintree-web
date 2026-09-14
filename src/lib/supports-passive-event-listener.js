@@ -1,5 +1,3 @@
-"use strict";
-
 // From https://github.com/WICG/EventListenerOptions/blob/gh-pages/explainer.md
 // Test via a getter in the options object to see if the passive property is accessed
 var opts;
@@ -20,4 +18,4 @@ try {
   // ignore errors
 }
 
-module.exports = supportsPassive;
+export default supportsPassive;

@@ -1,6 +1,4 @@
-"use strict";
-
-const find = require("../../../src/lib/find");
+import find from "../../../src/lib/find";
 
 describe("find", () => {
   it("returns null for empty array inputs", () => {

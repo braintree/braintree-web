@@ -1,7 +1,5 @@
-"use strict";
-
-const threeDSecure = require("../../../src/three-d-secure");
-const { version: packageVersion } = require("../../../package.json");
+import threeDSecure from "../../../src/three-d-secure";
+import { version as packageVersion } from "../../../package.json";
 
 describe("export", () => {
   it("contains create", () => {

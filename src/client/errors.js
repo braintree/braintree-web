@@ -1,4 +1,4 @@
-"use strict";
+import BraintreeError from "../lib/braintree-error";
 
 /**
  * @name BraintreeError.Client - Internal Error Codes
@@ -19,7 +19,7 @@
  * @description Errors that may occur when [using the request method](./Client.html#request)
  * @property {MERCHANT} CLIENT_OPTION_REQUIRED An option required in the request method was not provided. Usually `options.method` or `options.endpoint`
  * @property {MERCHANT} CLIENT_OPTION_INVALID The request option provided is invalid.
- * @property {MERCHANT} CLIENT_GATEWAY_NETWORK The Braintree gateway could not be contacted.
+ * @property {NETWORK} CLIENT_GATEWAY_NETWORK The Braintree gateway could not be contacted.
  * @property {NETWORK} CLIENT_REQUEST_TIMEOUT The request took too long to complete and timed out.
  * @property {NETWORK} CLIENT_REQUEST_ERROR The response from a request had status 400 or greater.
  * @property {NETWORK} CLIENT_GRAPHQL_REQUEST_ERROR The response from a request to GraphQL contained an error.
@@ -28,9 +28,7 @@
  * @property {MERCHANT} CLIENT_AUTHORIZATION_INVALID The provided authorization could not be found. Either the client token has expired and a new client token must be generated or the tokenization key used is set to be inactive or has been deleted.
  */
 
-var BraintreeError = require("../lib/braintree-error");
-
-module.exports = {
+const _default = {
   CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN: {
     type: BraintreeError.types.MERCHANT,
     code: "CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN",
@@ -91,3 +89,20 @@ module.exports = {
       "Either the client token has expired and a new one should be generated or the tokenization key has been deactivated or deleted.",
   },
 };
+
+export const {
+  CLIENT_GATEWAY_CONFIGURATION_INVALID_DOMAIN,
+  CLIENT_OPTION_REQUIRED,
+  CLIENT_OPTION_INVALID,
+  CLIENT_MISSING_GATEWAY_CONFIGURATION,
+  CLIENT_INVALID_AUTHORIZATION,
+  CLIENT_GATEWAY_NETWORK,
+  CLIENT_REQUEST_TIMEOUT,
+  CLIENT_REQUEST_ERROR,
+  CLIENT_GRAPHQL_REQUEST_ERROR,
+  CLIENT_RATE_LIMITED,
+  CLIENT_AUTHORIZATION_INSUFFICIENT,
+  CLIENT_AUTHORIZATION_INVALID,
+} = _default;
+
+export default _default;

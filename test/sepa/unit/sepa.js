@@ -1,15 +1,13 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
+vi.mock("../../../src/sepa/external/mandate");
 
-jest.mock("../../../src/lib/analytics");
-jest.mock("../../../src/sepa/external/mandate");
-
-const SEPA = require("../../../src/sepa/external/sepa");
-const { fake } = require("../../helpers");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const sepaErrors = require("../../../src/sepa/shared/errors");
-const mandates = require("../../../src/sepa/external/mandate");
-const analytics = require("../../../src/lib/analytics");
+import SEPA from "../../../src/sepa/external/sepa";
+import { fake } from "../../helpers";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import BraintreeError from "../../../src/lib/braintree-error";
+import sepaErrors from "../../../src/sepa/shared/errors";
+import mandates from "../../../src/sepa/external/mandate";
+import analytics from "../../../src/lib/analytics";
 const VERSION = process.env.npm_package_version;
 
 describe("sepa.js", () => {
@@ -21,9 +19,9 @@ describe("sepa.js", () => {
     testContext.client = fake.client({
       configuration: testContext.configuration,
     });
-    jest
-      .spyOn(createDeferredClient, "create")
-      .mockResolvedValue(testContext.client);
+    vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+      testContext.client
+    );
   });
 
   describe("Constructor", () => {
@@ -51,7 +49,7 @@ describe("sepa.js", () => {
     const mockNonce = "8d8811e9-8cb0-04f5-74f0-32ddb5d9b5a5";
 
     beforeAll(() => {
-      jest.clearAllMocks();
+      vi.clearAllMocks();
     });
 
     beforeEach(() => {
@@ -63,17 +61,17 @@ describe("sepa.js", () => {
         countryCode: "DE",
         merchantAccountId: "merchantid1235",
       };
-      jest.spyOn(mandates, "createMandate").mockImplementation(() =>
+      vi.spyOn(mandates, "createMandate").mockImplementation(() =>
         Promise.resolve({
           approvalUrl: "https://some-mandate-destination.com/authorizenstuff",
           last4: "6608",
           bankReferenceToken: "QkEtS1JWVzMyNjYzRkYyUQ",
         })
       );
-      jest.spyOn(mandates, "openPopup").mockImplementation(() => {
+      vi.spyOn(mandates, "openPopup").mockImplementation(() => {
         return Promise.resolve();
       });
-      jest.spyOn(mandates, "handleApproval").mockImplementation(() => {
+      vi.spyOn(mandates, "handleApproval").mockImplementation(() => {
         return Promise.resolve({
           nonce: mockNonce,
           ibanLastFour: requiredInputs.iban.slice(-4),
@@ -81,35 +79,21 @@ describe("sepa.js", () => {
           mandateType: requiredInputs.mandateType,
         });
       });
-      jest
-        .spyOn(mandates, "handleApprovalForFullPageRedirect")
-        .mockImplementation(() => {
-          return Promise.resolve({
-            nonce: mockNonce,
-            ibanLastFour: requiredInputs.iban.slice(-4),
-            customerId: requiredInputs.customerId,
-            mandateType: requiredInputs.mandateType,
-          });
+      vi.spyOn(
+        mandates,
+        "handleApprovalForFullPageRedirect"
+      ).mockImplementation(() => {
+        return Promise.resolve({
+          nonce: mockNonce,
+          ibanLastFour: requiredInputs.iban.slice(-4),
+          customerId: requiredInputs.customerId,
+          mandateType: requiredInputs.mandateType,
         });
+      });
       sepaInputs = {
         client: testContext.client,
         merchantId,
       };
-    });
-
-    it("uses callback when supplied", (done) => {
-      const sepaInstance = new SEPA(sepaInputs);
-      const expectedResponse = {
-        nonce: mockNonce,
-        ibanLastFour: requiredInputs.iban.slice(-4),
-        customerId: requiredInputs.customerId,
-        mandateType: requiredInputs.mandateType,
-      };
-
-      sepaInstance.tokenize(requiredInputs, function (err, payload) {
-        expect(payload).toEqual(expectedResponse);
-        done();
-      });
     });
 
     const inputs = [
@@ -168,7 +152,7 @@ describe("sepa.js", () => {
       });
     });
 
-    it("should create a mandate succesfully", async () => {
+    it("should create a mandate successfully", async () => {
       const expectedArgs = {
         ...requiredInputs,
         returnUrl:
@@ -254,7 +238,7 @@ describe("sepa.js", () => {
 
     it("handles failures in the popup portion", async () => {
       try {
-        jest.spyOn(mandates, "openPopup").mockImplementation(() => {
+        vi.spyOn(mandates, "openPopup").mockImplementation(() => {
           return Promise.reject(
             new BraintreeError(sepaErrors.SEPA_TOKENIZATION_FAILED)
           );
@@ -279,7 +263,7 @@ describe("sepa.js", () => {
       }
     });
 
-    it("should complete tokenize process sucessfuly", async () => {
+    it("should complete tokenize process successfully", async () => {
       const expectedResponse = {
         nonce: mockNonce,
         ibanLastFour: requiredInputs.iban.slice(-4),
@@ -305,7 +289,7 @@ describe("sepa.js", () => {
 
     it("should failed tokenize process at handleApproval", async () => {
       try {
-        jest.spyOn(mandates, "handleApproval").mockImplementation(() => {
+        vi.spyOn(mandates, "handleApproval").mockImplementation(() => {
           return Promise.reject(
             new BraintreeError(sepaErrors.SEPA_TRANSACTION_FAILED)
           );
@@ -328,7 +312,7 @@ describe("sepa.js", () => {
     });
 
     it("fails if create mandate errors", async () => {
-      jest.spyOn(mandates, "createMandate").mockImplementation(() => {
+      vi.spyOn(mandates, "createMandate").mockImplementation(() => {
         return Promise.reject(
           new BraintreeError(sepaErrors.SEPA_CREATE_MANDATE_FAILED)
         );

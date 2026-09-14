@@ -1,0 +1,4 @@
+{
+  "ignorePaths": ["generated/"],
+  "words": ["applepay", "Braintree", "xdescribe", "xtest"]
+}

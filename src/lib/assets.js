@@ -1,9 +1,9 @@
-"use strict";
+import loadScript from "@braintree/asset-loader/load-script";
+import loadConnectScript from "@paypal/fastlane-sdk-loader";
+export const loadFastlane = loadConnectScript.loadAxo;
+export { loadScript };
 
-var loadScript = require("@braintree/asset-loader/load-script");
-var loadConnectScript = require("@paypal/accelerated-checkout-loader");
-
-module.exports = {
-  loadScript: loadScript,
-  loadFastlane: loadConnectScript.loadAxo,
+export default {
+  loadScript,
+  loadFastlane,
 };

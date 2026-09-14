@@ -1,19 +1,24 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/create-deferred-client");
+vi.mock("../../../src/lib/assets");
 
-jest.mock("../../../src/lib/analytics");
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/lib/create-deferred-client");
+import analytics from "../../../src/lib/analytics";
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import assets from "../../../src/lib/assets";
+import _e8 from "../../../src/apple-pay";
 
-const analytics = require("../../../src/lib/analytics");
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const { create } = require("../../../src/apple-pay");
-const ApplePay = require("../../../src/apple-pay/apple-pay");
+const { create } = _e8;
+
+import ApplePay from "../../../src/apple-pay/apple-pay";
+import _imp0 from "../../helpers";
+
 const {
   wait,
   fake: { client: fakeClient, clientToken, configuration },
-} = require("../../helpers");
+} = _imp0;
 
 describe("applePay.create", () => {
   let testContext;
@@ -27,10 +32,11 @@ describe("applePay.create", () => {
       configuration: testContext.configuration,
     });
 
-    jest
-      .spyOn(createDeferredClient, "create")
-      .mockResolvedValue(testContext.client);
-    jest.spyOn(basicComponentVerification, "verify").mockResolvedValue(null);
+    vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+      testContext.client
+    );
+    vi.spyOn(basicComponentVerification, "verify").mockResolvedValue(null);
+    assets.loadScript.mockResolvedValue(document.createElement("script"));
   });
 
   it("verifies with basicComponentVerification", () => {
@@ -60,7 +66,7 @@ describe("applePay.create", () => {
       });
     });
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     return create({
       authorization: clientToken,
@@ -81,7 +87,7 @@ describe("applePay.create", () => {
 
         expect(applePayInstance).toBeInstanceOf(ApplePay);
 
-        jest.advanceTimersByTime(11);
+        vi.advanceTimersByTime(11);
       })
       .then(() => {
         expect(clientIsReady).toBe(true);
@@ -111,6 +117,35 @@ describe("applePay.create", () => {
         client,
         "applepay.initialized"
       );
+    });
+  });
+
+  it("auto-loads Apple's Apple Pay JS SDK", () => {
+    const client = testContext.client;
+
+    return create({ client }).then(() => {
+      expect(assets.loadScript).toHaveBeenCalledWith({
+        src: "https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js",
+        crossorigin: "anonymous",
+      });
+    });
+  });
+
+  it("waits for the Apple Pay SDK to load before resolving (non-deferred)", () => {
+    const client = testContext.client;
+    let sdkResolved = false;
+
+    assets.loadScript.mockImplementation(() =>
+      Promise.resolve().then(() => {
+        sdkResolved = true;
+
+        return document.createElement("script");
+      })
+    );
+
+    return create({ client }).then((instance) => {
+      expect(sdkResolved).toBe(true);
+      expect(instance).toBeInstanceOf(ApplePay);
     });
   });
 });

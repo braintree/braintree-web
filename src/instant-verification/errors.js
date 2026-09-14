@@ -1,6 +1,4 @@
-"use strict";
-
-var BraintreeError = require("../lib/braintree-error");
+import BraintreeError from "../lib/braintree-error";
 
 /**
  * @name BraintreeError.InstantVerification - Creation Error Codes
@@ -27,7 +25,7 @@ var BraintreeError = require("../lib/braintree-error");
  * @property {MERCHANT} INSTANT_VERIFICATION_ERROR Occurs when a general Instant Verification error is encountered.
  */
 
-module.exports = {
+const _default = {
   INSTANT_VERIFICATION_ERROR: {
     type: BraintreeError.types.MERCHANT,
     code: "INSTANT_VERIFICATION_ERROR",
@@ -64,3 +62,15 @@ module.exports = {
     message: "Failed to fetch ACH mandate details.",
   },
 };
+
+export const {
+  INSTANT_VERIFICATION_ERROR,
+  INSTANT_VERIFICATION_NOT_ENABLED,
+  INSTANT_VERIFICATION_CANCELED,
+  INSTANT_VERIFICATION_FAILURE,
+  INSTANT_VERIFICATION_JWT_REQUIRED,
+  INSTANT_VERIFICATION_MANDATE_ID_REQUIRED,
+  INSTANT_VERIFICATION_MANDATE_DETAILS_FAILED,
+} = _default;
+
+export default _default;

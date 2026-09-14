@@ -1,19 +1,17 @@
-"use strict";
-
-jest.mock("../../../src/lib/analytics");
-jest.mock("framebus");
-jest.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/analytics");
+vi.mock("framebus");
+vi.mock("../../../src/lib/create-assets-url");
 
 beforeEach(() => {
-  console.warn = jest.fn();
+  console.warn = vi.fn();
 
   document.body.innerHTML = "";
 
   window.bus = {
-    on: jest.fn(),
-    emit: jest.fn(),
-    target: jest.fn().mockReturnThis(),
+    on: vi.fn(),
+    emit: vi.fn(),
+    target: vi.fn().mockReturnThis(),
   };
 });
 
-module.exports = global;
+export default global;

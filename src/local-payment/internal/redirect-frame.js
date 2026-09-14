@@ -1,8 +1,6 @@
-"use strict";
-
-var sanitizeUrl = require("@braintree/sanitize-url").sanitizeUrl;
-var frameService = require("../../lib/frame-service/internal");
-var querystring = require("../../lib/querystring");
+import { sanitizeUrl } from "@braintree/sanitize-url";
+import frameService from "../../lib/frame-service/internal";
+import querystring from "../../lib/querystring";
 
 function start(cb) {
   // In rare cases (i.e. in IE11 Metro), the parent frame cannot close the popup frame until it has
@@ -55,6 +53,6 @@ function start(cb) {
   });
 }
 
-module.exports = {
-  start: start,
+export default {
+  start,
 };

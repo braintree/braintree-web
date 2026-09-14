@@ -1,6 +1,4 @@
-"use strict";
-
-const { isHTTPS } = require("../../../src/lib/is-https");
+import { isHTTPS } from "../../../src/lib/is-https";
 
 describe("isHTTPS", () => {
   it("returns true for HTTPS", () => {

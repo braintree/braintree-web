@@ -1,12 +1,11 @@
-"use strict";
-
-var EventedModel = require("./evented-model");
-var getCardTypes = require("../../shared/get-card-types");
-var validator = require("card-validator");
-var comparePossibleCardTypes = require("../compare-possible-card-types");
-var constants = require("../../shared/constants");
-var normalizeCardType = require("../normalize-card-type");
-var removeIgnorableCharacters = require("../remove-ignorable-characters");
+// @ts-nocheck
+import EventedModel from "./evented-model";
+import creditCardType from "credit-card-type";
+import validator from "card-validator";
+import comparePossibleCardTypes from "../compare-possible-card-types";
+import constants from "../../shared/constants";
+import normalizeCardType from "../normalize-card-type";
+import removeIgnorableCharacters from "../remove-ignorable-characters";
 
 var events = constants.events;
 var externalEvents = constants.externalEvents;
@@ -77,7 +76,7 @@ CreditCardForm.prototype.setSupportedCardTypes = function (supportedCardTypes) {
       return brands;
     }, []);
   } else {
-    supportedCardTypes = getCardTypes("").map(function (card) {
+    supportedCardTypes = creditCardType("").map(function (card) {
       return card.type;
     });
   }
@@ -196,14 +195,15 @@ CreditCardForm.prototype._onSplitDateChange = function () {
   }
 };
 
-CreditCardForm.prototype._onNumberChange = function (number, metadata) {
+CreditCardForm.prototype._onNumberChange = function (payload) {
+  var number = payload.value;
   var binLength = this.configuration.binVerificationLength || 6;
 
   var newPossibleCardTypes = this.getCardTypes(number);
   var oldPossibleCardTypes = this.get("possibleCardTypes");
   var newBin = getBinFromNumber(number, binLength);
   var newNumberIsLongEnoughForBinEvent = newBin.length === binLength;
-  var oldBin = getBinFromNumber(metadata.old, binLength);
+  var oldBin = getBinFromNumber(payload.old, binLength);
   var oldNumberIsShortEnoughForBinEvent = oldBin.length < binLength;
   var oldBinIsNotEqualToNewBin = newBin !== oldBin;
 
@@ -263,19 +263,10 @@ function uniq(array) {
 
 CreditCardForm.prototype._validateNumber = function (value) {
   var validationResult = validator.number(value, {
-    luhnValidateUnionPay: true,
     maxLength: this.configuration.fields.number.maxCardLength,
   });
   var card = validationResult.card;
   var possibleCardTypes, possibleCardType;
-
-  // NEXT_MAJOR_VERSION credit-card-type fixed the mastercard enum
-  // but we still pass master-card in the braintree API
-  // in a major version bump, we can remove this and
-  // this will be mastercard instead of master-card
-  if (card && card.type === "mastercard") {
-    card.type = "master-card";
-  }
 
   possibleCardTypes = this.getCardTypes(value).filter(function (cardType) {
     return card && cardType.type === card.type;
@@ -364,7 +355,7 @@ CreditCardForm.prototype.invalidFieldKeys = function (keys) {
 };
 
 CreditCardForm.prototype.getCardTypes = function (value) {
-  return getCardTypes(removeIgnorableCharacters(value)).map(
+  return creditCardType(removeIgnorableCharacters(value)).map(
     function (cardType) {
       var type = normalizeCardType(cardType.type);
 
@@ -400,7 +391,7 @@ CreditCardForm.prototype.applyAutofillValues = function (data) {
         return;
       }
 
-      this._emit("autofill:" + key, value);
+      this.emit("autofill:" + key, value);
     }.bind(this)
   );
 };
@@ -429,7 +420,9 @@ function onFieldValueChange(form, fieldKey) {
 }
 
 function onFieldFocusChange(form, field) {
-  return function (isFocused) {
+  return function (payload) {
+    var isFocused = payload.value;
+
     if (!cardFormHasStartedBeingFilled) {
       cardFormHasStartedBeingFilled = true;
       window.bus.emit(events.CARD_FORM_ENTRY_HAS_BEGUN);
@@ -495,6 +488,8 @@ function getBinFromNumber(number, binLength) {
   return (number || "").substr(0, binLength);
 }
 
-module.exports = {
-  CreditCardForm: CreditCardForm,
+export { CreditCardForm };
+
+export default {
+  CreditCardForm,
 };

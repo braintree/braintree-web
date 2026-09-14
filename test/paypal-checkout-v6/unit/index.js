@@ -1,19 +1,16 @@
-"use strict";
+vi.mock("../../../src/lib/basic-component-verification");
 
-jest.mock("../../../src/lib/basic-component-verification");
-
-var basicComponentVerification = require("../../../src/lib/basic-component-verification");
-var paypalCheckoutV6 = require("../../../src/paypal-checkout-v6");
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import paypalCheckoutV6 from "../../../src/paypal-checkout-v6";
 var create = paypalCheckoutV6.create;
-var isSupported = paypalCheckoutV6.isSupported;
-var PayPalCheckoutV6 = require("../../../src/paypal-checkout-v6/paypal-checkout-v6");
+import PayPalCheckoutV6 from "../../../src/paypal-checkout-v6/paypal-checkout-v6";
 
 describe("paypalCheckoutV6", function () {
   describe("create", function () {
     beforeEach(function () {
-      jest
-        .spyOn(PayPalCheckoutV6.prototype, "_initialize")
-        .mockResolvedValue(null);
+      vi.spyOn(PayPalCheckoutV6.prototype, "_initialize").mockResolvedValue(
+        null
+      );
     });
 
     it("verifies with basicComponentVerification", function () {
@@ -43,12 +40,6 @@ describe("paypalCheckoutV6", function () {
       return create({ client: {} }).catch(function (err) {
         expect(err).toBe(error);
       });
-    });
-  });
-
-  describe("isSupported", function () {
-    it("returns true", function () {
-      expect(isSupported()).toBe(true);
     });
   });
 });

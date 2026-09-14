@@ -1,5 +1,3 @@
-"use strict";
-
 function top(height) {
   var windowHeight =
     window.outerHeight || document.documentElement.clientHeight;
@@ -19,8 +17,10 @@ function center(windowMetric, popupMetric, offset) {
   return (windowMetric - popupMetric) / 2 + offset;
 }
 
-module.exports = {
-  top: top,
-  left: left,
-  center: center,
+export { top, left, center };
+
+export default {
+  top,
+  left,
+  center,
 };

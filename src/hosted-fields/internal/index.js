@@ -1,27 +1,28 @@
-"use strict";
-
-var assign = require("../../lib/assign").assign;
-var Bus = require("framebus");
-var convertToBraintreeError = require("../../lib/convert-to-braintree-error");
-var frameName = require("./get-frame-name");
-var assembleIFrames = require("./assemble-iframes");
-var Client = require("../../client/client");
-var injectWithAllowList = require("inject-stylesheet").injectWithAllowlist;
-var CreditCardForm = require("./models/credit-card-form").CreditCardForm;
-var FieldComponent = require("./components/field-component").FieldComponent;
-var analytics = require("../../lib/analytics");
-var BraintreeError = require("../../lib/braintree-error");
-var constants = require("../shared/constants");
-var browserDetection = require("../shared/browser-detection");
-var errors = require("../shared/errors");
+// @ts-nocheck
+import { assign } from "../../lib/assign";
+import Bus from "framebus";
+import convertToBraintreeError from "../../lib/convert-to-braintree-error";
+import frameName from "./get-frame-name";
+import assembleIFrames from "./assemble-iframes";
+import Client from "../../client/client";
+import { injectWithAllowlist as injectWithAllowList } from "inject-stylesheet";
+import { CreditCardForm } from "./models/credit-card-form";
+import { FieldComponent } from "./components/field-component";
+import analytics from "../../lib/analytics";
+import BraintreeError from "../../lib/braintree-error";
+import constants from "../shared/constants";
+import browserDetection from "../shared/browser-detection";
+import errors from "../shared/errors";
 var events = constants.events;
 var allowedStyles = constants.allowedStyles;
+var supportedCardBrandDisplayNames = constants.supportedCardBrandDisplayNames;
 var tokenizationErrorCodes = constants.tokenizationErrorCodes;
 var ALLOWED_BILLING_ADDRESS_FIELDS = constants.allowedBillingAddressFields;
 var ALLOWED_SHIPPING_ADDRESS_FIELDS = constants.allowedShippingAddressFields;
-var formatCardRequestData = require("./format-card-request-data");
-var normalizeCardType = require("./normalize-card-type");
-var focusIntercept = require("../shared/focus-intercept");
+import formatCardRequestData from "./format-card-request-data";
+import normalizeCardType from "./normalize-card-type";
+import focusIntercept from "../shared/focus-intercept";
+import graphqlTokenization from "./graphql-tokenization";
 
 var CHECK_FOR_NEW_AUTOFILL_DATA_INTERVAL = 100;
 
@@ -143,7 +144,7 @@ function fix1PasswordAdjustment(form) {
   // 1Password autofill throws the form
   // positioning off screen. By toggling
   // the position, we can prevent the number
-  // field from dissapearing
+  // field from disappearing
   form.style.position = "relative";
   form.style.position = "absolute";
 }
@@ -291,7 +292,7 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
       if (isEmpty) {
         reply([new BraintreeError(errors.HOSTED_FIELDS_FIELDS_EMPTY)]);
 
-        return Promise.resolve();
+        return undefined;
       }
       if (!isValid) {
         reply([
@@ -303,7 +304,7 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
           }),
         ]);
 
-        return Promise.resolve();
+        return undefined;
       }
 
       options = options || {};
@@ -320,9 +321,6 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
       };
 
       data = {
-        _meta: {
-          source: "hosted-fields",
-        },
         creditCard: creditCardDetails,
       };
 
@@ -339,26 +337,22 @@ function createTokenizationHandler(clientInstanceOrPromise, cardForm) {
 }
 
 function handleTokenization(client, clientInstanceOrPromise, data, reply) {
+  var tokenizeRequest =
+    graphqlTokenization.buildTokenizeCreditCardRequest(data);
+
   return client
     .request({
-      api: "clientApi",
-      method: "post",
-      endpoint: "payment_methods/credit_cards",
-      data: data,
+      api: "graphQLApi",
+      data: {
+        query: tokenizeRequest.query,
+        variables: tokenizeRequest.variables,
+      },
     })
-    .then(function (clientApiResult) {
-      var paymentMethod = clientApiResult.creditCards[0];
-      var result = {
-        nonce: paymentMethod.nonce,
-        details: paymentMethod.details,
-        description: paymentMethod.description,
-        type: paymentMethod.type,
-        binData: paymentMethod.binData,
-      };
-
-      if (paymentMethod.authenticationInsight) {
-        result.authenticationInsight = paymentMethod.authenticationInsight;
-      }
+    .then(function (graphQLResult) {
+      var result = graphqlTokenization.shapeTokenizeResponse(
+        graphQLResult,
+        tokenizeRequest.isFastlane
+      );
 
       analytics.sendEvent(
         clientInstanceOrPromise,
@@ -385,14 +379,9 @@ function formatTokenizationError(err) {
 
   if (status === 403) {
     formattedError = err;
-  } else if (status < 500) {
-    try {
-      rootError = BraintreeError.findRootError(err);
-      code = rootError.fieldErrors[0].fieldErrors[0].code;
-      // eslint-disable-next-line no-unused-vars
-    } catch (err) {
-      // just bail out if code property cannot be found on rootError
-    }
+  } else if (status == null || status < 500) {
+    rootError = BraintreeError.findRootError(err);
+    code = graphqlTokenization.extractLegacyErrorCode(err);
 
     if (tokenizationErrorCodes.hasOwnProperty(code)) {
       formattedError = convertToBraintreeError(
@@ -429,16 +418,12 @@ function orchestrate(configuration) {
     var supportedCardBrands;
     var numberConfig = configuration.fields.number;
 
-    if (
-      numberConfig &&
-      (numberConfig.supportedCardBrands || numberConfig.rejectUnsupportedCards)
-    ) {
+    if (numberConfig) {
       supportedCardBrands = getSupportedCardBrands(
         client,
         numberConfig.supportedCardBrands
       );
 
-      // NEXT_MAJOR_VERSION rejecting unsupported cards should be the default behavior after the next major revision
       cardForm.setSupportedCardTypes(supportedCardBrands);
       // force a validation now that the validation rules have changed
       cardForm.validateField("number");
@@ -467,19 +452,20 @@ function orchestrate(configuration) {
     tokenizationHandler(options, reply);
   });
 
-  // Globalize cardForm is global so other components (UnionPay) can access it
-  window.cardForm = cardForm;
-
   return clientPromise;
 }
 
 function getSupportedCardBrands(client, merchantConfiguredCardBrands) {
   var supportedCardBrands;
-  var gwConfiguration =
-    client.getConfiguration().gatewayConfiguration.creditCards;
+  var creditCard = client.getConfiguration().gatewayConfiguration.creditCard;
   var gwSupportedCards =
-    gwConfiguration &&
-    gwConfiguration.supportedCardTypes.map(normalizeCardType);
+    creditCard &&
+    (creditCard.supportedCardBrands || [])
+      .map(function (cardBrand) {
+        return supportedCardBrandDisplayNames[cardBrand];
+      })
+      .filter(Boolean)
+      .map(normalizeCardType);
 
   // when using the forward api, there may not be
   // a merchant configuration for credit cards
@@ -562,9 +548,9 @@ function mergeCardData(cardData, options) {
   return newCardData;
 }
 
-module.exports = {
-  initialize: initialize,
-  create: create,
-  orchestrate: orchestrate,
-  createTokenizationHandler: createTokenizationHandler,
+export default {
+  initialize,
+  create,
+  orchestrate,
+  createTokenizationHandler,
 };

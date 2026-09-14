@@ -1,4 +1,4 @@
-"use strict";
+import BraintreeError from "../../lib/braintree-error";
 
 /**
  * @name BraintreeError.LocalPayment - Creation Error Codes
@@ -22,9 +22,7 @@
  * @property {MERCHANT} LOCAL_PAYMENT_QR_CODE_INVALID_CONTAINER Occurs when the QR code container is not a valid CSS selector string or HTML element.
  */
 
-var BraintreeError = require("../../lib/braintree-error");
-
-module.exports = {
+const _default = {
   LOCAL_PAYMENT_NOT_ENABLED: {
     type: BraintreeError.types.MERCHANT,
     code: "LOCAL_PAYMENT_NOT_ENABLED",
@@ -98,3 +96,22 @@ module.exports = {
     message: "QR code is only supported on desktop devices.",
   },
 };
+
+export const {
+  LOCAL_PAYMENT_NOT_ENABLED,
+  LOCAL_PAYMENT_ALREADY_IN_PROGRESS,
+  LOCAL_PAYMENT_CANCELED,
+  LOCAL_PAYMENT_WINDOW_CLOSED,
+  LOCAL_PAYMENT_WINDOW_OPEN_FAILED,
+  LOCAL_PAYMENT_START_PAYMENT_FAILED,
+  LOCAL_PAYMENT_START_PAYMENT_MISSING_REQUIRED_OPTION,
+  LOCAL_PAYMENT_START_PAYMENT_DEFERRED_PAYMENT_FAILED,
+  LOCAL_PAYMENT_TOKENIZATION_FAILED,
+  LOCAL_PAYMENT_INVALID_PAYMENT_OPTION,
+  LOCAL_PAYMENT_QR_CODE_INVALID_DATA,
+  LOCAL_PAYMENT_QR_CODE_CONTAINER_NOT_FOUND,
+  LOCAL_PAYMENT_QR_CODE_INVALID_CONTAINER,
+  LOCAL_PAYMENT_QR_CODE_NOT_SUPPORTED,
+} = _default;
+
+export default _default;

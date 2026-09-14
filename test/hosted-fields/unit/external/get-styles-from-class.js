@@ -1,9 +1,5 @@
-"use strict";
-
-const {
-  allowedStyles,
-} = require("../../../../src/hosted-fields/shared/constants");
-const getStylesFromClass = require("../../../../src/hosted-fields/external/get-styles-from-class");
+import { allowedStyles } from "../../../../src/hosted-fields/shared/constants";
+import getStylesFromClass from "../../../../src/hosted-fields/external/get-styles-from-class";
 
 describe("getStylesFromClass", () => {
   let testContext = {};
@@ -54,8 +50,8 @@ describe("getStylesFromClass", () => {
   });
 
   it("creates and then removes a dom node", () => {
-    jest.spyOn(document.body, "appendChild");
-    jest.spyOn(document.body, "removeChild");
+    vi.spyOn(document.body, "appendChild");
+    vi.spyOn(document.body, "removeChild");
 
     getStylesFromClass("custom-class");
 

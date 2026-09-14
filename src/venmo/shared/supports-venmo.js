@@ -1,7 +1,5 @@
-"use strict";
-
-var browserDetection = require("./browser-detection");
-var inIframe = require("../../lib/in-iframe");
+import browserDetection from "./browser-detection";
+import inIframe from "../../lib/in-iframe";
 
 function _parseOptions(options) {
   options = options || {};
@@ -120,7 +118,9 @@ function isBrowserSupported(options) {
   return true;
 }
 
-module.exports = {
-  isBrowserSupported: isBrowserSupported,
-  isNonDefaultBrowser: isNonDefaultBrowser,
+export { isBrowserSupported, isNonDefaultBrowser };
+
+export default {
+  isBrowserSupported,
+  isNonDefaultBrowser,
 };

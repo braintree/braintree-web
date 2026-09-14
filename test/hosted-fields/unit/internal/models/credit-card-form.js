@@ -1,15 +1,12 @@
-"use strict";
-
-const validator = require("card-validator");
-const {
-  CreditCardForm,
-} = require("../../../../../src/hosted-fields/internal/models/credit-card-form");
-const getCardTypes = require("../../../../../src/hosted-fields/shared/get-card-types");
-const {
+import validator from "card-validator";
+import { CreditCardForm } from "../../../../../src/hosted-fields/internal/models/credit-card-form";
+import getCardTypes from "credit-card-type";
+import constants, {
   events,
-  externalEvents,
-} = require("../../../../../src/hosted-fields/shared/constants");
-const { getModelConfig } = require("../../helpers");
+} from "../../../../../src/hosted-fields/shared/constants";
+import { getModelConfig } from "../../helpers";
+
+const externalEvents = constants.externalEvents;
 const nextYear = (new Date().getFullYear() + 1).toString();
 
 describe("credit card model", () => {
@@ -32,7 +29,7 @@ describe("credit card model", () => {
 
   describe("constructor()", () => {
     beforeEach(() => {
-      jest.spyOn(CreditCardForm.prototype, "on");
+      vi.spyOn(CreditCardForm.prototype, "on");
     });
 
     describe("_fieldKeys", () => {
@@ -61,7 +58,7 @@ describe("credit card model", () => {
 
       configuration.supportedCardTypes = ["VISA"];
 
-      jest.spyOn(CreditCardForm.prototype, "setSupportedCardTypes");
+      vi.spyOn(CreditCardForm.prototype, "setSupportedCardTypes");
 
       new CreditCardForm(configuration);
 
@@ -165,7 +162,7 @@ describe("credit card model", () => {
         },
       };
 
-      jest.spyOn(CreditCardForm.prototype, "getCardTypes").mockReturnValue([]);
+      vi.spyOn(CreditCardForm.prototype, "getCardTypes").mockReturnValue([]);
 
       testContext.emptyProperty = {
         value: "",
@@ -889,6 +886,8 @@ describe("credit card model", () => {
       "5555555555554444",
       "378",
       "378282246310005",
+      "589562",
+      "5895621234567890",
       "",
     ])("changes credit card type when the number changes to %p", (num) => {
       testContext.card.set("number.value", num);
@@ -902,6 +901,17 @@ describe("credit card model", () => {
       typesForNumber.forEach((card, index) => {
         expect(card.type).toBe(types[index].type);
       });
+    });
+
+    it("detects Naranja card type from its IIN", () => {
+      testContext.card.set("number.value", "5895621234567890");
+
+      const types = testContext.card.get("possibleCardTypes");
+
+      expect(types.length).toBe(1);
+      expect(types[0].type).toBe("naranja");
+      expect(types[0].niceType).toBe("Naranja");
+      expect(types[0].code.size).toBe(3);
     });
 
     it("validates CVV", () => {
@@ -953,7 +963,7 @@ describe("credit card model", () => {
       let i;
       let callCount = 0;
 
-      jest.spyOn(testContext.card, "emitEvent");
+      vi.spyOn(testContext.card, "emitEvent");
 
       testContext.card.set("number.value", "4111111111111111");
       testContext.card.set("number.value", "");
@@ -979,7 +989,7 @@ describe("credit card model", () => {
       let i;
       let callCount = 0;
 
-      jest.spyOn(testContext.card, "emitEvent");
+      vi.spyOn(testContext.card, "emitEvent");
 
       testContext.card.set("number.value", "");
       testContext.card.set("number.value", "411111111111111");
@@ -1071,25 +1081,6 @@ describe("credit card model", () => {
         ).toBe(true);
       });
     });
-
-    describe("luhn validity", () => {
-      it("passes option to card validator", () => {
-        const invalidCard = "6212345000000001";
-        const config = Object.assign({}, getModelConfig(["number"]), {
-          supportedCardTypes: {
-            UnionPay: true,
-          },
-        });
-
-        testContext.supportedCardForm = new CreditCardForm(config);
-        jest.spyOn(validator, "number");
-        testContext.supportedCardForm.set("number.value", invalidCard);
-
-        expect(validator.number).toHaveBeenCalledWith(invalidCard, {
-          luhnValidateUnionPay: true,
-        });
-      });
-    });
   });
 
   describe("binVerificationLength configuration", () => {
@@ -1135,7 +1126,7 @@ describe("credit card model", () => {
 
   describe("bin available", () => {
     describe("6-digit BIN (default)", () => {
-      it("emits a targetted BIN_AVAILABLE event when number goes from 5 digits to 6", () => {
+      it("emits a targeted BIN_AVAILABLE event when number goes from 5 digits to 6", () => {
         testContext.card.set("number.value", "41111");
 
         expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
@@ -1239,7 +1230,7 @@ describe("credit card model", () => {
         testContext.card8Digit = new CreditCardForm(config);
       });
 
-      it("emits a targetted BIN_AVAILABLE event when number goes from 7 digits to 8", () => {
+      it("emits a targeted BIN_AVAILABLE event when number goes from 7 digits to 8", () => {
         testContext.card8Digit.set("number.value", "4111111");
 
         expect(window.bus.emit).not.toHaveBeenCalledWith(events.BIN_AVAILABLE);
@@ -1334,7 +1325,7 @@ describe("credit card model", () => {
 
   describe("field empty change", () => {
     beforeEach(() => {
-      jest.spyOn(testContext.card, "emitEvent");
+      vi.spyOn(testContext.card, "emitEvent");
     });
 
     it("emits an EMPTY event", () => {
@@ -1378,7 +1369,7 @@ describe("credit card model", () => {
       expect(cardForm.supportedCardTypes.length).toBeGreaterThan(9);
     });
 
-    it("normalizes supportedCardTypes", () => {
+    it("normalizes card types, including 'master-card'", () => {
       const configuration = getModelConfig();
       const supportedCardTypes = {
         discover: true,
@@ -1407,7 +1398,7 @@ describe("credit card model", () => {
       ]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      vi.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1417,19 +1408,19 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm._emit).toBeCalledTimes(5);
-      expect(cardForm._emit).toBeCalledWith("autofill:cardholderName", "name");
-      expect(cardForm._emit).toBeCalledWith("autofill:number", "4111");
-      expect(cardForm._emit).toBeCalledWith("autofill:cvv", "123");
-      expect(cardForm._emit).toBeCalledWith("autofill:expirationMonth", "12");
-      expect(cardForm._emit).toBeCalledWith("autofill:expirationYear", "34");
+      expect(cardForm.emit).toBeCalledTimes(5);
+      expect(cardForm.emit).toBeCalledWith("autofill:cardholderName", "name");
+      expect(cardForm.emit).toBeCalledWith("autofill:number", "4111");
+      expect(cardForm.emit).toBeCalledWith("autofill:cvv", "123");
+      expect(cardForm.emit).toBeCalledWith("autofill:expirationMonth", "12");
+      expect(cardForm.emit).toBeCalledWith("autofill:expirationYear", "34");
     });
 
     it("does not emit event for key that does not exist in autofill data", () => {
       const configuration = getModelConfig(["number", "postalCode"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      vi.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1439,15 +1430,15 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm._emit).toBeCalledTimes(1);
-      expect(cardForm._emit).toBeCalledWith("autofill:number", "4111");
+      expect(cardForm.emit).toBeCalledTimes(1);
+      expect(cardForm.emit).toBeCalledWith("autofill:number", "4111");
     });
 
     it("emits expiration date autofill event with data from expiration month and year", () => {
       const configuration = getModelConfig(["expirationDate"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      vi.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1457,8 +1448,8 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm._emit).toBeCalledTimes(1);
-      expect(cardForm._emit).toBeCalledWith(
+      expect(cardForm.emit).toBeCalledTimes(1);
+      expect(cardForm.emit).toBeCalledWith(
         "autofill:expirationDate",
         "12 / 34"
       );
@@ -1468,7 +1459,7 @@ describe("credit card model", () => {
       const configuration = getModelConfig(["expirationDate"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      vi.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1478,14 +1469,14 @@ describe("credit card model", () => {
         expirationYear: "34",
       });
 
-      expect(cardForm._emit).not.toBeCalled();
+      expect(cardForm.emit).not.toBeCalled();
     });
 
     it("does not emit expiration date autofill event when expiration year is missing", () => {
       const configuration = getModelConfig(["expirationDate"]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      vi.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "name",
@@ -1495,7 +1486,7 @@ describe("credit card model", () => {
         expirationYear: "",
       });
 
-      expect(cardForm._emit).not.toBeCalled();
+      expect(cardForm.emit).not.toBeCalled();
     });
 
     it("does not emit event for value that is an empty string", () => {
@@ -1508,7 +1499,7 @@ describe("credit card model", () => {
       ]);
       const cardForm = new CreditCardForm(configuration);
 
-      jest.spyOn(cardForm, "_emit");
+      vi.spyOn(cardForm, "emit");
 
       cardForm.applyAutofillValues({
         cardholderName: "",
@@ -1518,8 +1509,8 @@ describe("credit card model", () => {
         expirationYear: "",
       });
 
-      expect(cardForm._emit).toBeCalledTimes(1);
-      expect(cardForm._emit).toBeCalledWith("autofill:number", "4111");
+      expect(cardForm.emit).toBeCalledTimes(1);
+      expect(cardForm.emit).toBeCalledWith("autofill:number", "4111");
     });
   });
 });

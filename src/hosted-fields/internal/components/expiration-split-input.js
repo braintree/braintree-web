@@ -1,9 +1,8 @@
-"use strict";
-
-var BaseInput = require("./base-input").BaseInput;
-var constants = require("../../shared/constants");
+// @ts-nocheck
+import { BaseInput } from "./base-input";
+import constants from "../../shared/constants";
 var allowedFields = constants.allowedFields;
-var sanitizeHtml = require("../../../lib/sanitize-html");
+import sanitizeHtml from "../../../lib/sanitize-html";
 
 function ExpirationSplitInput() {
   BaseInput.apply(this, arguments);
@@ -90,6 +89,8 @@ ExpirationSplitInput.prototype._getDOMChangeEvent = function () {
   return BaseInput.prototype._getDOMChangeEvent.call(this);
 };
 
-module.exports = {
-  ExpirationSplitInput: ExpirationSplitInput,
+export { ExpirationSplitInput };
+
+export default {
+  ExpirationSplitInput,
 };

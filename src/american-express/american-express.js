@@ -1,11 +1,9 @@
-"use strict";
-
-var BraintreeError = require("../lib/braintree-error");
-var errors = require("./errors");
-var assign = require("../lib/assign").assign;
-var methods = require("../lib/methods");
-var convertMethodsToError = require("../lib/convert-methods-to-error");
-var wrapPromise = require("@braintree/wrap-promise");
+// @ts-nocheck
+import BraintreeError from "../lib/braintree-error";
+import * as errors from "./errors";
+import { assign } from "../lib/assign";
+import methods from "../lib/methods";
+import convertMethodsToError from "../lib/convert-methods-to-error";
 
 /**
  * @class
@@ -22,35 +20,30 @@ function AmericanExpress(options) {
  * @public
  * @param {object} options Request options
  * @param {string} options.nonce An existing Braintree nonce.
- * @param {callback} [callback] The second argument, <code>data</code>, is the returned server data. If no callback is provided, `getRewardsBalance` returns a promise that resolves with the server data.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with the server data.
  * @example
  * var americanExpress = require('braintree-web/american-express');
  *
- * americanExpress.create({client: clientInstance}, function (createErr, americanExpressInstance) {
+ * americanExpress.create({client: clientInstance}).then(function (americanExpressInstance) {
  *   var options = {nonce: existingBraintreeNonce};
- *   americanExpressInstance.getRewardsBalance(options, function (getErr, payload) {
- *     if (getErr || payload.error) {
- *       // Handle error
- *       return;
- *     }
  *
- *     console.log('Rewards amount: ' + payload.rewardsAmount);
- *   });
+ *   return americanExpressInstance.getRewardsBalance(options);
+ * }).then(function (payload) {
+ *   console.log('Rewards amount: ' + payload.rewardsAmount);
+ * }).catch(function (err) {
+ *   // Handle error
  * });
  */
-AmericanExpress.prototype.getRewardsBalance = function (options) {
+AmericanExpress.prototype.getRewardsBalance = async function (options) {
   var nonce = options.nonce;
   var data;
 
   if (!nonce) {
-    return Promise.reject(
-      new BraintreeError({
-        type: errors.AMEX_NONCE_REQUIRED.type,
-        code: errors.AMEX_NONCE_REQUIRED.code,
-        message: "getRewardsBalance must be called with a nonce.",
-      })
-    );
+    throw new BraintreeError({
+      type: errors.AMEX_NONCE_REQUIRED.type,
+      code: errors.AMEX_NONCE_REQUIRED.code,
+      message: "getRewardsBalance must be called with a nonce.",
+    });
   }
 
   data = assign(
@@ -63,25 +56,25 @@ AmericanExpress.prototype.getRewardsBalance = function (options) {
 
   delete data.nonce;
 
-  return this._client
-    .request({
+  try {
+    const client = await this._client.request({
       method: "get",
       endpoint: "payment_methods/amex_rewards_balance",
       data: data,
-    })
-    .catch(function (err) {
-      return Promise.reject(
-        new BraintreeError({
-          type: errors.AMEX_NETWORK_ERROR.type,
-          code: errors.AMEX_NETWORK_ERROR.code,
-          message:
-            "A network error occurred when getting the American Express rewards balance.",
-          details: {
-            originalError: err,
-          },
-        })
-      );
     });
+
+    return client;
+  } catch (err) {
+    throw new BraintreeError({
+      type: errors.AMEX_NETWORK_ERROR.type,
+      code: errors.AMEX_NETWORK_ERROR.code,
+      message:
+        "A network error occurred when getting the American Express rewards balance.",
+      details: {
+        originalError: err,
+      },
+    });
+  }
 };
 
 /**
@@ -89,69 +82,59 @@ AmericanExpress.prototype.getRewardsBalance = function (options) {
  * @public
  * @param {object} options Request options
  * @param {string} options.nonce An existing nonce from American Express (note that this is <em>not</em> a nonce from Braintree).
- * @param {callback} [callback] The second argument, <code>data</code>, is the returned server data. If no callback is provided, `getExpressCheckoutProfile` returns a promise that resolves with the server data.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with the server data.
  * @example
  * var americanExpress = require('braintree-web/american-express');
  *
- * americanExpress.create({client: clientInstance}, function (createErr, americanExpressInstance) {
+ * americanExpress.create({client: clientInstance}).then(function (americanExpressInstance) {
  *   var options = {nonce: existingAmericanExpressNonce};
- *   americanExpressInstance.getExpressCheckoutProfile(options, function (getErr, payload) {
- *     if (getErr) {
- *       // Handle error
- *       return;
- *     }
  *
- *     console.log('Number of cards: ' + payload.amexExpressCheckoutCards.length);
- *   });
+ *   return americanExpressInstance.getExpressCheckoutProfile(options);
+ * }).then(function (payload) {
+ *   console.log('Number of cards: ' + payload.amexExpressCheckoutCards.length);
+ * }).catch(function (err) {
+ *   // Handle error
  * });
  */
-AmericanExpress.prototype.getExpressCheckoutProfile = function (options) {
+AmericanExpress.prototype.getExpressCheckoutProfile = async function (options) {
   if (!options.nonce) {
-    return Promise.reject(
-      new BraintreeError({
-        type: errors.AMEX_NONCE_REQUIRED.type,
-        code: errors.AMEX_NONCE_REQUIRED.code,
-        message: "getExpressCheckoutProfile must be called with a nonce.",
-      })
-    );
+    throw new BraintreeError({
+      type: errors.AMEX_NONCE_REQUIRED.type,
+      code: errors.AMEX_NONCE_REQUIRED.code,
+      message: "getExpressCheckoutProfile must be called with a nonce.",
+    });
   }
 
-  return this._client
-    .request({
+  try {
+    return await this._client.request({
       method: "get",
       endpoint: "payment_methods/amex_express_checkout_cards/" + options.nonce,
       data: {
         _meta: { source: "american-express" },
         paymentMethodNonce: options.nonce,
       },
-    })
-    .catch(function (err) {
-      return Promise.reject(
-        new BraintreeError({
-          type: errors.AMEX_NETWORK_ERROR.type,
-          code: errors.AMEX_NETWORK_ERROR.code,
-          message:
-            "A network error occurred when getting the American Express Checkout nonce profile.",
-          details: {
-            originalError: err,
-          },
-        })
-      );
     });
+  } catch (err) {
+    throw new BraintreeError({
+      type: errors.AMEX_NETWORK_ERROR.type,
+      code: errors.AMEX_NETWORK_ERROR.code,
+      message:
+        "A network error occurred when getting the American Express Checkout nonce profile.",
+      details: {
+        originalError: err,
+      },
+    });
+  }
 };
 
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/american-express.create|create}.
  * @public
- * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @example
- * americanExpressInstance.teardown();
- * @example <caption>With callback</caption>
- * americanExpressInstance.teardown(function () {
+ * americanExpressInstance.teardown().then(function () {
  *   // teardown is complete
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves once teardown is complete.
  */
 AmericanExpress.prototype.teardown = function () {
   convertMethodsToError(this, methods(AmericanExpress.prototype));
@@ -159,4 +142,4 @@ AmericanExpress.prototype.teardown = function () {
   return Promise.resolve();
 };
 
-module.exports = wrapPromise.wrapPrototype(AmericanExpress);
+export default AmericanExpress;

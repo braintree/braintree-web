@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Get the current branch name
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+
+# Skip validation during rebase or any detached HEAD state
+if [ "$BRANCH_NAME" = "HEAD" ]; then
+  exit 0
+fi
+
+# Validate the branch name
+node scripts/hooks/validate-branch-name.js "$BRANCH_NAME"
+
+# Exit with the validation script's exit code
+exit $?

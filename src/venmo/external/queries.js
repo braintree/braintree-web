@@ -1,21 +1,12 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.VENMO_PAYMENT_CONTEXT_STATUS_QUERY =
-  exports.LEGACY_VENMO_PAYMENT_CONTEXT_STATUS_QUERY =
-  exports.UPDATE_PAYMENT_CONTEXT_QUERY =
-  exports.LEGACY_UPDATE_PAYMENT_CONTEXT_QUERY =
-  exports.CREATE_PAYMENT_CONTEXT_QUERY =
-  exports.LEGACY_CREATE_PAYMENT_CONTEXT_QUERY =
-    void 0;
-exports.LEGACY_CREATE_PAYMENT_CONTEXT_QUERY =
-  "mutation CreateVenmoQRCodePaymentContext($input: CreateVenmoQRCodePaymentContextInput!) {\n  createVenmoQRCodePaymentContext(input: $input) {\n    clientMutationId\n    venmoQRCodePaymentContext {\n      id\n      merchantId\n      createdAt\n      expiresAt\n    }\n  }\n}";
-exports.CREATE_PAYMENT_CONTEXT_QUERY =
+export const CREATE_PAYMENT_CONTEXT_QUERY =
   "mutation CreateVenmoPaymentContext($input: CreateVenmoPaymentContextInput!) {\n  createVenmoPaymentContext(input: $input) {\n    clientMutationId\n    venmoPaymentContext {\n      id\n      merchantId\n      createdAt\n      expiresAt\n    }\n  }\n}";
-exports.LEGACY_UPDATE_PAYMENT_CONTEXT_QUERY =
-  "mutation UpdateVenmoQRCodePaymentContext($input: UpdateVenmoQRCodePaymentContextInput!) {\n  updateVenmoQRCodePaymentContext(input: $input) {\n    clientMutationId\n  }\n}";
-exports.UPDATE_PAYMENT_CONTEXT_QUERY =
+export const UPDATE_PAYMENT_CONTEXT_QUERY =
   "mutation UpdateVenmoPaymentContextStatus($input: UpdateVenmoPaymentContextStatusInput!) {\n  updateVenmoPaymentContextStatus(input: $input) {\n    clientMutationId\n  }\n}";
-exports.LEGACY_VENMO_PAYMENT_CONTEXT_STATUS_QUERY =
-  "query PaymentContext($id: ID!) {\n  node(id: $id) {\n    ... on VenmoQRCodePaymentContext {\n      status\n      paymentMethodId\n      userName\n    }\n  }\n}";
-exports.VENMO_PAYMENT_CONTEXT_STATUS_QUERY =
+export const VENMO_PAYMENT_CONTEXT_STATUS_QUERY =
   "query PaymentContext($id: ID!) {\n  node(id: $id) {\n    ... on VenmoPaymentContext {\n      status\n      paymentMethodId\n      userName\n      payerInfo {\n        firstName\n        lastName\n        phoneNumber\n        email\n        externalId\n        userName\n        billingAddress {\n          fullName\n          addressLine1\n          addressLine2\n          adminArea1\n          adminArea2\n          postalCode\n          countryCode\n        }\n        shippingAddress {\n          fullName\n          addressLine1\n          addressLine2\n          adminArea1\n          adminArea2\n          postalCode\n          countryCode\n        }\n      }\n    }\n  }\n}";
+
+export default {
+  CREATE_PAYMENT_CONTEXT_QUERY,
+  UPDATE_PAYMENT_CONTEXT_QUERY,
+  VENMO_PAYMENT_CONTEXT_STATUS_QUERY,
+};

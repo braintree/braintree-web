@@ -1,11 +1,9 @@
-"use strict";
-
-var analytics = require("../lib/analytics");
-var BraintreeError = require("../lib/braintree-error");
-var errors = require("./errors");
-var convertMethodsToError = require("../lib/convert-methods-to-error");
-var methods = require("../lib/methods");
-var wrapPromise = require("@braintree/wrap-promise");
+// @ts-nocheck
+import analytics from "../lib/analytics";
+import BraintreeError from "../lib/braintree-error";
+import errors from "./errors";
+import convertMethodsToError from "../lib/convert-methods-to-error";
+import methods from "../lib/methods";
 
 var DELETE_PAYMENT_METHOD_MUTATION =
   "mutation DeletePaymentMethodFromSingleUseToken($input: DeletePaymentMethodFromSingleUseTokenInput!) {" +
@@ -41,16 +39,14 @@ function VaultManager(options) {
  * @public
  * @param {object} [options] Options for fetching payment methods.
  * @param {boolean} [options.defaultFirst = false] If `true`, the payment methods will be returned with the default payment method for the customer first. Otherwise, order is not guaranteed.
- * @param {callback} [callback] The second argument is a {@link VaultManager~fetchPaymentMethodsPayload|fetchPaymentMethodsPayload}. This is also what is resolved by the promise if no callback is provided.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with the {@link VaultManager~fetchPaymentMethodsPayload|fetchPaymentMethodsPayload}.
  * @example
- * vaultManagerInstance.fetchPaymentMethods(function (err, paymentMethods) {
- *   paymentMethods.forEach(function (paymentMethod) {
- *     // add payment method to UI
- *     // paymentMethod.nonce <- transactable nonce associated with payment method
- *     // paymentMethod.details <- object with additional information about payment method
- *     // paymentMethod.type <- a constant signifying the type
- *   });
+ * const paymentMethods = await vaultManagerInstance.fetchPaymentMethods();
+ * paymentMethods.forEach(function (paymentMethod) {
+ *   // add payment method to UI
+ *   // paymentMethod.nonce <- transactable nonce associated with payment method
+ *   // paymentMethod.details <- object with additional information about payment method
+ *   // paymentMethod.type <- a constant signifying the type
  * });
  */
 VaultManager.prototype.fetchPaymentMethods = function (options) {
@@ -88,12 +84,9 @@ VaultManager.prototype.fetchPaymentMethods = function (options) {
  * Deletes a payment method owned by the customer whose id was used to generate the client token used to create the {@link module:braintree-web/client|client}.
  * @public
  * @param {string} paymentMethodNonce The payment method nonce that references a vaulted payment method.
- * @param {callback} [callback] No data is returned if the operation is successful.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  * @example
- * vaultManagerInstance.deletePaymentMethod('nonce-to-delete', function (err) {
- *   // handle err if it exists
- * });
+ * await vaultManagerInstance.deletePaymentMethod('nonce-to-delete');
  */
 VaultManager.prototype.deletePaymentMethod = function (paymentMethodNonce) {
   return this._createPromise.then(function (client) {
@@ -101,10 +94,8 @@ VaultManager.prototype.deletePaymentMethod = function (paymentMethodNonce) {
       client.getConfiguration().authorizationType === "CLIENT_TOKEN";
 
     if (!usesClientToken) {
-      return Promise.reject(
-        new BraintreeError(
-          errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN
-        )
+      throw new BraintreeError(
+        errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_NONCE_REQUIRES_CLIENT_TOKEN
       );
     }
 
@@ -160,7 +151,7 @@ VaultManager.prototype.deletePaymentMethod = function (paymentMethodNonce) {
             type: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.type,
             code: errors.VAULT_MANAGER_DELETE_PAYMENT_METHOD_UNKNOWN_ERROR.code,
             message:
-              "An unknown error occured when attempting to delete the payment method assocaited with the payment method nonce `" +
+              "An unknown error occurred when attempting to delete the payment method associated with the payment method nonce `" +
               paymentMethodNonce +
               "`.",
             details: {
@@ -169,7 +160,9 @@ VaultManager.prototype.deletePaymentMethod = function (paymentMethodNonce) {
           });
         }
 
-        return Promise.reject(formattedError);
+        // formattedError is always a BraintreeError (see assignments above).
+        // eslint-disable-next-line no-throw-literal
+        throw formattedError;
       });
   });
 };
@@ -197,14 +190,9 @@ function formatPaymentMethodPayload(paymentMethod) {
 /**
  * Cleanly tear down anything set up by {@link module:braintree-web/vault-manager.create|create}.
  * @public
- * @param {callback} [callback] Called once teardown is complete. No data is returned if teardown completes successfully.
  * @example
  * vaultManagerInstance.teardown();
- * @example <caption>With callback</caption>
- * vaultManagerInstance.teardown(function () {
- *   // teardown is complete
- * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves once teardown is complete.
  */
 VaultManager.prototype.teardown = function () {
   convertMethodsToError(this, methods(VaultManager.prototype));
@@ -212,4 +200,4 @@ VaultManager.prototype.teardown = function () {
   return Promise.resolve();
 };
 
-module.exports = wrapPromise.wrapPrototype(VaultManager);
+export default VaultManager;

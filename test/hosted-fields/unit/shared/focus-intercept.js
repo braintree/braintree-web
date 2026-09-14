@@ -1,13 +1,9 @@
-"use strict";
+vi.mock("../../../../src/hosted-fields/shared/browser-detection");
 
-jest.mock("../../../../src/hosted-fields/shared/browser-detection");
-
-const browserDetection = require("../../../../src/hosted-fields/shared/browser-detection");
-const focusIntercept = require("../../../../src/hosted-fields/shared/focus-intercept");
-const {
-  navigationDirections: directions,
-} = require("../../../../src/hosted-fields/shared/constants");
-const { triggerEvent } = require("../helpers");
+import browserDetection from "../../../../src/hosted-fields/shared/browser-detection";
+import focusIntercept from "../../../../src/hosted-fields/shared/focus-intercept";
+import { navigationDirections as directions } from "../../../../src/hosted-fields/shared/constants";
+import { triggerEvent } from "../helpers";
 
 const DOCUMENT_FRAGMENT_NODE_TYPE = 11;
 const ELEMENT_NODE_TYPE = 1;
@@ -29,7 +25,7 @@ describe("focusIntercept", () => {
           "unique-id",
           "type",
           "direction",
-          jest.fn()
+          vi.fn()
         );
 
         expect(input.nodeType).toBe(ELEMENT_NODE_TYPE);
@@ -40,7 +36,7 @@ describe("focusIntercept", () => {
           "unique-id",
           "type",
           "direction",
-          jest.fn()
+          vi.fn()
         );
 
         expect(input.getAttribute("aria-hidden")).toContain("true");
@@ -58,62 +54,65 @@ describe("focusIntercept", () => {
         );
       });
 
-      it("adds event handlers to inputs", (done) => {
-        const input = focusIntercept.generate(
-          "unique-id",
-          "cvv",
-          directions.BACK,
-          (event) => {
-            expect(event.target.getAttribute("id")).toContain(
-              `bt-cvv-${directions.BACK}-unique-id`
-            );
-            expect(event.type).toContain("focus");
-            done();
-          }
-        );
+      it("adds event handlers to inputs", () =>
+        new Promise((resolve) => {
+          const input = focusIntercept.generate(
+            "unique-id",
+            "cvv",
+            directions.BACK,
+            (event) => {
+              expect(event.target.getAttribute("id")).toContain(
+                `bt-cvv-${directions.BACK}-unique-id`
+              );
+              expect(event.type).toContain("focus");
+              resolve();
+            }
+          );
 
-        triggerEvent("focus", input);
-      });
+          triggerEvent("focus", input);
+        }));
 
-      it("does not blur the input when on a browser with a software keyboard", (done) => {
-        const input = focusIntercept.generate(
-          "unique-id",
-          "cvv",
-          directions.BACK,
-          () => {
-            // would happen after the handler is called
-            setTimeout(() => {
-              expect(input.blur).not.toBeCalled();
-              done();
-            }, 1);
-          }
-        );
+      it("does not blur the input when on a browser with a software keyboard", () =>
+        new Promise((resolve) => {
+          const input = focusIntercept.generate(
+            "unique-id",
+            "cvv",
+            directions.BACK,
+            () => {
+              // would happen after the handler is called
+              setTimeout(() => {
+                expect(input.blur).not.toBeCalled();
+                resolve();
+              }, 1);
+            }
+          );
 
-        browserDetection.hasSoftwareKeyboard.mockReturnValue(true);
-        jest.spyOn(input, "blur").mockReturnValue(null);
+          browserDetection.hasSoftwareKeyboard.mockReturnValue(true);
+          vi.spyOn(input, "blur").mockReturnValue(null);
 
-        triggerEvent("focus", input);
-      });
+          triggerEvent("focus", input);
+        }));
 
-      it("does blur the input when on a browser without a software keyboard", (done) => {
-        const input = focusIntercept.generate(
-          "unique-id",
-          "cvv",
-          directions.BACK,
-          () => {
-            // happens after the handler is called
-            setTimeout(() => {
-              expect(input.blur).toHaveBeenCalledTimes(1);
-              done();
-            }, 1);
-          }
-        );
+      it("does blur the input when on a browser without a software keyboard", () =>
+        new Promise((resolve) => {
+          const input = focusIntercept.generate(
+            "unique-id",
+            "cvv",
+            directions.BACK,
+            () => {
+              // happens after the handler is called
+              setTimeout(() => {
+                expect(input.blur).toHaveBeenCalledTimes(1);
+                resolve();
+              }, 1);
+            }
+          );
 
-        browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
-        jest.spyOn(input, "blur").mockReturnValue(null);
+          browserDetection.hasSoftwareKeyboard.mockReturnValue(false);
+          vi.spyOn(input, "blur").mockReturnValue(null);
 
-        triggerEvent("focus", input);
-      });
+          triggerEvent("focus", input);
+        }));
     });
 
     describe("on devices that do not require focus intercepts", () => {
@@ -132,7 +131,7 @@ describe("focusIntercept", () => {
 
   describe("destroy", () => {
     it("does nothing if there are not focusIntercept inputs to destroy", () => {
-      jest.spyOn(Node.prototype, "removeChild");
+      vi.spyOn(Node.prototype, "removeChild");
       focusIntercept.destroy();
 
       expect(Node.prototype.removeChild).not.toBeCalled();
@@ -158,7 +157,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "cvv",
             directions.FORWARD,
-            jest.fn()
+            vi.fn()
           )
         );
 
@@ -177,7 +176,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "cvv",
             directions.FORWARD,
-            jest.fn()
+            vi.fn()
           )
         );
 
@@ -192,12 +191,7 @@ describe("focusIntercept", () => {
 
       it("does not remove anything when argument does not match existing element", () => {
         testContext.form.appendChild(
-          focusIntercept.generate(
-            "unique-id",
-            "cvv",
-            directions.BACK,
-            jest.fn()
-          )
+          focusIntercept.generate("unique-id", "cvv", directions.BACK, vi.fn())
         );
 
         expect(document.getElementsByClassName("focus-intercept")).toHaveLength(
@@ -215,7 +209,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "number",
             directions.BACK,
-            jest.fn()
+            vi.fn()
           )
         );
         testContext.form.appendChild(
@@ -223,7 +217,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "number",
             directions.FORWARD,
-            jest.fn()
+            vi.fn()
           )
         );
         testContext.form.appendChild(
@@ -231,7 +225,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "expirationDate",
             directions.BACK,
-            jest.fn()
+            vi.fn()
           )
         );
         testContext.form.appendChild(
@@ -239,23 +233,18 @@ describe("focusIntercept", () => {
             "unique-id",
             "expirationDate",
             directions.FORWARD,
-            jest.fn()
+            vi.fn()
           )
         );
         testContext.form.appendChild(
-          focusIntercept.generate(
-            "unique-id",
-            "cvv",
-            directions.BACK,
-            jest.fn()
-          )
+          focusIntercept.generate("unique-id", "cvv", directions.BACK, vi.fn())
         );
         testContext.form.appendChild(
           focusIntercept.generate(
             "unique-id",
             "cvv",
             directions.FORWARD,
-            jest.fn()
+            vi.fn()
           )
         );
 
@@ -274,7 +263,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "number",
             directions.BACK,
-            jest.fn()
+            vi.fn()
           )
         );
         testContext.form.appendChild(
@@ -282,7 +271,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "number",
             directions.FORWARD,
-            jest.fn()
+            vi.fn()
           )
         );
         testContext.form.appendChild(
@@ -290,7 +279,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "expirationDate",
             directions.BACK,
-            jest.fn()
+            vi.fn()
           )
         );
         testContext.form.appendChild(
@@ -298,23 +287,18 @@ describe("focusIntercept", () => {
             "unique-id",
             "expirationDate",
             directions.FORWARD,
-            jest.fn()
+            vi.fn()
           )
         );
         testContext.form.appendChild(
-          focusIntercept.generate(
-            "unique-id",
-            "cvv",
-            directions.BACK,
-            jest.fn()
-          )
+          focusIntercept.generate("unique-id", "cvv", directions.BACK, vi.fn())
         );
         testContext.form.appendChild(
           focusIntercept.generate(
             "unique-id",
             "cvv",
             directions.FORWARD,
-            jest.fn()
+            vi.fn()
           )
         );
 
@@ -340,7 +324,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "number",
             directions.BACK,
-            jest.fn()
+            vi.fn()
           )
         );
         testContext.form.appendChild(protectedElement);
@@ -349,7 +333,7 @@ describe("focusIntercept", () => {
             "unique-id",
             "number",
             directions.FORWARD,
-            jest.fn()
+            vi.fn()
           )
         );
 

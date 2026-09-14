@@ -1,17 +1,16 @@
-"use strict";
+vi.mock("../../../src/lib/basic-component-verification");
 
-jest.mock("../../../src/lib/basic-component-verification");
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import _e12 from "../../../src/paypal-checkout";
 
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const { create, isSupported } = require("../../../src/paypal-checkout");
-const PayPalCheckout = require("../../../src/paypal-checkout/paypal-checkout");
+const { create } = _e12;
+
+import PayPalCheckout from "../../../src/paypal-checkout/paypal-checkout";
 
 describe("paypalCheckout", () => {
   describe("create", () => {
     beforeEach(() => {
-      jest
-        .spyOn(PayPalCheckout.prototype, "_initialize")
-        .mockResolvedValue(null);
+      vi.spyOn(PayPalCheckout.prototype, "_initialize").mockResolvedValue(null);
     });
 
     it("verifies with basicComponentVerification", () =>
@@ -39,12 +38,6 @@ describe("paypalCheckout", () => {
       return create({ client: {} }).catch((err) => {
         expect(err).toBe(error);
       });
-    });
-  });
-
-  describe("isSupported", () => {
-    it("returns true", () => {
-      expect(isSupported()).toBe(true);
     });
   });
 });

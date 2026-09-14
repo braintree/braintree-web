@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/html";
+import { isIntegrationCoverageRun } from "../../utils/integration-coverage";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
+import { getBraintree } from "../../utils/braintree-globals";
 import { TEST_CARDS } from "../../utils/test-data";
 import { SUCCESS_MESSAGES } from "../../constants";
 
 import "../../css/main.css";
 import "./hostedFields.css";
+import { IHostedFieldsEventData } from "../../types";
 
 interface TokenizationPayload {
   nonce: string;
@@ -107,19 +110,19 @@ const getTestCardValue = (
 };
 
 const createFieldConfig = (
-  selector: string,
+  container: string,
   placeholder: string,
   prefillValue: string = ""
 ) => {
   return {
-    selector,
+    container,
     placeholder,
     prefill: prefillValue,
   };
 };
 
 interface FieldConfig {
-  selector: string;
+  container: string;
   placeholder: string;
   prefill?: string;
 }
@@ -190,19 +193,20 @@ const handleTokenizationError = (
 };
 
 const setupBraintreeHostedFields = (
-  container,
+  container: HTMLElement,
   args?: Record<string, string>
 ) => {
   const authorization = getAuthorizationToken();
 
-  window.braintree.client
-    .create({
+  getBraintree()
+    .client.create({
       authorization: authorization,
+      ...(isIntegrationCoverageRun() && { debug: true }),
     })
     .then((clientInstance) => {
       const fields = configureFields(args);
 
-      return window.braintree.hostedFields.create({
+      return getBraintree().hostedFields.create({
         client: clientInstance,
         styles: {
           input: {
@@ -229,21 +233,24 @@ const setupBraintreeHostedFields = (
       ) as HTMLButtonElement;
       const resultDiv = container.querySelector("#result") as HTMLElement;
 
-      hostedFieldsInstance.on("validityChange", (event) => {
-        const fields = event.fields;
+      hostedFieldsInstance.on(
+        "validityChange",
+        (event: IHostedFieldsEventData) => {
+          const fields = event.fields;
 
-        const requiredFieldsValid = Object.keys(fields).every(
-          (key) => fields[key].isValid
-        );
+          const requiredFieldsValid = (
+            Object.keys(fields) as Array<keyof typeof event.fields>
+          ).every((key) => fields[key]?.isValid ?? true);
 
-        submitButton.disabled = !requiredFieldsValid;
+          submitButton.disabled = !requiredFieldsValid;
 
-        if (requiredFieldsValid) {
-          submitButton.classList.add("submit-button--success");
-        } else {
-          submitButton.classList.remove("submit-button--success");
+          if (requiredFieldsValid) {
+            submitButton.classList.add("submit-button--success");
+          } else {
+            submitButton.classList.remove("submit-button--success");
+          }
         }
-      });
+      );
 
       form.addEventListener("submit", (event) => {
         event.preventDefault();

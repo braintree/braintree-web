@@ -56,3 +56,12 @@ export function getScriptUrl(version: string, scriptName: string): string {
 export function normalizeScriptName(script: string): string {
   return script.replace(/\.min\.js$/, "").replace(/\.js$/, "");
 }
+
+export function getBraintree(): NonNullable<Window["braintree"]> {
+  if (!window.braintree) {
+    throw new Error(
+      "window.braintree is not defined — Braintree SDK scripts have not loaded"
+    );
+  }
+  return window.braintree;
+}

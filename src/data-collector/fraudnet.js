@@ -1,9 +1,10 @@
-"use strict";
-
-var FRAUDNET_FNCLS = require("../lib/constants").FRAUDNET_FNCLS;
-var FRAUDNET_SOURCE = require("../lib/constants").FRAUDNET_SOURCE;
-var FRAUDNET_URL = require("../lib/constants").FRAUDNET_URL;
-var loadScript = require("../lib/assets").loadScript;
+// @ts-nocheck
+import analytics from "../lib/analytics";
+import assetLoadDetail from "../lib/asset-load-detail";
+import { FRAUDNET_FNCLS } from "./constants";
+import { FRAUDNET_SOURCE } from "./constants";
+import { FRAUDNET_URL } from "./constants";
+import { loadScript } from "../lib/assets";
 
 var TRUNCATION_LENGTH = 32;
 
@@ -70,10 +71,15 @@ Fraudnet.prototype.initialize = function (options) {
 
       return self;
     })
-    .catch(function () {
-      // if the fraudnet script fails to load
-      // we just resolve with nothing
-      // and data collector ignores it
+    .catch(function (err) {
+      if (options.client) {
+        analytics.sendEventPlus(
+          options.client,
+          "data-collector.fraudnet.load-failed",
+          assetLoadDetail(err)
+        );
+      }
+
       return null;
     });
 };
@@ -124,7 +130,9 @@ function _createParameterBlock(config, environment) {
   return el;
 }
 
-module.exports = {
-  setup: setup,
-  clearSessionIdCache: clearSessionIdCache,
+export { setup, clearSessionIdCache };
+
+export default {
+  setup,
+  clearSessionIdCache,
 };

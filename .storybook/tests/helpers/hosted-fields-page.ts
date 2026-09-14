@@ -1,23 +1,10 @@
 /* eslint-disable no-console */
-import { Locator, Page } from "playwright/test";
+import { Locator, Page } from "@playwright/test";
 import {
   SUCCESS_MESSAGES,
   DEFAULT_HOSTED_FIELDS_VALUES,
 } from "../../constants";
-
-type HostedFieldKey =
-  | "number"
-  | "expirationDate"
-  | "cvv"
-  | "postalCode"
-  | "cardholderName";
-
-type AllowedElementState =
-  | "visible"
-  | "attached"
-  | "detached"
-  | "hidden"
-  | undefined;
+import { AllowedElementState, HostedFieldKey } from "../../types/test-types";
 
 export class HostedFieldsPage {
   private readonly page: Page;
@@ -89,7 +76,9 @@ export class HostedFieldsPage {
     try {
       await this.page.waitForFunction(
         () => typeof window.braintree !== "undefined",
-        { timeout: 20000 }
+        {
+          timeout: 20000,
+        }
       );
 
       await this.page.waitForFunction(

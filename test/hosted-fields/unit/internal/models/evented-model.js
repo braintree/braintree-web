@@ -1,7 +1,5 @@
-"use strict";
-
-const util = require("util");
-const EventedModel = require("../../../../../src/hosted-fields/internal/models/evented-model");
+import util from "util";
+import EventedModel from "../../../../../src/hosted-fields/internal/models/evented-model";
 
 describe("EventedModel", () => {
   let testContext;
@@ -68,76 +66,83 @@ describe("EventedModel", () => {
     expect(testContext.model.get("foo.bar")).not.toBeDefined();
   });
 
-  it('emits a "global" event when a property changes', (done) => {
-    testContext.model.on("change", () => {
-      done();
-    });
+  it('emits a "global" event when a property changes', () =>
+    new Promise((resolve) => {
+      testContext.model.on("change", () => {
+        resolve();
+      });
 
-    testContext.model.set("foo", 789);
-  });
+      testContext.model.set("foo", 789);
+    }));
 
-  it("emits a scoped change event when a property changes", (done) => {
-    testContext.model.on("change:foo", (newValue) => {
-      expect(newValue).toBe(789);
-      done();
-    });
+  it("emits a scoped change event when a property changes", () =>
+    new Promise((resolve) => {
+      testContext.model.on("change:foo", (payload) => {
+        expect(payload.value).toBe(789);
+        resolve();
+      });
 
-    testContext.model.set("foo", 789);
-  });
+      testContext.model.set("foo", 789);
+    }));
 
-  it("emits metadata with the old value as second argument for a scoped change event when a property changes", (done) => {
-    testContext.model.set("foo", 123);
+  it("emits metadata with the old value as second argument for a scoped change event when a property changes", () =>
+    new Promise((resolve) => {
+      testContext.model.set("foo", 123);
 
-    testContext.model.on("change:foo", (newValue, metadata) => {
-      expect(metadata.old).toBe(123);
-      expect(newValue).toBe(789);
-      done();
-    });
+      testContext.model.on("change:foo", (payload) => {
+        expect(payload.old).toBe(123);
+        expect(payload.value).toBe(789);
+        resolve();
+      });
 
-    testContext.model.set("foo", 789);
-  });
+      testContext.model.set("foo", 789);
+    }));
 
-  it("emits an intermediate-scope change event when a nested property changes", (done) => {
-    testContext.model.on("change:foo", (newValue) => {
-      expect(newValue).toEqual({ bar: "yas" });
-      done();
-    });
+  it("emits an intermediate-scope change event when a nested property changes", () =>
+    new Promise((resolve) => {
+      testContext.model.on("change:foo", (payload) => {
+        expect(payload.value).toEqual({ bar: "yas" });
+        resolve();
+      });
 
-    testContext.model.set("foo.bar", "yas");
-  });
+      testContext.model.set("foo.bar", "yas");
+    }));
 
-  it("emits metadata with only the old value that changed, not the whole object when a nested property changes", (done) => {
-    testContext.model.set("foo.bar", "foo");
+  it("emits metadata with only the old value that changed, not the whole object when a nested property changes", () =>
+    new Promise((resolve) => {
+      testContext.model.set("foo.bar", "foo");
 
-    testContext.model.on("change:foo", (newValue, metadata) => {
-      expect(metadata.old).toEqual("foo");
-      expect(newValue).toEqual({ bar: "yas" });
-      done();
-    });
+      testContext.model.on("change:foo", (payload) => {
+        expect(payload.old).toEqual("foo");
+        expect(payload.value).toEqual({ bar: "yas" });
+        resolve();
+      });
 
-    testContext.model.set("foo.bar", "yas");
-  });
+      testContext.model.set("foo.bar", "yas");
+    }));
 
-  it("emits a scoped change event when a nested property changes", (done) => {
-    testContext.model.on("change:foo.bar", (newValue) => {
-      expect(newValue).toBe("yas");
-      done();
-    });
+  it("emits a scoped change event when a nested property changes", () =>
+    new Promise((resolve) => {
+      testContext.model.on("change:foo.bar", (payload) => {
+        expect(payload.value).toBe("yas");
+        resolve();
+      });
 
-    testContext.model.set("foo.bar", "yas");
-  });
+      testContext.model.set("foo.bar", "yas");
+    }));
 
-  it("emits metadata with the old value as a second argument for a scoped change event when a nested property changes", (done) => {
-    testContext.model.set("foo.bar", "foo");
+  it("emits metadata with the old value as a second argument for a scoped change event when a nested property changes", () =>
+    new Promise((resolve) => {
+      testContext.model.set("foo.bar", "foo");
 
-    testContext.model.on("change:foo.bar", (newValue, metadata) => {
-      expect(metadata.old).toBe("foo");
-      expect(newValue).toBe("yas");
-      done();
-    });
+      testContext.model.on("change:foo.bar", (payload) => {
+        expect(payload.old).toBe("foo");
+        expect(payload.value).toBe("yas");
+        resolve();
+      });
 
-    testContext.model.set("foo.bar", "yas");
-  });
+      testContext.model.set("foo.bar", "yas");
+    }));
 
   it("is reset initially", () => {
     let model;
@@ -169,5 +174,24 @@ describe("EventedModel", () => {
         hecka: "cool",
       },
     });
+  });
+
+  it("does not allow setting __proto__ keys", () => {
+    testContext.model.set("__proto__.polluted", "yes");
+    expect({}.polluted).not.toBeDefined();
+  });
+
+  it("does not allow setting constructor keys", () => {
+    testContext.model.set("constructor.prototype.polluted", "yes");
+    expect({}.polluted).not.toBeDefined();
+  });
+
+  it("does not allow setting prototype keys", () => {
+    testContext.model.set("prototype.polluted", "yes");
+    expect({}.polluted).not.toBeDefined();
+  });
+
+  it("returns undefined for get with __proto__ key", () => {
+    expect(testContext.model.get("__proto__")).not.toBeDefined();
   });
 });

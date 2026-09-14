@@ -1,13 +1,16 @@
-"use strict";
+// @ts-nocheck
 /** @module braintree-web/payment-ready */
 
-var analytics = require("../lib/analytics");
-var PaymentReady = require("./payment-ready");
-var createAssetsUrl = require("../lib/create-assets-url");
-var createDeferredClient = require("../lib/create-deferred-client");
-var basicComponentVerification = require("../lib/basic-component-verification");
-var wrapPromise = require("@braintree/wrap-promise");
-var VERSION = process.env.npm_package_version;
+import analytics from "../lib/analytics";
+import PaymentReady from "./payment-ready";
+import createAssetsUrl from "../lib/create-assets-url";
+import createDeferredClient from "../lib/create-deferred-client";
+import basicComponentVerification from "../lib/basic-component-verification";
+/**
+ * @description The current version of the SDK, i.e. `{@pkg version}`.
+ * @type {string}
+ */
+const VERSION = __SDK_VERSION__;
 
 /**
  * @static
@@ -17,23 +20,22 @@ var VERSION = process.env.npm_package_version;
  * @param {string} [options.authorization] A tokenizationKey or clientToken. Can be used in place of `options.client`.
  * @param {boolean} [options.debug] A debug flag.
  * @param {string} [options.redirectUrl] When provided, triggers full page redirect flow instead of popup flow.
- * @param {callback} [callback] When provided, will be used instead of a promise. First argument is an error object, where the second is an instance of {@link PaymentReady|PaymentReady}.
- * @returns {Promise<PaymentReady>} Returns the PAYMENTREADY instance.
+ * @returns {Promise<PaymentReady>} Returns the PaymentReady instance.
  * @example
  * braintree.paymentReady.create({
  *   client: clientInstance
  * }).then(function (paymentReadyInstance) {
  *   // paymentReadyInstance is ready to be used.
  * }).catch(function (createErr) {
- *   console.error('Error creating PAYMENTREADY instance', createErr);
+ *   console.error('Error creating PaymentReady instance', createErr);
  * });
- * @example <caption>Creating a PAYMENTREADY component</caption>
+ * @example <caption>Creating a PaymentReady component</caption>
  * braintree.paymentReady.create({
  *   client: clientInstance,
  * }).then(function (paymentReadyInstance) {
  *   // paymentReadyInstance is ready to be used.
  * }).catch(function (createErr) {
- *   console.error('Error creating PAYMENT READY instance', createErr);
+ *   console.error('Error creating PaymentReady instance', createErr);
  * });
  */
 
@@ -64,11 +66,7 @@ function create(options) {
     });
 }
 
-module.exports = {
-  create: wrapPromise(create),
-  /**
-   * @description The current version of the SDK, i.e. `{@pkg version}`.
-   * @type {string}
-   */
-  VERSION: VERSION,
+export default {
+  create,
+  VERSION,
 };

@@ -1,5 +1,3 @@
-"use strict";
-
 function rejectIfResolves() {
   throw new Error("should not resolve");
 }
@@ -12,7 +10,9 @@ function wait(time) {
   });
 }
 
-module.exports = {
-  rejectIfResolves: rejectIfResolves,
-  wait: wait,
+export { rejectIfResolves, wait };
+
+export default {
+  rejectIfResolves,
+  wait,
 };

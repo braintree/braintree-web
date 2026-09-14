@@ -1,5 +1,3 @@
-"use strict";
-
 var EXPERIENCE_URL = {
   sandbox:
     "https://www.sandbox.paypal.com/openfinance/v1/bank/payment-method/create",
@@ -47,7 +45,9 @@ var ACH_MANDATE_DETAILS_QUERY =
   "} " +
   "}";
 
-module.exports = {
-  EXPERIENCE_URL: EXPERIENCE_URL,
-  ACH_MANDATE_DETAILS_QUERY: ACH_MANDATE_DETAILS_QUERY,
+export { EXPERIENCE_URL, ACH_MANDATE_DETAILS_QUERY };
+
+export default {
+  EXPERIENCE_URL,
+  ACH_MANDATE_DETAILS_QUERY,
 };

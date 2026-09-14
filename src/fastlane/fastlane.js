@@ -1,10 +1,8 @@
-"use strict";
-
-var BraintreeError = require("../lib/braintree-error");
-var errors = require("./errors");
-var loadFastlane = require("../lib/assets").loadFastlane;
-var wrapPromise = require("@braintree/wrap-promise");
-var assign = require("../lib/assign").assign;
+// @ts-nocheck
+import convertToBraintreeError from "../lib/convert-to-braintree-error";
+import errors from "./errors";
+import { loadFastlane } from "../lib/assets";
+import { assign } from "../lib/assign";
 
 function fastlane(options) {
   var config = options.client.getConfiguration();
@@ -54,14 +52,8 @@ function fastlane(options) {
       );
     })
     .catch(function (err) {
-      return Promise.reject(
-        new BraintreeError({
-          type: errors.FASTLANE_SDK_LOAD_ERROR.type,
-          code: errors.FASTLANE_SDK_LOAD_ERROR.code,
-          message: err.message,
-        })
-      );
+      throw convertToBraintreeError(err, errors.FASTLANE_SDK_LOAD_ERROR);
     });
 }
 
-module.exports = wrapPromise(fastlane);
+export default fastlane;

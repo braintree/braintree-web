@@ -1,5 +1,3 @@
-"use strict";
-
-jest.mock("../../../src/lib/analytics");
-jest.mock("framebus");
-jest.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/analytics");
+vi.mock("framebus");
+vi.mock("../../../src/lib/create-assets-url");

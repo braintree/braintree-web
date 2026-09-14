@@ -1,6 +1,4 @@
-"use strict";
-
-const comparePossibleCardTypes = require("../../../../src/hosted-fields/internal/compare-possible-card-types");
+import comparePossibleCardTypes from "../../../../src/hosted-fields/internal/compare-possible-card-types";
 
 describe("comparePossibleCardTypes", () => {
   it("returns true for 2 equal lists", () => {

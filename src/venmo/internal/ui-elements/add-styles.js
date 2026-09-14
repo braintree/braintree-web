@@ -1,5 +1,3 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
 var ID = "venmo-desktop__injected-styles";
 function addStyles(cssString) {
   var style = document.getElementById(ID);
@@ -10,4 +8,4 @@ function addStyles(cssString) {
   }
   style.innerHTML = style.innerHTML + "\n\n" + cssString;
 }
-exports.default = addStyles;
+export default addStyles;

@@ -1,14 +1,17 @@
-"use strict";
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("../../../src/lib/create-deferred-client");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/assets");
+vi.mock("../../../src/fastlane/fastlane");
 
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("../../../src/lib/create-deferred-client");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/fastlane/fastlane");
+import { fake } from "../../helpers";
+import _e14 from "../../../src/fastlane";
 
-const { fake } = require("../../helpers");
-const { create } = require("../../../src/fastlane");
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
+const { create } = _e14;
+
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import assets from "../../../src/lib/assets";
 
 describe("fastlane", () => {
   describe("create", () => {
@@ -20,9 +23,17 @@ describe("fastlane", () => {
       testContext.client = fake.client({
         configuration: testContext.configuration,
       });
-      jest
-        .spyOn(createDeferredClient, "create")
-        .mockResolvedValue(testContext.client);
+      vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+        testContext.client
+      );
+      assets.loadFastlane.mockResolvedValue({ metadata: {} });
+      window.braintree = {
+        fastlane: { create: vi.fn().mockResolvedValue({}) },
+      };
+    });
+
+    afterEach(() => {
+      delete window.braintree;
     });
 
     it("verifies with basicComponentVerification", () => {
@@ -31,7 +42,7 @@ describe("fastlane", () => {
         deviceData: "device-data",
       };
 
-      create(options).then(() => {
+      return create(options).then(() => {
         expect(basicComponentVerification.verify).toBeCalledTimes(1);
         expect(
           basicComponentVerification.verify.mock.calls[0][0]
@@ -48,7 +59,7 @@ describe("fastlane", () => {
         deviceData: "device-data",
       };
 
-      create(options).then(() => {
+      return create(options).then(() => {
         expect(createDeferredClient.create).toBeCalledTimes(1);
         expect(
           createDeferredClient.create.mock.calls[0][0].client

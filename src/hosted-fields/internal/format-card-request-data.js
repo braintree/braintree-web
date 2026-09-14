@@ -1,5 +1,3 @@
-"use strict";
-
 function constructAddress(data) {
   /* eslint-disable camelcase */
   var address = {
@@ -27,8 +25,7 @@ function constructAddress(data) {
   return address;
 }
 
-// eslint-disable-next-line complexity
-module.exports = function (data) {
+export default function (data) {
   var result = {};
 
   // connectCheckout are the tokenize options from the Fastlane SDK
@@ -108,4 +105,4 @@ module.exports = function (data) {
   }
 
   return result;
-};
+}

@@ -1,5 +1,3 @@
-"use strict";
-
 /**
  * Venmo shared constants
  * @typedef {object} Venmo~venmoConstants
@@ -9,7 +7,7 @@
  * @property {string} VENMO_WEB_LOGIN_URL A non-deeplinked url that leads to a Venmo login page. For use when explicitly wanting to avoid using the Venmo mobile app via a deep-linked url.
  * @property {string} VENMO_WEB_LOGIN_SANDBOX_URL A non-deeplinked url that leads to a Venmo *sandbox* login page. For use when explicitly wanting to avoid using the Venmo mobile app via a deep-linked url.
  */
-module.exports = {
+const _default = {
   DOCUMENT_VISIBILITY_CHANGE_EVENT_DELAY: 500,
   DEFAULT_PROCESS_RESULTS_DELAY: 1000,
   VENMO_APP_OR_MOBILE_AUTH_URL: "https://venmo.com/go/checkout",
@@ -17,3 +15,14 @@ module.exports = {
   VENMO_WEB_LOGIN_URL: "https://account.venmo.com/go/web",
   VENMO_WEB_LOGIN_SANDBOX_URL: "https://account.ext.live.venmo.com/go/web",
 };
+
+export const {
+  DOCUMENT_VISIBILITY_CHANGE_EVENT_DELAY,
+  DEFAULT_PROCESS_RESULTS_DELAY,
+  VENMO_APP_OR_MOBILE_AUTH_URL,
+  VENMO_MOBILE_APP_AUTH_ONLY_URL,
+  VENMO_WEB_LOGIN_URL,
+  VENMO_WEB_LOGIN_SANDBOX_URL,
+} = _default;
+
+export default _default;

@@ -1,6 +1,4 @@
-"use strict";
-
-const popupPosition = require("../../../../../../../src/lib/frame-service/external/strategies/popup/position");
+import popupPosition from "../../../../../../../src/lib/frame-service/external/strategies/popup/position";
 
 describe("popup position", () => {
   describe("center", () => {

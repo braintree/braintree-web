@@ -1,0 +1,7 @@
+{
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testMatch": ["**/vite/**/__tests__/**/*.test.ts"],
+  "transform": { "^.+\\.ts$": "@swc/jest" },
+  "moduleFileExtensions": ["ts", "js", "json"]
+}

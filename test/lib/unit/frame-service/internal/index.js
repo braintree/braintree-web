@@ -1,13 +1,9 @@
-"use strict";
-
-const frameService = require("../../../../../src/lib/frame-service/internal");
-const {
-  DISPATCH_FRAME_REPORT,
-} = require("../../../../../src/lib/frame-service/shared/events");
-const {
+import frameService from "../../../../../src/lib/frame-service/internal";
+import { DISPATCH_FRAME_REPORT } from "../../../../../src/lib/frame-service/shared/events";
+import {
   DISPATCH_FRAME_NAME,
   POPUP_CLOSE_TIMEOUT,
-} = require("../../../../../src/lib/frame-service/shared/constants");
+} from "../../../../../src/lib/frame-service/shared/constants";
 
 describe("frame-service", () => {
   it("is true", () => {
@@ -18,7 +14,7 @@ describe("frame-service", () => {
   beforeEach(() => {
     testContext = {};
 
-    jest.spyOn(window, "open").mockImplementation();
+    vi.spyOn(window, "open").mockImplementation();
     testContext.id = "id";
     testContext.cached = {
       globalOpener: window.opener,
@@ -72,7 +68,7 @@ describe("frame-service", () => {
 
   describe("report", () => {
     it("emits an error and a payload", () => {
-      const frame = { bus: { emit: jest.fn() } };
+      const frame = { bus: { emit: vi.fn() } };
 
       window.name = `${DISPATCH_FRAME_NAME}_${testContext.id}`;
       window.opener.frames[`${DISPATCH_FRAME_NAME}_${testContext.id}`] = frame;
@@ -87,24 +83,25 @@ describe("frame-service", () => {
       });
     });
 
-    it("passes an error back to the callback if getFrame errors", (done) => {
-      window.name = `${DISPATCH_FRAME_NAME}_wont_find_it`;
+    it("passes an error back to the callback if getFrame errors", () =>
+      new Promise((resolve) => {
+        window.name = `${DISPATCH_FRAME_NAME}_wont_find_it`;
 
-      frameService.report("err", "payload", (err) => {
-        expect(err.message).toBe("Braintree is inactive");
+        frameService.report("err", "payload", (err) => {
+          expect(err.message).toBe("Braintree is inactive");
 
-        done();
-      });
-    });
+          resolve();
+        });
+      }));
   });
 
   describe("asyncClose", () => {
     it("async call to window.close", () => {
-      jest.useFakeTimers();
-      jest.spyOn(window, "close").mockImplementation();
+      vi.useFakeTimers();
+      vi.spyOn(window, "close").mockImplementation();
       frameService.asyncClose();
 
-      jest.advanceTimersByTime(POPUP_CLOSE_TIMEOUT + 10);
+      vi.advanceTimersByTime(POPUP_CLOSE_TIMEOUT + 10);
       expect(window.close).toHaveBeenCalled();
     });
   });

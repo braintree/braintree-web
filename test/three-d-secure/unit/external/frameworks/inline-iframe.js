@@ -1,15 +1,13 @@
-"use strict";
-
-const InlineIframeFramework = require("../../../../../src/three-d-secure/external/frameworks/inline-iframe");
-const SongbirdFramework = require("../../../../../src/three-d-secure/external/frameworks/songbird");
-const {
+import InlineIframeFramework from "../../../../../src/three-d-secure/external/frameworks/inline-iframe";
+import SongbirdFramework from "../../../../../src/three-d-secure/external/frameworks/songbird";
+import {
   fake,
   wait,
   yields,
   yieldsByEventAsync,
   findFirstEventCallback,
-} = require("../../../../helpers");
-const assets = require("../../../../../src/lib/assets");
+} from "../../../../helpers";
+import assets from "../../../../../src/lib/assets";
 
 describe("InlineIframeFramework", () => {
   let testContext;
@@ -17,32 +15,34 @@ describe("InlineIframeFramework", () => {
   beforeEach(() => {
     testContext = {};
 
-    jest.spyOn(InlineIframeFramework.prototype, "setupSongbird");
+    vi.spyOn(InlineIframeFramework.prototype, "setupSongbird");
 
     testContext.configuration = {
       authorization: fake.clientToken,
       authorizationFingerprint: "encoded_auth_fingerprint",
       gatewayConfiguration: {
         assetsUrl: "http://example.com/assets",
-        threeDSecure: {
-          cardinalAuthenticationJWT: "jwt",
-          cardinalSongbirdUrl:
-            "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
+        creditCard: {
+          threeDSecure: {
+            cardinalAuthenticationJWT: "jwt",
+            cardinalSongbirdUrl:
+              "https://songbirdstag.cardinalcommerce.com/edge/v1/songbird.js",
+          },
         },
       },
     };
     testContext.client = {
-      request: jest.fn().mockResolvedValue(null),
+      request: vi.fn().mockResolvedValue(null),
       getConfiguration: () => testContext.configuration,
     };
     testContext.fakeCardinal = {
-      configure: jest.fn(),
-      setup: jest.fn(),
-      on: jest.fn(),
-      trigger: jest.fn().mockResolvedValue({ Status: false }),
-      continue: jest.fn(),
+      configure: vi.fn(),
+      setup: vi.fn(),
+      on: vi.fn(),
+      trigger: vi.fn().mockResolvedValue({ Status: false }),
+      continue: vi.fn(),
     };
-    jest.spyOn(assets, "loadScript").mockImplementation(() => {
+    vi.spyOn(assets, "loadScript").mockImplementation(() => {
       window.Cardinal = testContext.fakeCardinal;
 
       // allow a slight delay so timing tests can run
@@ -57,9 +57,9 @@ describe("InlineIframeFramework", () => {
         client: testContext.client,
       };
       const framework = new InlineIframeFramework(options);
-      const spy = jest.fn();
+      const spy = vi.fn();
 
-      jest.spyOn(SongbirdFramework.prototype, "setUpEventListeners");
+      vi.spyOn(SongbirdFramework.prototype, "setUpEventListeners");
 
       framework.setUpEventListeners(spy);
 
@@ -71,31 +71,29 @@ describe("InlineIframeFramework", () => {
       ).toHaveBeenCalledWith(spy);
     });
 
-    it("sets up listener for on authentication iframe available event", (done) => {
-      const options = {
-        createPromise: Promise.resolve(testContext.client),
-        client: testContext.client,
-      };
-      const framework = new InlineIframeFramework(options);
+    it("sets up listener for on authentication iframe available event", () =>
+      new Promise((resolve) => {
+        const options = {
+          createPromise: Promise.resolve(testContext.client),
+          client: testContext.client,
+        };
+        const framework = new InlineIframeFramework(options);
 
-      jest
-        .spyOn(framework, "on")
-        .mockImplementation(
+        vi.spyOn(framework, "on").mockImplementation(
           yieldsByEventAsync(
             "inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE",
-            "some data",
-            "a fake function"
+            { element: "some data", next: "a fake function" }
           )
         );
 
-      framework.setUpEventListeners((eventName, data, fakeFunction) => {
-        expect(eventName).toBe("authentication-iframe-available");
-        expect(data).toBe("some data");
-        expect(fakeFunction).toBe("a fake function");
+        framework.setUpEventListeners((eventName, payload) => {
+          expect(eventName).toBe("authentication-iframe-available");
+          expect(payload.element).toBe("some data");
+          expect(payload.next).toBe("a fake function");
 
-        done();
-      });
-    });
+          resolve();
+        });
+      }));
   });
 
   describe("setupSongbird", () => {
@@ -204,7 +202,7 @@ describe("InlineIframeFramework", () => {
           mode: "static",
         },
       };
-      testContext.resolveFunction = jest.fn(() => {
+      testContext.resolveFunction = vi.fn(() => {
         const handler = findFirstEventCallback(
           "payments.validated",
           testContext.fakeCardinal.on.mock.calls
@@ -212,7 +210,7 @@ describe("InlineIframeFramework", () => {
 
         handler.apply(null, testContext.validationArgs);
       });
-      testContext.rejectFunction = jest.fn(() => {
+      testContext.rejectFunction = vi.fn(() => {
         const handler = findFirstEventCallback(
           "payments.validated",
           testContext.fakeCardinal.on.mock.calls
@@ -289,7 +287,7 @@ describe("InlineIframeFramework", () => {
 
       return testContext.instance
         .initializeChallengeWithLookupResponse(testContext.lookupResponse, {
-          onLookupComplete: jest.fn(yields()),
+          onLookupComplete: vi.fn(yields()),
         })
         .catch((err) => {
           expect(err.code).toBe("THREEDS_CARDINAL_SDK_ERROR");
@@ -297,7 +295,7 @@ describe("InlineIframeFramework", () => {
     });
 
     it("adds element to page and calls resolve callback automatically when mode is suppress", () => {
-      jest.spyOn(document.body, "appendChild");
+      vi.spyOn(document.body, "appendChild");
       testContext.iframeDetails.data.mode = "suppress";
 
       return testContext.instance
@@ -314,30 +312,31 @@ describe("InlineIframeFramework", () => {
         });
     });
 
-    it("passes iframe to merchant and waits for merchant to resolve when mode is static", (done) => {
-      jest.spyOn(document.body, "appendChild");
-      testContext.iframeDetails.data.mode = "static";
+    it("passes iframe to merchant and waits for merchant to resolve when mode is static", () =>
+      new Promise((resolve) => {
+        vi.spyOn(document.body, "appendChild");
+        testContext.iframeDetails.data.mode = "static";
 
-      testContext.instance.on(
-        "inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE",
-        (payload, next) => {
-          expect(testContext.resolveFunction).not.toHaveBeenCalled();
-          expect(payload.element.querySelector("iframe")).toBeDefined();
+        testContext.instance.on(
+          "inline-iframe-framework:AUTHENTICATION_IFRAME_AVAILABLE",
+          (payload) => {
+            expect(testContext.resolveFunction).not.toHaveBeenCalled();
+            expect(payload.element.querySelector("iframe")).toBeDefined();
 
-          next();
+            payload.next();
 
-          expect(testContext.resolveFunction).toHaveBeenCalledTimes(1);
+            expect(testContext.resolveFunction).toHaveBeenCalledTimes(1);
 
-          done();
-        }
-      );
+            resolve();
+          }
+        );
 
-      testContext.instance.initializeChallengeWithLookupResponse(
-        testContext.lookupResponse,
-        {
-          onLookupComplete: yields(),
-        }
-      );
-    });
+        testContext.instance.initializeChallengeWithLookupResponse(
+          testContext.lookupResponse,
+          {
+            onLookupComplete: yields(),
+          }
+        );
+      }));
   });
 });

@@ -1,6 +1,4 @@
-"use strict";
-
-module.exports = {
+const _default = {
   DISPATCH_FRAME_NAME: "dispatch",
   DISPATCH_FRAME_CLASS: "braintree-dispatch-frame",
   POPUP_BASE_OPTIONS: "resizable,scrollbars",
@@ -8,4 +6,20 @@ module.exports = {
   DEFAULT_POPUP_HEIGHT: 535,
   POPUP_POLL_INTERVAL: 100,
   POPUP_CLOSE_TIMEOUT: 100,
+  VISIBILITY_CHANGE_LISTENER_INSTALL_DELAY: 500,
+  RESUME_PROCESS_DELAY: 1000,
 };
+
+export const {
+  DISPATCH_FRAME_NAME,
+  DISPATCH_FRAME_CLASS,
+  POPUP_BASE_OPTIONS,
+  DEFAULT_POPUP_WIDTH,
+  DEFAULT_POPUP_HEIGHT,
+  POPUP_POLL_INTERVAL,
+  POPUP_CLOSE_TIMEOUT,
+  VISIBILITY_CHANGE_LISTENER_INSTALL_DELAY,
+  RESUME_PROCESS_DELAY,
+} = _default;
+
+export default _default;

@@ -1,15 +1,13 @@
-"use strict";
+import isMobileDevice from "../../../../src/local-payment/shared/browser-detection";
+import isAndroid from "@braintree/browser-detection/is-android";
+import isIos from "@braintree/browser-detection/is-ios";
 
-const isMobileDevice = require("../../../../src/local-payment/shared/browser-detection");
-const isAndroid = require("@braintree/browser-detection/is-android");
-const isIos = require("@braintree/browser-detection/is-ios");
-
-jest.mock("@braintree/browser-detection/is-android");
-jest.mock("@braintree/browser-detection/is-ios");
+vi.mock("@braintree/browser-detection/is-android");
+vi.mock("@braintree/browser-detection/is-ios");
 
 describe("isMobileDevice", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("isMobileDevice", () => {

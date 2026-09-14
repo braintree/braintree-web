@@ -1,10 +1,8 @@
-"use strict";
+vi.mock("../../../../../src/lib/frame-service/external/frame-service");
 
-jest.mock("../../../../../src/lib/frame-service/external/frame-service");
-
-const frameService = require("../../../../../src/lib/frame-service/external");
-const FrameService = require("../../../../../src/lib/frame-service/external/frame-service");
-const { noop } = require("../../../../helpers");
+import frameService from "../../../../../src/lib/frame-service/external";
+import FrameService from "../../../../../src/lib/frame-service/external/frame-service";
+import { noop } from "../../../../helpers";
 
 describe("FrameService create", () => {
   let testContext;
@@ -12,31 +10,7 @@ describe("FrameService create", () => {
   beforeEach(() => {
     testContext = {};
 
-    const gatewayConfiguration = {
-      paypal: {
-        assetsUrl: "https://paypal.assets.url",
-        displayName: "my brand",
-      },
-    };
-
-    testContext.state = {
-      client: {
-        authorization: "fake authorization-key",
-        gatewayConfiguration,
-        getConfiguration: () => ({ gatewayConfiguration }),
-      },
-      enableShippingAddress: true,
-      amount: 10.0,
-      currency: "USD",
-      locale: "en_us",
-      flow: "checkout",
-      shippingAddressOverride: {
-        street: "123 Townsend St",
-      },
-    };
-
     testContext.options = {
-      state: testContext.state,
       name: "fake_name",
       dispatchFrameUrl: "fake-url",
       openFrameUrl: "fake-frame-html",

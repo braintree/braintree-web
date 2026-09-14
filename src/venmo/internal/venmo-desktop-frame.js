@@ -1,7 +1,5 @@
-"use strict";
+import create from "./";
 
-var create = require("./");
-
-module.exports = {
-  create: create,
+export default {
+  create,
 };

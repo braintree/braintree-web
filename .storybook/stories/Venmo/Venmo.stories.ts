@@ -1,56 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/html";
 import { createSimpleBraintreeStory } from "../../utils/story-helper";
 import { getAuthorizationToken } from "../../utils/sdk-config";
+import type {
+  IBraintreeError,
+  IVenmoCreateOptions,
+  IVenmoTokenizePayload,
+} from "../../types/global";
+import venmoLogoUrl from "../../assets/venmo-logo.svg?url";
 import "./venmo.css";
-
-// cSpell:ignore venmo Venmo
-
-// Type assertion for window.braintree to include venmo
-interface BraintreeWithVenmo {
-  client: {
-    create: (_options: { authorization: string }) => Promise<unknown>;
-  };
-  venmo: {
-    create: (_options: {
-      client: unknown;
-      allowDesktop?: boolean;
-      allowDesktopWebLogin?: boolean;
-      mobileWebFallBack?: boolean;
-      paymentMethodUsage?: "single_use" | "multi_use";
-      riskCorrelationId?: string;
-      [key: string]: unknown;
-    }) => Promise<{
-      isBrowserSupported(): boolean;
-      hasTokenizationResult(): boolean;
-      tokenize(): Promise<{
-        nonce: string;
-        details: { username: string };
-      }>;
-      cancelTokenization(): Promise<void>;
-      teardown(): Promise<void>;
-    }>;
-  };
-}
-interface VenmoOptions {
-  allowDesktop?: boolean;
-  allowDesktopWebLogin?: boolean;
-  mobileWebFallBack?: boolean;
-  paymentMethodUsage?: "single_use" | "multi_use";
-  riskCorrelationId?: string;
-  [key: string]: unknown;
-}
-
-interface VenmoPayload {
-  nonce: string;
-  details: {
-    username: string;
-  };
-}
-
-interface VenmoError {
-  message: string;
-  code?: string;
-}
 
 const meta: Meta = {
   title: "Braintree/Venmo",
@@ -82,7 +39,9 @@ const createVenmoForm = (title: string, description: string): HTMLElement => {
         </p>
       </div>
 
-      <img id="venmo-button" class="venmo-button" src=".storybook/assets/venmo-logo.svg" />
+      <button id="venmo-button" class="venmo-button" type="button" style="display:none">
+        <img src="${venmoLogoUrl}" alt="Pay with Venmo" />
+      </button>
       <div id="result" class="shared-result"></div>
       <div id="loading" class="shared-loading">Initializing Venmo...</div>
     </div>
@@ -91,7 +50,10 @@ const createVenmoForm = (title: string, description: string): HTMLElement => {
   return container;
 };
 
-const setupVenmo = (container: HTMLElement, venmoOptions: VenmoOptions) => {
+const setupVenmo = (
+  container: HTMLElement,
+  venmoOptions: IVenmoCreateOptions
+) => {
   const authorization = getAuthorizationToken();
   const venmoButton = container.querySelector(
     "#venmo-button"
@@ -99,38 +61,23 @@ const setupVenmo = (container: HTMLElement, venmoOptions: VenmoOptions) => {
   const resultDiv = container.querySelector("#result") as HTMLDivElement;
   const loadingDiv = container.querySelector("#loading") as HTMLDivElement;
 
-  (window.braintree as unknown as BraintreeWithVenmo).client
-    .create({
+  window
+    .braintree!.client.create({
       authorization: authorization,
     })
     .then((clientInstance) => {
-      return (window.braintree as unknown as BraintreeWithVenmo).venmo.create({
+      window.__testClient = clientInstance;
+      return window.braintree!.venmo.create({
         client: clientInstance,
         riskCorrelationId: "foo-bar-test",
         ...venmoOptions,
       });
     })
     .then((venmoInstance) => {
-      if (!venmoInstance.isBrowserSupported()) {
-        showError(resultDiv, loadingDiv, "Browser does not support Venmo");
-        return;
-      }
+      window.__venmoInstance = venmoInstance;
 
       loadingDiv.style.display = "none";
       venmoButton.style.display = "block";
-
-      // Check for existing tokenization results
-      if (venmoInstance.hasTokenizationResult()) {
-        venmoInstance
-          .tokenize()
-          .then((payload: VenmoPayload) => {
-            handleVenmoSuccess(resultDiv, payload);
-          })
-          .catch((tokenizeError: VenmoError) => {
-            handleVenmoError(resultDiv, tokenizeError);
-          });
-        return;
-      }
 
       venmoButton.addEventListener("click", () => {
         venmoButton.disabled = true;
@@ -138,12 +85,12 @@ const setupVenmo = (container: HTMLElement, venmoOptions: VenmoOptions) => {
 
         venmoInstance
           .tokenize()
-          .then((payload: VenmoPayload) => {
+          .then((payload: IVenmoTokenizePayload) => {
             handleVenmoSuccess(resultDiv, payload);
             venmoButton.disabled = false;
             venmoButton.textContent = "Pay with Venmo";
           })
-          .catch((tokenizeError: VenmoError) => {
+          .catch((tokenizeError: IBraintreeError) => {
             handleVenmoError(resultDiv, tokenizeError);
             venmoButton.disabled = false;
             venmoButton.textContent = "Pay with Venmo";
@@ -168,7 +115,7 @@ const showError = (
 
 const handleVenmoSuccess = (
   resultDiv: HTMLDivElement,
-  payload: VenmoPayload
+  payload: IVenmoTokenizePayload
 ) => {
   resultDiv.className =
     "shared-result shared-result--success shared-result--visible";
@@ -179,13 +126,14 @@ const handleVenmoSuccess = (
   `;
 };
 
-const handleVenmoError = (resultDiv: HTMLDivElement, error: VenmoError) => {
+const handleVenmoError = (
+  resultDiv: HTMLDivElement,
+  error: IBraintreeError
+) => {
   let message = error.message;
 
-  if (error.code === "VENMO_CANCELED") {
-    message = "Venmo app not available or user canceled";
-  } else if (error.code === "VENMO_APP_CANCELED") {
-    message = "User canceled payment in Venmo app";
+  if (error.code === "VENMO_CUSTOMER_CANCELED") {
+    message = "Customer canceled the Venmo payment";
   }
 
   resultDiv.className =
@@ -205,6 +153,7 @@ export const DesktopWeb: StoryObj = {
         mobileWebFallBack: true,
         allowDesktopWebLogin: true,
         paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
       });
     },
     ["client.min.js", "venmo.min.js"]
@@ -216,12 +165,15 @@ export const DesktopQR: StoryObj = {
     (container) => {
       const formContainer = createVenmoForm(
         "Venmo Desktop QR",
-        "Desktop QR code integration for multi-use payment methods with enhanced desktop support."
+        "Desktop QR code integration for single-use or multi-use payment methods with enhanced desktop support."
       );
       container.appendChild(formContainer);
       setupVenmo(formContainer, {
         allowDesktop: true,
-        paymentMethodUsage: "multi_use",
+        paymentMethodUsage: "single_use",
+        totalAmount: "10.00",
+        collectCustomerBillingAddress: true,
+        collectCustomerShippingAddress: true,
       });
     },
     ["client.min.js", "venmo.min.js"]

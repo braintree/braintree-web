@@ -1,17 +1,26 @@
-"use strict";
-
-var InputComponents = require("./index");
-var constants = require("../../shared/constants");
-var assign = require("../../../lib/assign").assign;
-var LabelComponent = require("./label").LabelComponent;
-var focusIntercept = require("../../shared/focus-intercept");
+// @ts-nocheck
+import InputComponents from "./index";
+import constants from "../../shared/constants";
+import { assign } from "../../../lib/assign";
+import { LabelComponent } from "./label";
+import focusIntercept from "../../shared/focus-intercept";
 var events = constants.events;
 var allowedFields = constants.allowedFields;
 var directions = constants.navigationDirections;
 
-module.exports = {
+const _default = {
   FieldComponent: function FieldComponent(options) {
     var type = options.type;
+
+    if (
+      !(
+        InputComponents.hasOwnProperty(type) &&
+        typeof InputComponents[type] === "function"
+      )
+    ) {
+      throw new Error("Invalid field type: " + type);
+    }
+
     var attribution = assign({}, allowedFields[type]);
     var customLabel = options.cardForm.configuration.fields[type].internalLabel;
     var componentId = options.componentId;
@@ -76,3 +85,7 @@ module.exports = {
     );
   },
 };
+
+export const { FieldComponent } = _default;
+
+export default _default;

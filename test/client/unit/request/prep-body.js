@@ -1,6 +1,4 @@
-"use strict";
-
-const prepBody = require("../../../../src/client/request/prep-body");
+import prepBody from "../../../../src/client/request/prep-body";
 
 describe("prepBody", () => {
   it("stringifies object bodies for non GET requests", () => {

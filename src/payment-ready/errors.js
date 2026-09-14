@@ -1,8 +1,6 @@
-"use strict";
+import BraintreeError from "../lib/braintree-error";
 
-var BraintreeError = require("../lib/braintree-error");
-
-module.exports = {
+const _default = {
   PAYMENT_READY_ERROR: {
     type: BraintreeError.types.MERCHANT,
     code: "PAYMENT_READY_ERROR",
@@ -38,3 +36,14 @@ module.exports = {
     message: "Error getting customer recommendations",
   },
 };
+
+export const {
+  PAYMENT_READY_ERROR,
+  PAYMENT_READY_MISSING_REQUIRED_OPTION,
+  PAYMENT_READY_CREATE_SESSION_ERROR,
+  PAYMENT_READY_UPDATE_SESSION_ERROR,
+  PAYMENT_READY_NO_SESSION_ID,
+  PAYMENT_READY_GET_RECOMMENDATIONS_ERROR,
+} = _default;
+
+export default _default;

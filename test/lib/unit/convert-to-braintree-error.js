@@ -1,7 +1,5 @@
-"use strict";
-
-const BraintreeError = require("../../../src/lib/braintree-error");
-const convertToBraintreeError = require("../../../src/lib/convert-to-braintree-error");
+import BraintreeError from "../../../src/lib/braintree-error";
+import convertToBraintreeError from "../../../src/lib/convert-to-braintree-error";
 
 describe("convertToBraintreeError", () => {
   it("returns original error if it is a Braintree Error", () => {
@@ -11,13 +9,15 @@ describe("convertToBraintreeError", () => {
       message: "My Message",
     });
 
-    expect(
-      convertToBraintreeError(originalError, {
-        type: "NETWORK",
-        code: "ANOTHER_CODE",
-        message: "Another message",
-      })
-    ).toBe(originalError);
+    const btError = convertToBraintreeError(originalError, {
+      type: "NETWORK",
+      code: "ANOTHER_CODE",
+      message: "Another message",
+    });
+
+    expect(btError.code).toBe("A_CODE");
+    expect(btError.type).toBe("MERCHANT");
+    expect(btError.message).toBe("My Message");
   });
 
   it("wraps error when it is not a Braintree Error", () => {

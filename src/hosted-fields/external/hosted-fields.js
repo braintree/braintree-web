@@ -1,37 +1,35 @@
-"use strict";
-
-var assign = require("../../lib/assign").assign;
-var createAssetsUrl = require("../../lib/create-assets-url");
-var isVerifiedDomain = require("../../lib/is-verified-domain");
-var Destructor = require("../../lib/destructor");
-var iFramer = require("@braintree/iframer");
-var Bus = require("framebus");
-var createDeferredClient = require("../../lib/create-deferred-client");
-var BraintreeError = require("../../lib/braintree-error");
-var composeUrl = require("./compose-url");
-var getStylesFromClass = require("./get-styles-from-class");
-var constants = require("../shared/constants");
-var errors = require("../shared/errors");
-var INTEGRATION_TIMEOUT_MS =
-  require("../../lib/constants").INTEGRATION_TIMEOUT_MS;
-var uuid = require("@braintree/uuid");
-var findParentTags = require("../shared/find-parent-tags");
-var browserDetection = require("../shared/browser-detection");
+// @ts-nocheck
+import { assign } from "../../lib/assign";
+import createAssetsUrl from "../../lib/create-assets-url";
+import isVerifiedDomain from "../../lib/is-verified-domain";
+import Destructor from "../../lib/destructor";
+import iFramer from "@braintree/iframer";
+import Bus from "framebus";
+import createDeferredClient from "../../lib/create-deferred-client";
+import BraintreeError from "../../lib/braintree-error";
+import composeUrl from "../../lib/compose-url";
+import getStylesFromClass from "./get-styles-from-class";
+import constants from "../shared/constants";
+import errors from "../shared/errors";
+import { INTEGRATION_TIMEOUT_MS } from "../../lib/constants";
+import uuid from "@braintree/uuid";
+import findParentTags from "../shared/find-parent-tags";
+import browserDetection from "../shared/browser-detection";
 var events = constants.events;
-var EventEmitter = require("@braintree/event-emitter");
-var injectFrame = require("./inject-frame");
-var analytics = require("../../lib/analytics");
+import EventEmitter from "@braintree/event-emitter";
+import injectFrame from "./inject-frame";
+import analytics from "../../lib/analytics";
 var allowedFields = constants.allowedFields;
-var methods = require("../../lib/methods");
-var shadow = require("../../lib/shadow");
-var findRootNode = require("../../lib/find-root-node");
-var convertMethodsToError = require("../../lib/convert-methods-to-error");
-var sharedErrors = require("../../lib/errors");
-var getCardTypes = require("../shared/get-card-types");
-var attributeValidationError = require("./attribute-validation-error");
-var wrapPromise = require("@braintree/wrap-promise");
-var focusChange = require("./focus-change");
-var destroyFocusIntercept = require("../shared/focus-intercept").destroy;
+var supportedCardBrandDisplayNames = constants.supportedCardBrandDisplayNames;
+import methods from "../../lib/methods";
+import shadow from "../../lib/shadow";
+import findRootNode from "../../lib/find-root-node";
+import convertMethodsToError from "../../lib/convert-methods-to-error";
+import sharedErrors from "../../lib/errors";
+import creditCardType from "credit-card-type";
+import attributeValidationError from "./attribute-validation-error";
+import focusChange from "./focus-change";
+import { destroy as destroyFocusIntercept } from "../shared/focus-intercept";
 
 var SAFARI_FOCUS_TIMEOUT = 5;
 
@@ -126,8 +124,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * - `hipercard`
  * - `jcb`
  * - `maestro`
- * - `master-card`
- * - `unionpay`
+ * - `mastercard`
  * - `visa`
  * @property {string} niceType The pretty-printed card type. It will be one of the following strings:
  * - `American Express`
@@ -139,7 +136,6 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * - `JCB`
  * - `Maestro`
  * - `MasterCard`
- * - `UnionPay`
  * - `Visa`
  * @property {object} code
  * This object contains data relevant to the security code requirements of the card brand.
@@ -169,7 +165,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * * {@link HostedFields#event:binAvailable|binAvailable} - emits a {@link HostedFields~binPayload|bin payload}. Note: If you are using a [Referrer-Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy) header that prevents the origin from being sent, this event will not fire.
  * @example
  * <caption>Listening to a Hosted Field event, in this case 'focus'</caption>
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('focus', function (event) {
  *     console.log(event.emittedBy, 'has been focused');
  *   });
@@ -185,7 +181,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @description Unsubscribes the handler function to a named event.
  * @example
  * <caption>Subscribing and then unsubscribing from a Hosted Field event, in this case 'focus'</caption>
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   var callback = function (event) {
  *     console.log(event.emittedBy, 'has been focused');
  *   };
@@ -206,7 +202,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * var hostedFields = require('braintree-web/hosted-fields');
  * var submitButton = document.querySelector('input[type="submit"]');
  *
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('inputSubmitRequest', function () {
  *     // User requested submission, e.g. by pressing Enter or equivalent
  *     submitButton.click();
@@ -220,7 +216,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to an empty event</caption>
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('empty', function (event) {
  *     console.log(event.emittedBy, 'is now empty');
  *   });
@@ -233,7 +229,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to an notEmpty event</caption>
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('notEmpty', function (event) {
  *     console.log(event.emittedBy, 'is now not empty');
  *   });
@@ -246,7 +242,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to a blur event</caption>
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('blur', function (event) {
  *     console.log(event.emittedBy, 'lost focus');
  *   });
@@ -259,7 +255,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to a focus event</caption>
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('focus', function (event) {
  *     console.log(event.emittedBy, 'gained focus');
  *   });
@@ -272,7 +268,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to a cardTypeChange event</caption>
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('cardTypeChange', function (event) {
  *     if (event.cards.length === 1) {
  *       console.log(event.cards[0].type);
@@ -289,7 +285,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @type {HostedFields~stateObject}
  * @example
  * <caption>Listening to a validityChange event</caption>
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('validityChange', function (event) {
  *     var field = event.fields[event.emittedBy];
  *
@@ -310,7 +306,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * @type {HostedFields~binPayload}
  * @example
  * <caption>Listening to a `binAvailable` event (6-digit BIN by default)</caption>
- * hostedFields.create({ ... }, function (createErr, hostedFieldsInstance) {
+ * hostedFields.create({ ... }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('binAvailable', function (event) {
  *     event.bin // 6 digits by default, e.g. "411111"
  *   });
@@ -320,7 +316,7 @@ var SAFARI_FOCUS_TIMEOUT = 5;
  * hostedFields.create({
  *   binVerificationLength: 8,
  *   fields: { ... }
- * }, function (createErr, hostedFieldsInstance) {
+ * }).then(function (hostedFieldsInstance) {
  *   hostedFieldsInstance.on('binAvailable', function (event) {
  *     event.bin // 8 digits, e.g. "41111111"
  *   });
@@ -356,7 +352,7 @@ function createInputEventHandler(fields) {
       fields: merchantPayload.fields,
     };
 
-    this._emit(eventData.type, merchantPayload);
+    this.emit(eventData.type, merchantPayload);
   };
 }
 
@@ -412,12 +408,15 @@ function HostedFields(options) {
     sessionId: sessionId,
   });
   // Default URL (used in production)
-  hostedFieldsUrl = composeUrl(assetsUrl, componentId, isDebug);
+  hostedFieldsUrl = composeUrl(
+    "hosted-fields-frame",
+    assetsUrl,
+    componentId,
+    isDebug
+  );
 
-  // In development, check for asset URL override
-  // This explicit type checking is required because the unreachable-branch-transform
-  // in our build process fails when evaluating undefined environment variables,
-  // as it attempts to resolve identifiers without proper scope information
+  // In development, apply an asset URL override when one is set. The typeof
+  // check guards against BRAINTREE_JS_ASSET_URL being undefined.
   if (
     process.env.BRAINTREE_JS_ENV === "development" &&
     typeof process.env.BRAINTREE_JS_ASSET_URL === "string" &&
@@ -458,7 +457,7 @@ function HostedFields(options) {
   this._fields = fields;
   this._state = {
     fields: {},
-    cards: getCardTypes(""),
+    cards: creditCardType(""),
   };
 
   this._bus = new Bus({
@@ -496,9 +495,7 @@ function HostedFields(options) {
       }
 
       field = options.fields[key];
-      // NEXT_MAJOR_VERSION remove selector as an option
-      // and simply make the API take a container
-      externalContainer = field.container || field.selector;
+      externalContainer = field.container;
 
       if (typeof externalContainer === "string") {
         externalContainer = document.querySelector(externalContainer);
@@ -510,7 +507,6 @@ function HostedFields(options) {
           code: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.code,
           message: errors.HOSTED_FIELDS_INVALID_FIELD_SELECTOR.message,
           details: {
-            fieldSelector: field.selector,
             fieldContainer: field.container,
             fieldKey: key,
           },
@@ -523,7 +519,6 @@ function HostedFields(options) {
           code: errors.HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME.code,
           message: errors.HOSTED_FIELDS_FIELD_DUPLICATE_IFRAME.message,
           details: {
-            fieldSelector: field.selector,
             fieldContainer: field.container,
             fieldKey: key,
           },
@@ -645,7 +640,7 @@ function HostedFields(options) {
   });
 
   this._bus.on(events.BIN_AVAILABLE, function (bin) {
-    self._emit("binAvailable", {
+    self.emit("binAvailable", {
       bin: bin,
     });
   });
@@ -655,7 +650,7 @@ function HostedFields(options) {
       self._clientPromise,
       "custom.hosted-fields.load.timed-out"
     );
-    self._emit("timeout");
+    self.emit("timeout");
   }, INTEGRATION_TIMEOUT_MS);
 
   Promise.all(frameReadyPromises).then(function (results) {
@@ -668,7 +663,7 @@ function HostedFields(options) {
 
     self._cleanUpFocusIntercepts();
 
-    self._emit("ready");
+    self.emit("ready");
   });
 
   this._bus.on(events.FRAME_READY, function (data, reply) {
@@ -707,7 +702,9 @@ function HostedFields(options) {
   });
 }
 
-EventEmitter.createChild(HostedFields);
+HostedFields.prototype = Object.create(EventEmitter.prototype, {
+  constructor: { value: HostedFields },
+});
 
 HostedFields.prototype._setupLabelFocus = function (type, container) {
   var labels, i;
@@ -805,63 +802,63 @@ HostedFields.prototype._attachInvalidFieldContainersToError = function (err) {
 /**
  * Get card verification challenges, such as requirements for cvv and postal code.
  * @public
- * @param {callback} [callback] Called on completion, containing an error if one occurred. If no callback is provided, `getChallenges` returns a promise.
  * @example
  * hostedFieldsInstance.getChallenges().then(function (challenges) {
  *   challenges // ['cvv', 'postal_code']
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise with an array of fields with verification challenges.
  */
 HostedFields.prototype.getChallenges = function () {
   return this._clientPromise.then(function (client) {
-    return client.getConfiguration().gatewayConfiguration.challenges;
+    var creditCard = client.getConfiguration().gatewayConfiguration.creditCard;
+    var challenges = (creditCard && creditCard.challenges) || [];
+
+    return challenges.map(function (challenge) {
+      return challenge.toLowerCase();
+    });
   });
 };
 
 /**
  * Get supported card types configured in the Braintree Control Panel
  * @public
- * @param {callback} [callback] Called on completion, containing an error if one occurred. If no callback is provided, `getSupportedCardTypes` returns a promise.
  * @example
  * hostedFieldsInstance.getSupportedCardTypes().then(function (cardTypes) {
  *   cardTypes // ['Visa', 'American Express', 'Mastercard']
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise with an array of the supported card types.
  */
 HostedFields.prototype.getSupportedCardTypes = function () {
   return this._clientPromise.then(function (client) {
-    var cards = client
-      .getConfiguration()
-      .gatewayConfiguration.creditCards.supportedCardTypes.map(
-        function (cardType) {
-          if (cardType === "MasterCard") {
-            // Mastercard changed their branding. We can't update our
-            // config without creating a breaking change, so we just
-            // hard code the change here
-            return "Mastercard";
-          }
+    var creditCard = client.getConfiguration().gatewayConfiguration.creditCard;
+    var supportedCardBrands =
+      (creditCard && creditCard.supportedCardBrands) || [];
 
-          return cardType;
-        }
-      );
+    return supportedCardBrands.reduce(function (cards, cardBrand) {
+      var cardType = supportedCardBrandDisplayNames[cardBrand];
 
-    return cards;
+      if (!cardType) {
+        return cards;
+      }
+
+      return cards.concat(cardType);
+    }, []);
   });
 };
 
 /**
  * Cleanly remove anything set up by {@link module:braintree-web/hosted-fields.create|create}.
  * @public
- * @param {callback} [callback] Called on completion, containing an error if one occurred. No data is returned if teardown completes successfully. If no callback is provided, `teardown` returns a promise.
  * @example
- * hostedFieldsInstance.teardown(function (teardownErr) {
- *   if (teardownErr) {
- *     console.error('Could not tear down Hosted Fields!');
- *   } else {
- *     console.info('Hosted Fields has been torn down!');
- *   }
- * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * try {
+ *  hostedFieldsInstance.teardown().then(() => {
+ *    console.info('Hosted Fields has been torn down!');
+ *  });
+ * } catch (err) {
+ *   console.log(err);
+ *   console.error('Could not tear down Hosted Fields!');
+ * }
+ * @returns {Promise} Returns a promise.
  */
 HostedFields.prototype.teardown = function () {
   var self = this;
@@ -904,89 +901,82 @@ HostedFields.prototype.teardown = function () {
  * @param {string} [options.billingAddress.countryCodeAlpha3] When supplied, this alpha 3 representation of a country will be tokenized along with the contents of the fields.
  * @param {string} [options.billingAddress.countryName] When supplied, this country name will be tokenized along with the contents of the fields.
  *
- * @param {callback} [callback] May be used as the only parameter of the function if no options are passed in. The second argument, <code>data</code>, is a {@link HostedFields~tokenizePayload|tokenizePayload}. If no callback is provided, `tokenize` returns a function that resolves with a {@link HostedFields~tokenizePayload|tokenizePayload}.
  * @example <caption>Tokenize a card</caption>
- * hostedFieldsInstance.tokenize(function (tokenizeErr, payload) {
- *   if (tokenizeErr) {
- *     switch (tokenizeErr.code) {
- *       case 'HOSTED_FIELDS_FIELDS_EMPTY':
- *         // occurs when none of the fields are filled in
- *         console.error('All fields are empty! Please fill out the form.');
- *         break;
- *       case 'HOSTED_FIELDS_FIELDS_INVALID':
- *         // occurs when certain fields do not pass client side validation
- *         console.error('Some fields are invalid:', tokenizeErr.details.invalidFieldKeys);
+ * hostedFieldsInstance.tokenize().then(function (payload) {
+ *   console.log('Got nonce:', payload.nonce);
+ * }).catch(function (tokenizeErr) {
+ *   switch (tokenizeErr.code) {
+ *     case 'HOSTED_FIELDS_FIELDS_EMPTY':
+ *       // occurs when none of the fields are filled in
+ *       console.error('All fields are empty! Please fill out the form.');
+ *       break;
+ *     case 'HOSTED_FIELDS_FIELDS_INVALID':
+ *       // occurs when certain fields do not pass client side validation
+ *       console.error('Some fields are invalid:', tokenizeErr.details.invalidFieldKeys);
  *
- *         // you can also programmatically access the field containers for the invalid fields
- *         tokenizeErr.details.invalidFields.forEach(function (fieldContainer) {
- *           fieldContainer.className = 'invalid';
- *         });
- *         break;
- *       case 'HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE':
- *         // occurs when:
- *         //   * the client token used for client authorization was generated
- *         //     with a customer ID and the fail on duplicate payment method
- *         //     option is set to true
- *         //   * the card being tokenized has previously been vaulted (with any customer)
- *         // See: https://developer.paypal.com/braintree/docs/reference/request/client-token/generate#options.fail_on_duplicate_payment_method
- *         console.error('This payment method already exists in your vault.');
- *         break;
- *       case 'HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED':
- *         // occurs when:
- *         //   * the client token used for client authorization was generated
- *         //     with a customer ID and the verify card option is set to true
- *         //     and you have credit card verification turned on in the Braintree
- *         //     control panel
- *         //   * the cvv does not pass verification (https://developer.paypal.com/braintree/docs/reference/general/testing#avs-and-cvv/cid-responses)
- *         // See: https://developer.paypal.com/braintree/docs/reference/request/client-token/generate#options.verify_card
- *         console.error('CVV did not pass verification');
- *         break;
- *       case 'HOSTED_FIELDS_FAILED_TOKENIZATION':
- *         // occurs for any other tokenization error on the server
- *         console.error('Tokenization failed server side. Is the card valid?');
- *         break;
- *       case 'HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR':
- *         // occurs when the Braintree gateway cannot be contacted
- *         console.error('Network error occurred when tokenizing.');
- *         break;
- *       default:
- *         console.error('Something bad happened!', tokenizeErr);
- *     }
- *   } else {
- *     console.log('Got nonce:', payload.nonce);
+ *       // you can also programmatically access the field containers for the invalid fields
+ *       tokenizeErr.details.invalidFields.forEach(function (fieldContainer) {
+ *         fieldContainer.className = 'invalid';
+ *       });
+ *       break;
+ *     case 'HOSTED_FIELDS_TOKENIZATION_FAIL_ON_DUPLICATE':
+ *       // occurs when:
+ *       //   * the client token used for client authorization was generated
+ *       //     with a customer ID and the fail on duplicate payment method
+ *       //     option is set to true
+ *       //   * the card being tokenized has previously been vaulted (with any customer)
+ *       // See: https://developer.paypal.com/braintree/docs/reference/request/client-token/generate#options.fail_on_duplicate_payment_method
+ *       console.error('This payment method already exists in your vault.');
+ *       break;
+ *     case 'HOSTED_FIELDS_TOKENIZATION_CVV_VERIFICATION_FAILED':
+ *       // occurs when:
+ *       //   * the client token used for client authorization was generated
+ *       //     with a customer ID and the verify card option is set to true
+ *       //     and you have credit card verification turned on in the Braintree
+ *       //     control panel
+ *       //   * the cvv does not pass verification (https://developer.paypal.com/braintree/docs/reference/general/testing#avs-and-cvv/cid-responses)
+ *       // See: https://developer.paypal.com/braintree/docs/reference/request/client-token/generate#options.verify_card
+ *       console.error('CVV did not pass verification');
+ *       break;
+ *     case 'HOSTED_FIELDS_FAILED_TOKENIZATION':
+ *       // occurs for any other tokenization error on the server
+ *       console.error('Tokenization failed server side. Is the card valid?');
+ *       break;
+ *     case 'HOSTED_FIELDS_TOKENIZATION_NETWORK_ERROR':
+ *       // occurs when the Braintree gateway cannot be contacted
+ *       console.error('Network error occurred when tokenizing.');
+ *       break;
+ *     default:
+ *       console.error('Something bad happened!', tokenizeErr);
  *   }
  * });
  * @example <caption>Tokenize and vault a card</caption>
  * hostedFieldsInstance.tokenize({
  *   vault: true
- * }, function (tokenizeErr, payload) {
- *   if (tokenizeErr) {
- *     console.error(tokenizeErr);
- *   } else {
- *     console.log('Got nonce:', payload.nonce);
- *   }
+ * }).then(function (payload) {
+ *   console.log('Got nonce:', payload.nonce);
+ * }).catch(function (tokenizeErr) {
+ *   console.error(tokenizeErr);
  * });
  * @example <caption>Tokenize a card with non-Hosted Fields cardholder name</caption>
- * hostedFieldsInstance.tokenize({
- *   cardholderName: 'First Last'
- * }, function (tokenizeErr, payload) {
- *   if (tokenizeErr) {
- *     console.error(tokenizeErr);
- *   } else {
- *     console.log('Got nonce:', payload.nonce);
- *   }
- * });
+ * try {
+ *   const payload = await hostedFieldsInstance.tokenize({
+ *     cardholderName: 'First Last'
+ *   });
+ *
+ *   console.log('Got nonce:', payload.nonce);
+ * } catch (tokenizeErr) {
+ *   console.error(tokenizeErr);
+ * }
  * @example <caption>Tokenize a card with non-Hosted Fields postal code option</caption>
  * hostedFieldsInstance.tokenize({
  *   billingAddress: {
  *     postalCode: '11111'
  *   }
- * }, function (tokenizeErr, payload) {
- *   if (tokenizeErr) {
- *     console.error(tokenizeErr);
- *   } else {
- *     console.log('Got nonce:', payload.nonce);
- *   }
+ * }).then(function (payload) {
+ *   console.log('Got nonce:', payload.nonce);
+ * }).catch(function (tokenizeErr) {
+ *   console.error(tokenizeErr);
  * });
  * @example <caption>Tokenize a card with additional billing address options</caption>
  * hostedFieldsInstance.tokenize({
@@ -1005,12 +995,10 @@ HostedFields.prototype.teardown = function () {
  *     countryCodeAlpha3: 'USA',
  *     countryCodeNumeric: '840'
  *   }
- * }, function (tokenizeErr, payload) {
- *   if (tokenizeErr) {
- *     console.error(tokenizeErr);
- *   } else {
- *     console.log('Got nonce:', payload.nonce);
- *   }
+ * }).then(function (payload) {
+ *   console.log('Got nonce:', payload.nonce);
+ * }).catch(function (tokenizeErr) {
+ *   console.error(tokenizeErr);
  * });
  * @example <caption>Allow tokenization with empty cardholder name field</caption>
  * var state = hostedFieldsInstance.getState();
@@ -1029,14 +1017,12 @@ HostedFields.prototype.teardown = function () {
  *
  * hostedFieldsInstance.tokenize({
  *  fieldsToTokenize: fields
- * }, function (tokenizeErr, payload) {
- *   if (tokenizeErr) {
- *     console.error(tokenizeErr);
- *   } else {
- *     console.log('Got nonce:', payload.nonce);
- *   }
+ * }).then(function (payload) {
+ *   console.log('Got nonce:', payload.nonce);
+ * }).catch(function (tokenizeErr) {
+ *   console.error(tokenizeErr);
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise that resolves with a {@link HostedFields~tokenizePayload|tokenizePayload}.
  */
 HostedFields.prototype.tokenize = function (options) {
   var self = this;
@@ -1065,15 +1051,12 @@ HostedFields.prototype.tokenize = function (options) {
  * @public
  * @param {string} field The field you wish to add a class to. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {string} classname The class to be added.
- * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the class is added successfully.
  *
  * @example
- * hostedFieldsInstance.addClass('number', 'custom-class', function (addClassErr) {
- *   if (addClassErr) {
- *     console.error(addClassErr);
- *   }
+ * hostedFieldsInstance.addClass('number', 'custom-class').catch(function (addClassErr) {
+ *   console.error(addClassErr);
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  */
 HostedFields.prototype.addClass = function (field, classname) {
   var err;
@@ -1111,23 +1094,16 @@ HostedFields.prototype.addClass = function (field, classname) {
 };
 
 /**
- * Removes a class to a {@link module:braintree-web/hosted-fields~field field}. Useful for updating field styles when events occur elsewhere in your checkout.
+ * Removes a class from a {@link module:braintree-web/hosted-fields~field field}. Useful for updating field styles when events occur elsewhere in your checkout.
  * @public
  * @param {string} field The field you wish to remove a class from. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {string} classname The class to be removed.
- * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the class is removed successfully.
- *
  * @example
- * hostedFieldsInstance.addClass('number', 'custom-class', function (addClassErr) {
- *   if (addClassErr) {
- *     console.error(addClassErr);
- *     return;
- *   }
- *
+ * hostedFieldsInstance.addClass('number', 'custom-class').then(function () {
  *   // some time later...
  *   hostedFieldsInstance.removeClass('number', 'custom-class');
  * });
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  */
 HostedFields.prototype.removeClass = function (field, classname) {
   var err;
@@ -1173,17 +1149,13 @@ HostedFields.prototype.removeClass = function (field, classname) {
  * @param {string} options.field The field to which you wish to add an attribute. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {string} options.attribute The name of the attribute you wish to add to the field.
  * @param {string} options.value The value for the attribute.
- * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the attribute is set successfully.
- *
  * @example <caption>Set the placeholder attribute of a field</caption>
  * hostedFieldsInstance.setAttribute({
  *   field: 'number',
  *   attribute: 'placeholder',
  *   value: '1111 1111 1111 1111'
- * }, function (attributeErr) {
- *   if (attributeErr) {
- *     console.error(attributeErr);
- *   }
+ * }).catch(function (attributeErr) {
+ *   console.error(attributeErr);
  * });
  *
  * @example <caption>Set the aria-required attribute of a field</caption>
@@ -1191,13 +1163,11 @@ HostedFields.prototype.removeClass = function (field, classname) {
  *   field: 'number',
  *   attribute: 'aria-required',
  *   value: true
- * }, function (attributeErr) {
- *   if (attributeErr) {
- *     console.error(attributeErr);
- *   }
+ * }).catch(function (attributeErr) {
+ *   console.error(attributeErr);
  * });
  *
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  */
 HostedFields.prototype.setAttribute = function (options) {
   var attributeErr, err;
@@ -1246,7 +1216,6 @@ HostedFields.prototype.setAttribute = function (options) {
  *
  * @public
  * @param {array} options An array of 12 entries corresponding to the 12 months.
- * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the options are updated successfully. Errors if expirationMonth is not configured on the Hosted Fields instance or if the expirationMonth field is not configured to be a select input.
  *
  * @example <caption>Update the month options to spanish</caption>
  * hostedFieldsInstance.setMonthOptions([
@@ -1264,7 +1233,7 @@ HostedFields.prototype.setAttribute = function (options) {
  *   '12 - diciembre'
  * ]);
  *
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  */
 HostedFields.prototype.setMonthOptions = function (options) {
   var self = this;
@@ -1328,19 +1297,16 @@ HostedFields.prototype.setMessage = function (options) {
  * @param {object} options The options for the attribute you wish to remove.
  * @param {string} options.field The field from which you wish to remove an attribute. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
  * @param {string} options.attribute The name of the attribute you wish to remove from the field.
- * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the attribute is removed successfully.
  *
  * @example <caption>Remove the placeholder attribute of a field</caption>
  * hostedFieldsInstance.removeAttribute({
  *   field: 'number',
  *   attribute: 'placeholder'
- * }, function (attributeErr) {
- *   if (attributeErr) {
- *     console.error(attributeErr);
- *   }
+ * }).catch(function (attributeErr) {
+ *   console.error(attributeErr);
  * });
  *
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  */
 HostedFields.prototype.removeAttribute = function (options) {
   var attributeErr, err;
@@ -1384,34 +1350,13 @@ HostedFields.prototype.removeAttribute = function (options) {
 };
 
 /**
- * @deprecated since version 3.8.0. Use {@link HostedFields#setAttribute|setAttribute} instead.
- *
- * @public
- * @param {string} field The field whose placeholder you wish to change. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
- * @param {string} placeholder Will be used as the `placeholder` attribute of the input.
- * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the placeholder updated successfully.
- *
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
- */
-HostedFields.prototype.setPlaceholder = function (field, placeholder) {
-  return this.setAttribute({
-    field: field,
-    attribute: "placeholder",
-    value: placeholder,
-  });
-};
-
-/**
  * Clear the value of a {@link module:braintree-web/hosted-fields~field field}.
  * @public
  * @param {string} field The field you wish to clear. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
- * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field cleared successfully.
- * @returns {(Promise|void)} Returns a promise if no callback is provided.
+ * @returns {Promise} Returns a promise.
  * @example
- * hostedFieldsInstance.clear('number', function (clearErr) {
- *   if (clearErr) {
- *     console.error(clearErr);
- *   }
+ * hostedFieldsInstance.clear('number').catch(function (clearErr) {
+ *   console.error(clearErr);
  * });
  *
  * @example <caption>Clear several fields</caption>
@@ -1457,13 +1402,10 @@ HostedFields.prototype.clear = function (field) {
  * Programmatically focus a {@link module:braintree-web/hosted-fields~field field}.
  * @public
  * @param {string} field The field you want to focus. Must be a valid {@link module:braintree-web/hosted-fields~fieldOptions fieldOption}.
- * @param {callback} [callback] Callback executed on completion, containing an error if one occurred. No data is returned if the field focused successfully.
- * @returns {void}
+ * @returns {Promise} Returns a promise.
  * @example
- * hostedFieldsInstance.focus('number', function (focusErr) {
- *   if (focusErr) {
- *     console.error(focusErr);
- *   }
+ * hostedFieldsInstance.focus('number').catch(function (focusErr) {
+ *   console.error(focusErr);
  * });
  * @example <caption>Using an event listener</caption>
  * myElement.addEventListener('click', function (e) {
@@ -1554,4 +1496,4 @@ function formatMerchantConfigurationForIframes(config) {
   return formattedConfig;
 }
 
-module.exports = wrapPromise.wrapPrototype(HostedFields);
+export default HostedFields;

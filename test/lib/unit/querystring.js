@@ -1,7 +1,5 @@
-"use strict";
-
-const querystring = require("../../../src/lib/querystring");
-const { noop } = require("../../helpers");
+import querystring from "../../../src/lib/querystring";
+import { noop } from "../../helpers";
 
 describe("querystring", () => {
   describe("hasQueryParams", () => {

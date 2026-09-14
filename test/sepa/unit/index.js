@@ -1,20 +1,21 @@
-"use strict";
+vi.mock("../../../src/lib/analytics");
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("../../../src/lib/create-deferred-client");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/sepa/external/sepa");
+vi.mock("../../../src/sepa/external/mandate");
 
-jest.mock("../../../src/lib/analytics");
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("../../../src/lib/create-deferred-client");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/sepa/external/sepa");
-jest.mock("../../../src/sepa/external/mandate");
+import { fake } from "../../helpers";
+import _e16 from "../../../src/sepa";
 
-const { fake } = require("../../helpers");
-const { create } = require("../../../src/sepa");
-const SEPA = require("../../../src/sepa/external/sepa");
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const analytics = require("../../../src/lib/analytics");
-const assign = require("../../../src/lib/assign").assign;
-const mandate = require("../../../src/sepa/external/mandate");
+const { create } = _e16;
+
+import SEPA from "../../../src/sepa/external/sepa";
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import analytics from "../../../src/lib/analytics";
+import { assign } from "../../../src/lib/assign";
+import mandate from "../../../src/sepa/external/mandate";
 
 describe("SEPA static methods", () => {
   describe("sepa.create", () => {
@@ -26,20 +27,9 @@ describe("SEPA static methods", () => {
       testContext.client = fake.client({
         configuration: testContext.configuration,
       });
-      jest
-        .spyOn(createDeferredClient, "create")
-        .mockResolvedValue(testContext.client);
-    });
-
-    it("works with a callback when provided", (done) => {
-      const expectedSepaInputs = {
-        client: testContext.client,
-      };
-
-      create(expectedSepaInputs, function () {
-        expect(SEPA).toBeCalledWith(expectedSepaInputs);
-        done();
-      });
+      vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+        testContext.client
+      );
     });
 
     it("verifies with basicComponentVerification", () =>

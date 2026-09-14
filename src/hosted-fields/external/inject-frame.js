@@ -1,9 +1,7 @@
-"use strict";
+import focusIntercept from "../shared/focus-intercept";
+import { navigationDirections as directions } from "../shared/constants";
 
-var focusIntercept = require("../shared/focus-intercept");
-var directions = require("../shared/constants").navigationDirections;
-
-module.exports = function injectFrame(id, frame, container, focusHandler) {
+export default function injectFrame(id, frame, container, focusHandler) {
   var frameType = frame.getAttribute("type");
   var clearboth = document.createElement("div");
   var fragment = document.createDocumentFragment();
@@ -30,4 +28,4 @@ module.exports = function injectFrame(id, frame, container, focusHandler) {
   container.appendChild(fragment);
 
   return [frame, clearboth];
-};
+}

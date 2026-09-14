@@ -1,9 +1,11 @@
-"use strict";
-
-var BraintreeError = require("./braintree-error");
+import BraintreeError from "./braintree-error";
 
 function convertToBraintreeError(originalErr, btErrorObject) {
-  if (originalErr instanceof BraintreeError) {
+  if (
+    originalErr &&
+    originalErr.name &&
+    originalErr.name === "BraintreeError"
+  ) {
     return originalErr;
   }
 
@@ -17,4 +19,4 @@ function convertToBraintreeError(originalErr, btErrorObject) {
   });
 }
 
-module.exports = convertToBraintreeError;
+export default convertToBraintreeError;

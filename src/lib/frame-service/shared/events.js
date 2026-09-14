@@ -1,8 +1,10 @@
-"use strict";
+import enumerate from "../../enumerate";
 
-var enumerate = require("../../enumerate");
-
-module.exports = enumerate(
+const events = enumerate(
   ["DISPATCH_FRAME_READY", "DISPATCH_FRAME_REPORT"],
   "frameService:"
 );
+
+export const { DISPATCH_FRAME_READY, DISPATCH_FRAME_REPORT } = events;
+
+export default events;

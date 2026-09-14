@@ -1,20 +1,20 @@
-"use strict";
+vi.mock("../../../src/lib/basic-component-verification");
+vi.mock("framebus");
+vi.mock("../../../src/lib/create-assets-url");
+vi.mock("../../../src/lib/create-deferred-client");
 
-jest.mock("../../../src/lib/basic-component-verification");
-jest.mock("framebus");
-jest.mock("../../../src/lib/create-assets-url");
-jest.mock("../../../src/lib/create-deferred-client");
+import basicComponentVerification from "../../../src/lib/basic-component-verification";
+import createDeferredClient from "../../../src/lib/create-deferred-client";
+import dataCollector from "../../../src/data-collector";
+import fraudnet from "../../../src/data-collector/fraudnet";
+import BraintreeError from "../../../src/lib/braintree-error";
+import methods from "../../../src/lib/methods";
+import _imp0 from "../../helpers";
 
-const basicComponentVerification = require("../../../src/lib/basic-component-verification");
-const createDeferredClient = require("../../../src/lib/create-deferred-client");
-const dataCollector = require("../../../src/data-collector");
-const fraudnet = require("../../../src/data-collector/fraudnet");
-const BraintreeError = require("../../../src/lib/braintree-error");
-const methods = require("../../../src/lib/methods");
 const {
   fake: { client: fakeClient, clientToken, configuration },
   noop,
-} = require("../../helpers");
+} = _imp0;
 
 describe("dataCollector", () => {
   let testContext;
@@ -25,10 +25,10 @@ describe("dataCollector", () => {
     testContext.client = fakeClient({
       configuration: testContext.configuration,
     });
-    jest.spyOn(fraudnet, "setup").mockResolvedValue({});
-    jest
-      .spyOn(createDeferredClient, "create")
-      .mockResolvedValue(testContext.client);
+    vi.spyOn(fraudnet, "setup").mockResolvedValue({});
+    vi.spyOn(createDeferredClient, "create").mockResolvedValue(
+      testContext.client
+    );
   });
 
   describe("create", () => {
@@ -68,24 +68,6 @@ describe("dataCollector", () => {
         });
     });
 
-    it("doesn't raise an error when passed kount=true", () => {
-      dataCollector
-        .create({
-          kount: true,
-          authorization: clientToken,
-          useDeferredClient: true,
-          debug: true,
-        })
-        .then((dtInstance) => {
-          expect(dtInstance).toBeDefined();
-        })
-        .catch(() => {
-          // Should never get here
-          expect(true).toBe(false);
-        });
-      expect.assertions(1);
-    });
-
     it("sets up fraudnet with the gateway environment", () => {
       testContext.configuration.gatewayConfiguration.environment =
         "custom-environment-value";
@@ -93,10 +75,10 @@ describe("dataCollector", () => {
       return dataCollector
         .create({
           client: testContext.client,
-          paypal: true,
         })
         .then(() => {
           expect(fraudnet.setup).toBeCalledWith({
+            client: expect.anything(),
             environment: "custom-environment-value",
             clientSessionId: "fakeSessionId",
           });
@@ -108,10 +90,10 @@ describe("dataCollector", () => {
         .create({
           client: testContext.client,
           riskCorrelationId: "custom-risk-correlation-id",
-          paypal: true,
         })
         .then(() => {
           expect(fraudnet.setup).toBeCalledWith({
+            client: expect.anything(),
             sessionId: "custom-risk-correlation-id",
             environment: "sandbox",
             clientSessionId: "fakeSessionId",
@@ -119,73 +101,7 @@ describe("dataCollector", () => {
         });
     });
 
-    it("can use clientMetadataId as an alias for riskCorrelationId", () => {
-      return dataCollector
-        .create({
-          client: testContext.client,
-          clientMetadataId: "custom-correlation-id",
-          paypal: true,
-        })
-        .then(() => {
-          expect(fraudnet.setup).toBeCalledWith({
-            sessionId: "custom-correlation-id",
-            environment: "sandbox",
-            clientSessionId: "fakeSessionId",
-          });
-        });
-    });
-
-    it("can use correlationId as an alias for riskCorrelationId", () => {
-      return dataCollector
-        .create({
-          client: testContext.client,
-          correlationId: "custom-correlation-id",
-          paypal: true,
-        })
-        .then(() => {
-          expect(fraudnet.setup).toBeCalledWith({
-            sessionId: "custom-correlation-id",
-            environment: "sandbox",
-            clientSessionId: "fakeSessionId",
-          });
-        });
-    });
-
-    it("prefers riskCorrelationId over clientMetadataId", () => {
-      return dataCollector
-        .create({
-          client: testContext.client,
-          clientMetadataId: "custom-client-metadata-id",
-          riskCorrelationId: "custom-risk-correlation-id",
-          paypal: true,
-        })
-        .then(() => {
-          expect(fraudnet.setup).toBeCalledWith({
-            sessionId: "custom-risk-correlation-id",
-            environment: "sandbox",
-            clientSessionId: "fakeSessionId",
-          });
-        });
-    });
-
-    it("prefers clientMetadataId over correlationId", () => {
-      return dataCollector
-        .create({
-          client: testContext.client,
-          clientMetadataId: "custom-client-metadata-id",
-          correlationId: "custom-correlation-id",
-          paypal: true,
-        })
-        .then(() => {
-          expect(fraudnet.setup).toBeCalledWith({
-            sessionId: "custom-client-metadata-id",
-            environment: "sandbox",
-            clientSessionId: "fakeSessionId",
-          });
-        });
-    });
-
-    it("returns only fraudnet information if paypal is true", () => {
+    it("returns fraudnet information", () => {
       const mockData = {
         sessionId: "thingy",
       };
@@ -195,30 +111,11 @@ describe("dataCollector", () => {
       return dataCollector
         .create({
           client: testContext.client,
-          paypal: true,
         })
         .then((actual) => {
           expect(actual.deviceData).toBe(
             `{"correlation_id":"${mockData.sessionId}"}`
           );
-        });
-    });
-
-    it("returns fraudnet only when paypal isn't present", () => {
-      const mockPPid = "paypal_id";
-
-      fraudnet.setup.mockResolvedValue({
-        sessionId: mockPPid,
-      });
-
-      return dataCollector
-        .create({
-          client: testContext.client,
-        })
-        .then((data) => {
-          const actual = JSON.parse(data.deviceData);
-
-          expect(actual.correlation_id).toBe(mockPPid);
         });
     });
 
@@ -233,7 +130,6 @@ describe("dataCollector", () => {
       return dataCollector
         .create({
           client: testContext.client,
-          paypal: true,
         })
         .then((actual) => {
           actual1 = actual;
@@ -244,7 +140,6 @@ describe("dataCollector", () => {
           return dataCollector
             .create({
               client: testContext.client,
-              paypal: true,
             })
             .then((actual2) => {
               expect(actual1.deviceData).not.toBe(actual2.deviceData);
@@ -262,7 +157,6 @@ describe("dataCollector", () => {
       return dataCollector
         .create({
           client: testContext.client,
-          paypal: true,
         })
         .then((instance) => {
           expect(instance.rawDeviceData).toEqual({
@@ -271,24 +165,28 @@ describe("dataCollector", () => {
         });
     });
 
-    it("returns a rejected promise if fraudnet.setup resolves without an instance", (done) => {
-      fraudnet.setup.mockResolvedValue(null);
+    it("returns a rejected promise if fraudnet.setup resolves without an instance", () =>
+      new Promise((resolve) => {
+        fraudnet.setup.mockResolvedValue(null);
 
-      dataCollector
-        .create({
-          client: testContext.client,
-          paypal: true,
-        })
-        .catch((err) => {
-          expect(err.code).toEqual("DATA_COLLECTOR_REQUIRES_CREATE_OPTIONS");
-          done();
-        });
-    });
+        dataCollector
+          .create({
+            client: testContext.client,
+          })
+          .catch((err) => {
+            expect(err.code).toEqual("DATA_COLLECTOR_FAILED_TO_INSTANTIATE");
+            expect(err.type).toEqual("NETWORK");
+            expect(err.message).toEqual(
+              "Data Collector failed to instantiate. Possible network error or blocked request."
+            );
+            resolve();
+          });
+      }));
   });
 
   describe("teardown", () => {
     it("runs teardown on all instances", () => {
-      const fraudnetTeardown = jest.fn();
+      const fraudnetTeardown = vi.fn();
 
       fraudnet.setup.mockResolvedValue({
         sessionId: "anything",
@@ -298,7 +196,6 @@ describe("dataCollector", () => {
       return dataCollector
         .create({
           client: testContext.client,
-          paypal: true,
         })
         .then((actual) => {
           return actual.teardown();
@@ -308,68 +205,68 @@ describe("dataCollector", () => {
         });
     });
 
-    it("resolves a promise", (done) => {
-      fraudnet.setup.mockResolvedValue({
-        sessionId: "anything",
-        teardown: noop,
-      });
-
-      dataCollector
-        .create({
-          client: testContext.client,
-          paypal: true,
-        })
-        .then((instance) => {
-          instance.teardown().then(() => {
-            done();
-          });
+    it("resolves a promise", () =>
+      new Promise((resolve) => {
+        fraudnet.setup.mockResolvedValue({
+          sessionId: "anything",
+          teardown: noop,
         });
-    });
 
-    it("replaces all methods so error is thrown when methods are invoked", (done) => {
-      fraudnet.setup.mockResolvedValue({
-        sessionId: "anything",
-        teardown: noop,
-      });
-
-      dataCollector
-        .create({
-          client: testContext.client,
-          paypal: true,
-        })
-        .then((instance) => {
-          instance.teardown(() => {
-            const tornDownMethods = methods(instance);
-
-            expect(tornDownMethods.length).toBeGreaterThan(0);
-
-            tornDownMethods.forEach((method) => {
-              let error;
-
-              try {
-                instance[method]();
-              } catch (e) {
-                error = e;
-              }
-
-              expect(error).toBeInstanceOf(BraintreeError);
-              expect(error.type).toBe("MERCHANT");
-              expect(error.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
-              expect(error.message).toBe(
-                `${method} cannot be called after teardown.`
-              );
+        dataCollector
+          .create({
+            client: testContext.client,
+          })
+          .then((instance) => {
+            instance.teardown().then(() => {
+              resolve();
             });
-
-            done();
           });
+      }));
+
+    it("replaces all methods so error is thrown when methods are invoked", () =>
+      new Promise((resolve) => {
+        fraudnet.setup.mockResolvedValue({
+          sessionId: "anything",
+          teardown: noop,
         });
-    });
+
+        dataCollector
+          .create({
+            client: testContext.client,
+          })
+          .then((instance) => {
+            instance.teardown().then(() => {
+              const tornDownMethods = methods(instance);
+
+              expect(tornDownMethods.length).toBeGreaterThan(0);
+
+              tornDownMethods.forEach((method) => {
+                let error;
+
+                try {
+                  instance[method]();
+                } catch (e) {
+                  error = e;
+                }
+
+                expect(error).toBeInstanceOf(BraintreeError);
+                expect(error.type).toBe("MERCHANT");
+                expect(error.code).toBe("METHOD_CALLED_AFTER_TEARDOWN");
+                expect(error.message).toBe(
+                  `${method} cannot be called after teardown.`
+                );
+              });
+
+              resolve();
+            });
+          });
+      }));
 
     it("waits for deferred client to be ready when using authorization setup", () => {
       let clientHasResolved = false;
 
       fraudnet.setup.mockResolvedValue({
-        teardown: jest.fn(),
+        teardown: vi.fn(),
         sessionId: "paypal_id",
       });
 
@@ -387,7 +284,6 @@ describe("dataCollector", () => {
         .create({
           authorization: "fake-auth",
           useDeferredClient: true,
-          paypal: true,
         })
         .then((instance) => {
           expect(clientHasResolved).toBe(false);
@@ -410,7 +306,6 @@ describe("dataCollector", () => {
       dataCollector
         .create({
           client: testContext.client,
-          paypal: true,
         })
         .then((instance) => instance.getDeviceData())
         .then((deviceData) => {
@@ -423,7 +318,6 @@ describe("dataCollector", () => {
       dataCollector
         .create({
           client: testContext.client,
-          paypal: true,
         })
         .then((instance) =>
           instance.getDeviceData({
@@ -453,7 +347,6 @@ describe("dataCollector", () => {
         .create({
           authorization: "fake-auth",
           useDeferredClient: true,
-          paypal: true,
         })
         .then((instance) => {
           expect(clientHasResolved).toBe(false);

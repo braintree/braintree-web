@@ -1,23 +1,16 @@
-"use strict";
+import Client from "../../../src/client/client";
+import client from "../../../src/client";
+import BraintreeError from "../../../src/lib/braintree-error";
+import _imp0 from "../../helpers";
 
-const Client = require("../../../src/client/client");
-const client = require("../../../src/client");
-const BraintreeError = require("../../../src/lib/braintree-error");
 const {
   fake: { client: fakeClient, clientToken, tokenizationKey },
   rejectIfResolves,
-} = require("../../helpers");
+} = _imp0;
 
 describe("client.create", () => {
   beforeEach(() => {
-    jest.spyOn(Client, "initialize").mockResolvedValue(fakeClient());
-  });
-
-  it("supports a callback", (done) => {
-    client.create({ authorization: tokenizationKey }, () => {
-      expect(Client.initialize).toBeCalledTimes(1);
-      done();
-    });
+    vi.spyOn(Client, "initialize").mockResolvedValue(fakeClient());
   });
 
   it("rejcts if no authorization given", () =>

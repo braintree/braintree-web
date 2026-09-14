@@ -1,14 +1,12 @@
-"use strict";
+vi.mock("../../../src/venmo/shared/browser-detection");
+vi.mock("../../../src/lib/in-iframe");
 
-jest.mock("../../../src/venmo/shared/browser-detection");
-jest.mock("../../../src/lib/in-iframe");
-
-const browserDetection = require("../../../src/venmo/shared/browser-detection");
-const inIframe = require("../../../src/lib/in-iframe");
-const {
+import browserDetection from "../../../src/venmo/shared/browser-detection";
+import inIframe from "../../../src/lib/in-iframe";
+import {
   isBrowserSupported,
   isNonDefaultBrowser,
-} = require("../../../src/venmo/shared/supports-venmo");
+} from "../../../src/venmo/shared/supports-venmo";
 
 describe("isBrowserSupported", () => {
   beforeEach(() => {
@@ -112,7 +110,7 @@ describe("isBrowserSupported", () => {
   });
 
   describe("allowWebviews: false", () => {
-    it("returns true for iOS Safari when webviews are dissallowed", () => {
+    it("returns true for iOS Safari when webviews are disallowed", () => {
       browserDetection.isIos.mockReturnValue(true);
       browserDetection.isIosSafari.mockReturnValue(true);
 

@@ -1,33 +1,19 @@
-"use strict";
-
-var BaseFramework = require("./base");
-var assign = require("../../../lib/assign").assign;
-var deferred = require("../../../lib/deferred");
-var BraintreeError = require("../../../lib/braintree-error");
-var convertToBraintreeError = require("../../../lib/convert-to-braintree-error");
-var analytics = require("../../../lib/analytics");
-var assets = require("../../../lib/assets");
-var errors = require("../../shared/errors");
-var enumerate = require("../../../lib/enumerate");
-var ExtendedPromise = require("@braintree/extended-promise");
-
-var INTEGRATION_TIMEOUT_MS =
-  require("../../../lib/constants").INTEGRATION_TIMEOUT_MS;
-var PLATFORM = require("../../../lib/constants").PLATFORM;
-var VERSION = process.env.npm_package_version;
+// @ts-nocheck
+import BaseFramework from "./base";
+import { assign } from "../../../lib/assign";
+import deferred from "../../../lib/deferred";
+import BraintreeError from "../../../lib/braintree-error";
+import convertToBraintreeError from "../../../lib/convert-to-braintree-error";
+import analytics from "../../../lib/analytics";
+import assets from "../../../lib/assets";
+import errors from "../../shared/errors";
+import enumerate from "../../../lib/enumerate";
+import ExtendedPromise from "@braintree/extended-promise";
+import { INTEGRATION_TIMEOUT_MS } from "../../../lib/constants";
+import { PLATFORM } from "../../../lib/constants";
+const VERSION = __SDK_VERSION__;
 var CUSTOMER_CANCELED_SONGBIRD_MODAL = "01";
-var SONGBIRD_UI_EVENTS = [
-  "ui.close",
-  "ui.render",
-
-  // eslint-disable-next-line no-warning-comments
-  // TODO these events are not documented in the
-  // client reference because so far we have
-  // not been able to trigger them in our testing
-  "ui.renderHidden",
-  "ui.loading.close",
-  "ui.loading.render",
-];
+var SONGBIRD_UI_EVENTS = ["ui.close", "ui.render"];
 
 var SCA_EXEMPTION_TYPES = ["low_value", "transaction_risk_analysis"];
 
@@ -52,21 +38,13 @@ SongbirdFramework.prototype = Object.create(BaseFramework.prototype, {
 });
 
 SongbirdFramework.events = enumerate(
-  [
-    "LOOKUP_COMPLETE",
-    "CUSTOMER_CANCELED",
-    "UI.CLOSE",
-    "UI.RENDER",
-    "UI.RENDERHIDDEN",
-    "UI.LOADING.CLOSE",
-    "UI.LOADING.RENDER",
-  ],
+  ["LOOKUP_COMPLETE", "CUSTOMER_CANCELED", "UI.CLOSE", "UI.RENDER"],
   "songbird-framework:"
 );
 
 SongbirdFramework.prototype.setUpEventListeners = function (reply) {
-  this.on(SongbirdFramework.events.LOOKUP_COMPLETE, function (data, next) {
-    reply("lookup-complete", data, next);
+  this.on(SongbirdFramework.events.LOOKUP_COMPLETE, function (payload) {
+    reply("lookup-complete", payload);
   });
   this.on(SongbirdFramework.events.CUSTOMER_CANCELED, function () {
     reply("customer-canceled");
@@ -76,15 +54,6 @@ SongbirdFramework.prototype.setUpEventListeners = function (reply) {
   });
   this.on(SongbirdFramework.events["UI.RENDER"], function () {
     reply("authentication-modal-render");
-  });
-  this.on(SongbirdFramework.events["UI.RENDERHIDDEN"], function () {
-    reply("authentication-modal-render-hidden");
-  });
-  this.on(SongbirdFramework.events["UI.LOADING.CLOSE"], function () {
-    reply("authentication-modal-loader-close");
-  });
-  this.on(SongbirdFramework.events["UI.LOADING.RENDER"], function () {
-    reply("authentication-modal-loader-render");
   });
 };
 
@@ -188,63 +157,6 @@ SongbirdFramework.prototype.transformShippingAddress = function (
   return additionalInformation;
 };
 
-SongbirdFramework.prototype._createV1IframeModalElement = function (iframe) {
-  var modal = document.createElement("div");
-
-  modal.innerHTML =
-    '<div data-braintree-v1-fallback-iframe-container="true" style="' +
-    "height: 400px;" +
-    '"></div>';
-  modal
-    .querySelector('[data-braintree-v1-fallback-iframe-container="true"]')
-    .appendChild(iframe);
-
-  return modal;
-};
-
-SongbirdFramework.prototype._createV1IframeModal = function (iframe) {
-  var modal = this._createV1IframeModalElement(iframe);
-  var btn = modal.querySelector("[data-braintree-v1-fallback-close-button]");
-  var backdrop = modal.querySelector("[data-braintree-v1-fallback-backdrop]");
-  var self = this;
-
-  function closeHandler() {
-    modal.parentNode.removeChild(modal);
-    self.cancelVerifyCard(errors.THREEDS_CARDINAL_SDK_CANCELED);
-    document.removeEventListener("keyup", self._onV1Keyup);
-    self._onV1Keyup = null;
-  }
-
-  this._onV1Keyup = function (e) {
-    if (e.key !== "Escape") {
-      return;
-    }
-
-    if (!modal.parentNode) {
-      // modal not on page
-      return;
-    }
-
-    closeHandler();
-  };
-
-  if (btn) {
-    btn.addEventListener("click", closeHandler);
-  }
-
-  if (backdrop) {
-    backdrop.addEventListener("click", closeHandler);
-  }
-
-  document.addEventListener("keyup", this._onV1Keyup);
-
-  return modal;
-};
-
-SongbirdFramework.prototype._addV1IframeToPage = function () {
-  document.body.appendChild(this._v1Modal);
-};
-
 SongbirdFramework.prototype.setupSongbird = function (setupOptions) {
   var self = this;
   var startTime = Date.now();
@@ -264,9 +176,7 @@ SongbirdFramework.prototype.setupSongbird = function (setupOptions) {
       if (!window.Cardinal) {
         self._v2SetupFailureReason = "cardinal-global-unavailable";
 
-        return Promise.reject(
-          new BraintreeError(errors.THREEDS_CARDINAL_SDK_SETUP_FAILED)
-        );
+        throw new BraintreeError(errors.THREEDS_CARDINAL_SDK_SETUP_FAILED);
       }
 
       return self._configureCardinalSdk({
@@ -302,7 +212,8 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
   return this._waitForClient()
     .then(function () {
       var threeDSConfig =
-        self._client.getConfiguration().gatewayConfiguration.threeDSecure;
+        self._client.getConfiguration().gatewayConfiguration.creditCard
+          .threeDSecure;
 
       return threeDSConfig;
     })
@@ -315,7 +226,7 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
 
       SONGBIRD_UI_EVENTS.forEach(function (eventName) {
         self.setCardinalListener(eventName, function () {
-          self._emit(SongbirdFramework.events[eventName.toUpperCase()]);
+          self.emit(SongbirdFramework.events[eventName.toUpperCase()]);
         });
       });
       self.setCardinalListener(
@@ -342,7 +253,7 @@ SongbirdFramework.prototype._configureCardinalSdk = function (config) {
     .catch(function (err) {
       self._v2SetupFailureReason = "cardinal-configuration-threw-error";
 
-      return Promise.reject(err);
+      throw err;
     });
 };
 
@@ -389,11 +300,11 @@ SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
   return this._waitForClient()
     .then(function () {
       scriptAttrs.src =
-        self._client.getConfiguration().gatewayConfiguration.threeDSecure.cardinalSongbirdUrl;
+        self._client.getConfiguration().gatewayConfiguration.creditCard.threeDSecure.cardinalSongbirdUrl;
 
       identityHash =
-        self._client.getConfiguration().gatewayConfiguration.threeDSecure
-          .cardinalSongbirdIdentityHash;
+        self._client.getConfiguration().gatewayConfiguration.creditCard
+          .threeDSecure.cardinalSongbirdIdentityHash;
 
       if (identityHash) {
         scriptAttrs.crossorigin = "anonymous";
@@ -413,11 +324,9 @@ SongbirdFramework.prototype._loadCardinalScript = function (setupOptions) {
     .catch(function (err) {
       self._v2SetupFailureReason = "songbird-js-failed-to-load";
 
-      return Promise.reject(
-        convertToBraintreeError(
-          err,
-          errors.THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED
-        )
+      throw convertToBraintreeError(
+        err,
+        errors.THREEDS_CARDINAL_SDK_SCRIPT_LOAD_FAILED
       );
     });
 };
@@ -465,7 +374,7 @@ SongbirdFramework.prototype._performJWTValidation = function (
     );
 
     if (cancelCode === CUSTOMER_CANCELED_SONGBIRD_MODAL) {
-      this._emit(SongbirdFramework.events.CUSTOMER_CANCELED);
+      this.emit(SongbirdFramework.events.CUSTOMER_CANCELED);
     }
   }
 
@@ -487,10 +396,7 @@ SongbirdFramework.prototype._performJWTValidation = function (
     })
     .then(function (response) {
       var paymentMethod = response.paymentMethod || self._lookupPaymentMethod;
-      var formattedResponse = self._formatAuthResponse(
-        paymentMethod,
-        response.threeDSecureInfo
-      );
+      var formattedResponse = self._formatAuthResponse(paymentMethod);
 
       formattedResponse.rawCardinalSDKVerificationData =
         rawCardinalSDKVerificationData;
@@ -499,7 +405,7 @@ SongbirdFramework.prototype._performJWTValidation = function (
         "three-d-secure.verification-flow.upgrade-payment-method.succeeded"
       );
 
-      return Promise.resolve(formattedResponse);
+      return formattedResponse;
     })
     .catch(function (err) {
       var error = new BraintreeError({
@@ -516,7 +422,7 @@ SongbirdFramework.prototype._performJWTValidation = function (
         "three-d-secure.verification-flow.upgrade-payment-method.errored"
       );
 
-      return Promise.reject(error);
+      throw error;
     });
 };
 
@@ -719,7 +625,10 @@ SongbirdFramework.prototype._onLookupComplete = function (
         if (options.onLookupComplete) {
           options.onLookupComplete(response, next);
         } else {
-          self._emit(SongbirdFramework.events.LOOKUP_COMPLETE, response, next);
+          self.emit(SongbirdFramework.events.LOOKUP_COMPLETE, {
+            data: response,
+            next: next,
+          });
         }
       });
     });
@@ -780,24 +689,20 @@ SongbirdFramework.prototype._formatLookupData = function (options) {
       if (options.dataOnlyRequested) {
         data.dataOnlyRequested = options.dataOnlyRequested;
       }
-      if (options.exemptionRequested) {
-        data.exemptionRequested = options.exemptionRequested;
-      }
       if (options.requestVisaDAF) {
         data.requestVisaDAF = options.requestVisaDAF;
       }
       if (options.bin) {
         data.bin = options.bin;
       }
-      // NEXT_MAJOR_VERSION remove cardAdd in favor of cardAddChallengeRequested
-      if (options.cardAdd != null) {
-        data.cardAdd = options.cardAdd;
-      }
       if (options.cardAddChallengeRequested != null) {
         data.cardAdd = options.cardAddChallengeRequested;
       }
       if (options.merchantName) {
         data.merchantName = options.merchantName;
+      }
+      if (options.applySmartAuthentication) {
+        data.applySmartAuthentication = options.applySmartAuthentication;
       }
 
       return self.prepareLookup(data);
@@ -865,4 +770,4 @@ function extractAddressData(source, target, prefix) {
   target[prefix + "CountryCode"] = source.countryCodeAlpha2;
 }
 
-module.exports = SongbirdFramework;
+export default SongbirdFramework;
