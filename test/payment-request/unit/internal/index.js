@@ -59,6 +59,7 @@ describe("Payment Request Frame", () => {
 
       expect(Bus).toBeCalledWith({
         channel: "123",
+        targetFrames: [window.parent],
       });
       expect(window.bus).toBeInstanceOf(Bus);
     });

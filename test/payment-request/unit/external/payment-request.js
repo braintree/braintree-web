@@ -383,6 +383,19 @@ describe("Payment Request component", () => {
       testContext.frameCanMakeRequests();
     });
 
+    it("registers the internal frame as a bus target frame", (done) => {
+      testContext.instance.initialize().then(() => {
+        const iframe = document.body.appendChild.mock.calls[0][0];
+
+        expect(Bus.prototype.addTargetFrame).toHaveBeenCalledTimes(1);
+        expect(Bus.prototype.addTargetFrame).toHaveBeenCalledWith(iframe);
+
+        done();
+      });
+
+      testContext.frameCanMakeRequests();
+    });
+
     it("uses unminified html page when client is set to debug mode", (done) => {
       jest.spyOn(testContext.fakeClient, "getConfiguration").mockReturnValue({
         gatewayConfiguration: {},

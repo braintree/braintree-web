@@ -881,6 +881,21 @@ describe("PayPalCheckoutV6", () => {
       });
     });
 
+    it("does not pass clientToken to createInstance for saved-payment-methods type", () => {
+      testContext.instance._billingAgreementJwt = "fake-baid-jwt";
+      testContext.instance._billingAgreementJwtPromise = Promise.resolve();
+      testContext.instance._initializePayPalInstance("saved-payment-methods");
+
+      return testContext.instance._spmInstancePromise.then(() => {
+        const callArgs = window.paypal.createInstance.mock.calls[0][0];
+
+        expect(callArgs).not.toHaveProperty("clientToken");
+        expect(callArgs).toMatchObject({
+          components: ["paypal-saved-payment-methods"],
+        });
+      });
+    });
+
     it("clears promise cache on rejection to allow retry", () => {
       var error = new Error("SDK initialization failed");
 
@@ -1465,6 +1480,102 @@ describe("PayPalCheckoutV6", () => {
             done();
           })
           .catch(done);
+      });
+    });
+
+    describe("app switch redirect options", () => {
+      it("passes autoRedirect and fullPageOverlay through to the SDK session", () => {
+        const mockSession = {
+          start: jest
+            .fn()
+            .mockResolvedValue({ redirectURL: "https://paypal.com/redirect" }),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          returnUrl: "https://example.com/return",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: jest.fn(),
+        });
+
+        return session
+          .start({
+            presentationMode: "direct-app-switch",
+            autoRedirect: { enabled: false },
+            fullPageOverlay: { enabled: true },
+          })
+          .then((result) => {
+            expect(mockSession.start).toHaveBeenCalledWith(
+              {
+                presentationMode: "direct-app-switch",
+                autoRedirect: { enabled: false },
+                fullPageOverlay: { enabled: true },
+              },
+              expect.any(Promise)
+            );
+            expect(result.redirectURL).toBe("https://paypal.com/redirect");
+          });
+      });
+
+      it("passes autoRedirect through for redirect presentation mode too", () => {
+        const mockSession = {
+          start: jest
+            .fn()
+            .mockResolvedValue({ redirectURL: "https://paypal.com/redirect" }),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session
+          .start({
+            presentationMode: "redirect",
+            autoRedirect: { enabled: false },
+          })
+          .then(() => {
+            expect(mockSession.start).toHaveBeenCalledWith(
+              {
+                presentationMode: "redirect",
+                autoRedirect: { enabled: false },
+              },
+              expect.any(Promise)
+            );
+          });
+      });
+
+      it("omits autoRedirect and fullPageOverlay when not provided", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(mockSession.start).toHaveBeenCalledWith(
+            { presentationMode: "popup" },
+            expect.any(Promise)
+          );
+        });
       });
     });
 
@@ -3296,6 +3407,49 @@ describe("PayPalCheckoutV6", () => {
           );
         });
     });
+
+    it("includes editBillingAgreementJwt when provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+          editBillingAgreementJwt: "fake-edit-jwt",
+        })
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: expect.objectContaining({
+                editBillingAgreementJwt: "fake-edit-jwt",
+              }),
+            })
+          );
+        });
+    });
+
+    it("does not include editBillingAgreementJwt when not provided", () => {
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance
+        ._createPaymentResource({
+          amount: "10.00",
+          currency: "USD",
+        })
+        .then(() => {
+          const requestData = testContext.client.request.mock.calls[0][0].data;
+
+          expect(requestData).not.toHaveProperty("editBillingAgreementJwt");
+        });
+    });
   });
 
   describe("updatePayment", function () {
@@ -3683,6 +3837,46 @@ describe("PayPalCheckoutV6", () => {
         return session.start().then(() => {
           expect(mockPayPalSession.start).toHaveBeenCalledWith(
             expect.objectContaining({ presentationMode: "popup" }),
+            expect.any(Promise)
+          );
+        });
+      });
+
+      it("passes autoRedirect and fullPageOverlay through to the SDK session", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          returnUrl: "https://example.com/return",
+          cancelUrl: "https://example.com/cancel",
+          onApprove: () => {},
+        });
+
+        return session
+          .start({
+            presentationMode: "direct-app-switch",
+            autoRedirect: { enabled: false },
+            fullPageOverlay: { enabled: true },
+          })
+          .then(() => {
+            expect(mockPayPalSession.start).toHaveBeenCalledWith(
+              {
+                presentationMode: "direct-app-switch",
+                autoRedirect: { enabled: false },
+                fullPageOverlay: { enabled: true },
+              },
+              expect.any(Promise)
+            );
+          });
+      });
+
+      it("omits autoRedirect and fullPageOverlay when not provided", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          onApprove: () => {},
+        });
+
+        return session.start({ presentationMode: "popup" }).then(() => {
+          expect(mockPayPalSession.start).toHaveBeenCalledWith(
+            { presentationMode: "popup" },
             expect.any(Promise)
           );
         });
@@ -5557,6 +5751,643 @@ describe("PayPalCheckoutV6", () => {
           })
           .catch(done);
       });
+    });
+  });
+
+  describe("createEditSavedPaymentSession", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+      testContext.mockEditSession = {
+        start: jest.fn().mockResolvedValue(),
+      };
+      testContext.paypalSpmInstance = {
+        createBraintreeEditSavedPaymentSession: jest
+          .fn()
+          .mockReturnValue(testContext.mockEditSession),
+      };
+      testContext.instance._paypalSpmInstance = testContext.paypalSpmInstance;
+      testContext.instance._client = testContext.client;
+
+      window.paypal = {
+        createInstance: jest
+          .fn()
+          .mockResolvedValue(testContext.paypalSpmInstance),
+      };
+
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        paymentResource: {
+          redirectUrl: "https://example.com?token=ORDER123",
+        },
+      });
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("requires amount option", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("requires currency option", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          amount: "10.00",
+          onApprove: jest.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("requires onApprove callback", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          amount: "10.00",
+          currency: "USD",
+        });
+      }).toThrowError(
+        expect.objectContaining({
+          code: "PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS",
+          type: "MERCHANT",
+        })
+      );
+    });
+
+    it("throws when paymentMethodIdJwt is not in configuration", () => {
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+      }).toThrow(BraintreeError);
+    });
+
+    it("throws PAYPAL_CHECKOUT_V6_EDIT_SAVED_PAYMENT_NOT_SUPPORTED when paymentMethodIdJwt is missing", () => {
+      expect(() => {
+        testContext.instance.createEditSavedPaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+      }).toThrowError(
+        expect.objectContaining({
+          code: "PAYPAL_CHECKOUT_V6_EDIT_SAVED_PAYMENT_NOT_SUPPORTED",
+          type: "MERCHANT",
+        })
+      );
+    });
+
+    it("returns a session object with start() when paymentMethodIdJwt is present", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      expect(typeof session.start).toBe("function");
+    });
+
+    it("sends SESSION_EDIT_FI_CREATED analytics event on creation", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      expect(analytics.sendEvent).toHaveBeenCalledWith(
+        expect.anything(),
+        "paypal-checkout-v6.session.edit-fi.created"
+      );
+    });
+
+    it("does not start the BAID JWT fetch until createEditSavedPaymentSession is called", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      expect(testContext.instance._billingAgreementJwtPromise).toBeUndefined();
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      expect(testContext.instance._billingAgreementJwtPromise).toBeDefined();
+    });
+
+    it("does not re-fetch the BAID JWT when createEditSavedPaymentSession is called multiple times", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      const firstPromise = testContext.instance._billingAgreementJwtPromise;
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "20.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      expect(testContext.instance._billingAgreementJwtPromise).toBe(
+        firstPromise
+      );
+    });
+
+    it("calls createBraintreeEditSavedPaymentSession eagerly at session creation time", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      // Pre-resolve the JWT promise so the eager chain only needs one microtask tick.
+      testContext.instance._billingAgreementJwtPromise = Promise.resolve();
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      // Flush the microtask queue so the eager promise chain resolves
+      return Promise.resolve().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("passes BAID JWT as billingAgreementIdToken to createBraintreeEditSavedPaymentSession", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      testContext.instance._billingAgreementJwt = "fake-baid-jwt";
+      testContext.instance._billingAgreementJwtPromise = Promise.resolve();
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      return Promise.resolve().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            billingAgreementIdToken: "fake-baid-jwt",
+          })
+        );
+      });
+    });
+
+    it("waits for _billingAgreementJwtPromise before calling createBraintreeEditSavedPaymentSession", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      var resolveJwt;
+      testContext.instance._billingAgreementJwtPromise = new Promise(function (
+        resolve
+      ) {
+        resolveJwt = resolve;
+      });
+
+      testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      expect(
+        testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+      ).not.toHaveBeenCalled();
+
+      testContext.instance._billingAgreementJwt = "fake-baid-jwt";
+      resolveJwt();
+
+      return Promise.resolve().then(() => {
+        // Allow the JWT promise chain to resolve
+        return Promise.resolve().then(() => {
+          expect(
+            testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+          ).toHaveBeenCalledTimes(1);
+        });
+      });
+    });
+
+    it("passes editBillingAgreementJwt to create_payment_resource", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              editBillingAgreementJwt: "fake-payment-method-jwt",
+            }),
+          })
+        );
+      });
+    });
+
+    it("defaults intent to authorize", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              intent: "authorize",
+            }),
+          })
+        );
+      });
+    });
+
+    it("maps intent: capture to intent: sale for create_payment_resource", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        intent: "capture",
+        onApprove: jest.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.client.request).toHaveBeenCalledWith(
+          expect.objectContaining({
+            data: expect.objectContaining({
+              intent: "sale",
+            }),
+          })
+        );
+      });
+    });
+
+    it("defaults commit to false", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            commit: false,
+          })
+        );
+      });
+    });
+
+    it("respects explicit commit: true option", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        commit: true,
+        onApprove: jest.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({
+            commit: true,
+          })
+        );
+      });
+    });
+
+    it("sends EDIT_FI_STARTED analytics event when start() is called", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.edit-fi.started"
+        );
+      });
+    });
+
+    it("calls onApprove and sends EDIT_FI_APPROVED analytics event on approval", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      const onApprove = jest.fn();
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove,
+      });
+
+      return session.start().then(() => {
+        const capturedCallbacks =
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+            .mock.calls[0][0];
+
+        capturedCallbacks.onApprove({ orderId: "ORDER123" });
+
+        expect(onApprove).toHaveBeenCalledWith({ orderId: "ORDER123" });
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.edit-fi.approved"
+        );
+      });
+    });
+
+    it("calls onCancel and sends EDIT_FI_CANCELED analytics event on cancellation", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      const onCancel = jest.fn();
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+        onCancel,
+      });
+
+      return session.start().then(() => {
+        const capturedCallbacks =
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+            .mock.calls[0][0];
+
+        capturedCallbacks.onCancel({ orderId: "ORDER123" });
+
+        expect(onCancel).toHaveBeenCalledWith({ orderId: "ORDER123" });
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.edit-fi.canceled"
+        );
+      });
+    });
+
+    it("calls onError and sends EDIT_FI_FAILED analytics event on error", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      const onError = jest.fn();
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+        onError,
+      });
+
+      return session.start().then(() => {
+        const capturedCallbacks =
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+            .mock.calls[0][0];
+        const err = new Error("something went wrong");
+
+        capturedCallbacks.onError(err);
+
+        expect(onError).toHaveBeenCalledWith(err);
+        expect(analytics.sendEvent).toHaveBeenCalledWith(
+          testContext.client,
+          "paypal-checkout-v6.edit-fi.failed"
+        );
+      });
+    });
+
+    it("rejects with INSTANCE_NOT_READY if no instance and no promise", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      // Clear the instance set by beforeEach and remove window.paypal so that
+      // _initializePayPalInstance is a no-op (no SDK → returns early), leaving
+      // both _paypalSpmInstance and _spmInstancePromise falsy.
+      testContext.instance._paypalSpmInstance = null;
+      delete window.paypal;
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      // The rejection is baked into editSessionPromise at creation time;
+      // start() surfaces it.
+      return session
+        .start()
+        .then(() => {
+          throw new Error("should not resolve");
+        })
+        .catch((err) => {
+          expect(err).toBeInstanceOf(BraintreeError);
+          expect(err.code).toBe("PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY");
+        });
+    });
+
+    it("waits for spmInstancePromise when instance is not yet ready", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      testContext.instance._paypalSpmInstance = null;
+      testContext.instance._spmInstancePromise = Promise.resolve(
+        testContext.paypalSpmInstance
+      );
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(
+          testContext.paypalSpmInstance.createBraintreeEditSavedPaymentSession
+        ).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it("passes presentationMode through to the SDK session", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      return session.start({ presentationMode: "modal" }).then(() => {
+        expect(testContext.mockEditSession.start).toHaveBeenCalledWith(
+          { presentationMode: "modal" },
+          expect.any(Promise)
+        );
+      });
+    });
+
+    it("defaults presentationMode to auto", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      return session.start().then(() => {
+        expect(testContext.mockEditSession.start).toHaveBeenCalledWith(
+          { presentationMode: "auto" },
+          expect.any(Promise)
+        );
+      });
+    });
+
+    it("passes autoRedirect and fullPageOverlay through to the SDK session", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+
+      const session = testContext.instance.createEditSavedPaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        onApprove: jest.fn(),
+      });
+
+      return session
+        .start({
+          presentationMode: "direct-app-switch",
+          autoRedirect: { enabled: false },
+          fullPageOverlay: { enabled: true },
+        })
+        .then(() => {
+          expect(testContext.mockEditSession.start).toHaveBeenCalledWith(
+            {
+              presentationMode: "direct-app-switch",
+              autoRedirect: { enabled: false },
+              fullPageOverlay: { enabled: true },
+            },
+            expect.any(Promise)
+          );
+        });
+    });
+  });
+
+  describe("_createBillingAgreementJwt", () => {
+    beforeEach(() => {
+      testContext.instance = new PayPalCheckoutV6({});
+
+      return testContext.instance._initialize({
+        client: testContext.client,
+      });
+    });
+
+    it("resolves immediately when paymentMethodIdJwt is not in configuration", () => {
+      return testContext.instance
+        ._createBillingAgreementJwt(testContext.client)
+        .then(() => {
+          expect(testContext.client.request).not.toHaveBeenCalled();
+          expect(testContext.instance._billingAgreementJwt).toBeUndefined();
+        });
+    });
+
+    it("calls createBillingAgreementJwt mutation with paymentMethodIdJwt", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        data: {
+          createBillingAgreementJwt: { jwt: "fake-baid-jwt" },
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementJwt(testContext.client)
+        .then(() => {
+          expect(testContext.client.request).toHaveBeenCalledWith(
+            expect.objectContaining({
+              api: "graphQLApi",
+              data: expect.objectContaining({
+                variables: {
+                  input: { paymentMethodJwt: "fake-payment-method-jwt" },
+                },
+              }),
+            })
+          );
+        });
+    });
+
+    it("stores the returned jwt as _billingAgreementJwt", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      jest.spyOn(testContext.client, "request").mockResolvedValue({
+        data: {
+          createBillingAgreementJwt: { jwt: "fake-baid-jwt" },
+        },
+      });
+
+      return testContext.instance
+        ._createBillingAgreementJwt(testContext.client)
+        .then(() => {
+          expect(testContext.instance._billingAgreementJwt).toBe(
+            "fake-baid-jwt"
+          );
+        });
+    });
+
+    it("resolves (does not reject) when the GraphQL call fails", () => {
+      testContext.instance._configuration.paymentMethodIdJwt =
+        "fake-payment-method-jwt";
+      jest
+        .spyOn(testContext.client, "request")
+        .mockRejectedValue(new Error("network error"));
+
+      return testContext.instance
+        ._createBillingAgreementJwt(testContext.client)
+        .then(() => {
+          expect(testContext.instance._billingAgreementJwt).toBeUndefined();
+        });
     });
   });
 

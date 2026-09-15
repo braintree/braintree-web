@@ -2,6 +2,8 @@
 
 var EventEmitter = require("@braintree/event-emitter");
 
+var DANGEROUS_KEYS = ["__proto__", "constructor", "prototype"];
+
 function EventedModel() {
   EventEmitter.call(this);
 
@@ -23,6 +25,10 @@ EventedModel.prototype.get = function get(compoundKey) {
   for (i = 0; i < keys.length; i++) {
     key = keys[i];
 
+    if (DANGEROUS_KEYS.indexOf(key) !== -1) {
+      return; // eslint-disable-line consistent-return
+    }
+
     if (!traversal.hasOwnProperty(key)) {
       return; // eslint-disable-line consistent-return
     }
@@ -42,6 +48,10 @@ EventedModel.prototype.set = function set(compoundKey, value) {
   for (i = 0; i < keys.length - 1; i++) {
     key = keys[i];
 
+    if (DANGEROUS_KEYS.indexOf(key) !== -1) {
+      return;
+    }
+
     if (!traversal.hasOwnProperty(key)) {
       traversal[key] = {};
     }
@@ -49,6 +59,10 @@ EventedModel.prototype.set = function set(compoundKey, value) {
     traversal = traversal[key];
   }
   key = keys[i];
+
+  if (DANGEROUS_KEYS.indexOf(key) !== -1) {
+    return;
+  }
 
   if (traversal[key] !== value) {
     oldValue = traversal[key];

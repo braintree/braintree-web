@@ -1131,6 +1131,7 @@ interface IPayPalCheckoutV6Session {
       | "payment-handler"
       | "direct-app-switch";
     autoRedirect?: { enabled: boolean };
+    fullPageOverlay?: { enabled: boolean };
   }) => Promise<{ redirectURL?: string } | undefined | false>;
   hasReturned?: () => boolean;
   resume: () => Promise<void>;
@@ -1150,13 +1151,15 @@ interface IPayPalCheckoutV6TokenizePayload {
     lastName?: string;
   };
   shippingOptionId?: string;
+  /** Persistent payment method token, present when the tokenized payment method was implicitly vaulted. */
+  implicitlyVaultedPaymentMethodToken?: string;
 }
 
 /**
  * PayPal Checkout V6 Instance
  */
 interface IPayPalCheckoutV6Instance {
-  loadPayPalSDK: () => Promise<unknown>;
+  loadPayPalSDK: (options?: { env?: string }) => Promise<unknown>;
   getClientId: () => Promise<string>;
   createPayment: (options: {
     flow: string;
@@ -1199,6 +1202,8 @@ interface IPayPalCheckoutV6Instance {
     displayName?: string;
     userAuthenticationEmail?: string;
     presentationMode?: string;
+    autoRedirect?: { enabled: boolean };
+    fullPageOverlay?: { enabled: boolean };
     shippingCallbackUrl?: string;
     contactPreference?:
       | "NO_CONTACT_INFO"
@@ -1258,6 +1263,8 @@ interface IPayPalCheckoutV6Instance {
     displayName?: string;
     userAuthenticationEmail?: string;
     presentationMode?: string;
+    autoRedirect?: { enabled: boolean };
+    fullPageOverlay?: { enabled: boolean };
     shippingCallbackUrl?: string;
     contactPreference?:
       | "NO_CONTACT_INFO"
@@ -1309,6 +1316,8 @@ interface IPayPalCheckoutV6Instance {
     displayName?: string;
     riskCorrelationId?: string;
     presentationMode?: string;
+    autoRedirect?: { enabled: boolean };
+    fullPageOverlay?: { enabled: boolean };
     onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
     onCancel?: () => void;
     onError?: (err: IBraintreeError) => void;
@@ -1350,6 +1359,8 @@ interface IPayPalCheckoutV6Instance {
     displayName?: string;
     userAuthenticationEmail?: string;
     presentationMode?: string;
+    autoRedirect?: { enabled: boolean };
+    fullPageOverlay?: { enabled: boolean };
     shippingCallbackUrl?: string;
     onShippingAddressChange?: (
       data: IPayPalV6ShippingAddressChangeData
@@ -1473,6 +1484,17 @@ interface IPayPalCheckoutV6Instance {
       | "UPDATE_CONTACT_INFO";
     optOutOfModalBackdrop?: boolean;
   }) => Promise<IPayPalCheckoutV6TokenizePayload>;
+  createEditSavedPaymentSession: (options: {
+    amount: string;
+    currency: string;
+    intent?: "authorize" | "capture" | "order";
+    commit?: boolean;
+    presentationMode?: "auto" | "popup" | "modal";
+    onApprove: (data: IPayPalV6ApproveData) => void | Promise<void>;
+    onCancel?: (data?: unknown) => void;
+    onComplete?: (data?: unknown) => void;
+    onError?: (err: IBraintreeError) => void;
+  }) => IPayPalCheckoutV6Session;
   closeVaultInitiatedCheckoutWindow: () => Promise<void>;
   focusVaultInitiatedCheckoutWindow: () => Promise<void>;
   teardown: () => Promise<void>;

@@ -6,6 +6,7 @@ var Bus = require("framebus");
 var convertMethodsToError = require("../../lib/convert-methods-to-error");
 var generateGooglePayConfiguration = require("../../lib/generate-google-pay-configuration");
 var iFramer = require("@braintree/iframer");
+var isVerifiedDomain = require("../../lib/is-verified-domain");
 var uuid = require("@braintree/uuid");
 var useMin = require("../../lib/use-min");
 var methods = require("../../lib/methods");
@@ -203,7 +204,12 @@ function PaymentRequestComponent(options) {
       return this._supportedPaymentMethods[key];
     }.bind(this)
   );
-  this._bus = new Bus({ channel: this._componentId });
+  this._bus = new Bus({
+    channel: this._componentId,
+    verifyDomain: isVerifiedDomain,
+    // Initially empty because the internal frame is not created yet
+    targetFrames: [],
+  });
 }
 
 EventEmitter.createChild(PaymentRequestComponent);
@@ -325,6 +331,8 @@ PaymentRequestComponent.prototype.initialize = function () {
       clientConfiguration.isDebug
     );
     document.body.appendChild(self._frame);
+    // Internal frame now created, add as a target frame for the bus
+    self._bus.addTargetFrame(self._frame);
   });
 };
 

@@ -250,6 +250,63 @@ PayPalCheckoutV6.prototype._setupFrameService = function (client) {
 };
 
 /**
+ * Exchanges the paymentMethodIdJwt (from a client token generated with a
+ * preferredPaymentMethodToken) for a Billing Agreement JWT (BAID JWT) by
+ * calling the Braintree GraphQL API. The resulting JWT is stored as
+ * `_billingAgreementJwt` and passed as `billingAgreementIdToken` to
+ * `createBraintreeEditSavedPaymentSession`, so the
+ * `<paypal-saved-payment-methods>` component can authenticate and display
+ * the buyer's saved funding instrument.
+ *
+ * If no `paymentMethodIdJwt` is present in the configuration the method
+ * resolves immediately without making a network request.
+ * @private
+ * @param {object} client The Braintree client instance.
+ * @returns {Promise} Resolves when the JWT has been fetched (or skipped).
+ */
+PayPalCheckoutV6.prototype._createBillingAgreementJwt = function (client) {
+  var self = this;
+  var paymentMethodIdJwt = this._configuration.paymentMethodIdJwt;
+
+  if (!paymentMethodIdJwt) {
+    return Promise.resolve();
+  }
+
+  return client
+    .request({
+      api: "graphQLApi",
+      data: {
+        query: constants.CREATE_BILLING_AGREEMENT_JWT_MUTATION,
+        variables: {
+          input: {
+            paymentMethodJwt: paymentMethodIdJwt,
+          },
+        },
+      },
+    })
+    .then(function (response) {
+      self._billingAgreementJwt = response.data.createBillingAgreementJwt.jwt;
+      analytics.sendEvent(
+        client,
+        "paypal-checkout-v6.create-billing-agreement-jwt.succeeded"
+      );
+    })
+    .catch(function (err) {
+      analytics.sendEvent(
+        client,
+        "paypal-checkout-v6.create-billing-agreement-jwt.failed"
+      );
+      // Non-fatal: Edit Saved Payment will still be attempted; the SPM
+      // component will show an error state if it cannot authenticate.
+      // eslint-disable-next-line no-console
+      console.warn(
+        "PayPal Checkout V6: failed to create billing agreement JWT",
+        err
+      );
+    });
+};
+
+/**
  * Checks if the PayPal SDK is loaded and ready for use.
  * @private
  * @returns {boolean} True if PayPal SDK is available.
@@ -512,6 +569,11 @@ PayPalCheckoutV6.prototype._initializePayPalInstance = function (instanceType) {
       promiseKey: "_messagesInstancePromise",
       components: ["paypal-messages"],
     },
+    "saved-payment-methods": {
+      instanceKey: "_paypalSpmInstance",
+      promiseKey: "_spmInstancePromise",
+      components: ["paypal-saved-payment-methods"],
+    },
   };
 
   var config = instanceConfig[instanceType];
@@ -527,9 +589,7 @@ PayPalCheckoutV6.prototype._initializePayPalInstance = function (instanceType) {
   // Create and cache the promise
   self[promiseKey] = self._clientPromise
     .then(function () {
-      return self._createPayPalInstance({
-        components: components,
-      });
+      return self._createPayPalInstance({ components: components });
     })
     .then(function (instance) {
       self[instanceKey] = instance;
@@ -925,6 +985,10 @@ PayPalCheckoutV6.prototype._createPaymentResource = function (options) {
       options.vaultInitiatedCheckoutPaymentMethodToken;
   }
 
+  if (options.editBillingAgreementJwt) {
+    payload.editBillingAgreementJwt = options.editBillingAgreementJwt;
+  }
+
   return this._clientPromise.then(function (client) {
     analytics.sendEvent(
       client,
@@ -1061,6 +1125,33 @@ PayPalCheckoutV6.prototype._createOrderPromise = function (
 };
 
 /**
+ * Builds the options object passed to a PayPal SDK session's start() method,
+ * allowlisting the fields the SDK accepts alongside presentationMode.
+ * @private
+ * @param {string} presentationMode How to present the PayPal flow.
+ * @param {object} [autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect.
+ * @param {object} [fullPageOverlay] Full-page overlay configuration.
+ * @returns {object} Options object for the SDK's session.start().
+ */
+PayPalCheckoutV6.prototype._buildSessionStartOptions = function (
+  presentationMode,
+  autoRedirect,
+  fullPageOverlay
+) {
+  var sessionStartOptions = { presentationMode: presentationMode };
+
+  if (autoRedirect) {
+    sessionStartOptions.autoRedirect = autoRedirect;
+  }
+
+  if (fullPageOverlay) {
+    sessionStartOptions.fullPageOverlay = fullPageOverlay;
+  }
+
+  return sessionStartOptions;
+};
+
+/**
  * Starts a checkout payment session with the given instance and client.
  * @private
  * @param {object} instance PayPal SDK instance.
@@ -1069,6 +1160,8 @@ PayPalCheckoutV6.prototype._createOrderPromise = function (
  * @param {string} sessionType Type of session: 'paypal', 'paypal-credit', or 'pay-later'.
  * @param {object} options Payment session options.
  * @param {object} paymentOptions Payment resource options.
+ * @param {object} [autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect.
+ * @param {object} [fullPageOverlay] Full-page overlay configuration.
  * @returns {Promise} Promise from PayPal session.start().
  */
 PayPalCheckoutV6.prototype._startCheckoutSession = function (
@@ -1077,7 +1170,9 @@ PayPalCheckoutV6.prototype._startCheckoutSession = function (
   presentationMode,
   sessionType,
   options,
-  paymentOptions
+  paymentOptions,
+  autoRedirect,
+  fullPageOverlay
 ) {
   var sessionMethod;
 
@@ -1101,9 +1196,11 @@ PayPalCheckoutV6.prototype._startCheckoutSession = function (
   );
 
   return session.start(
-    {
-      presentationMode: presentationMode,
-    },
+    this._buildSessionStartOptions(
+      presentationMode,
+      autoRedirect,
+      fullPageOverlay
+    ),
     this._createOrderPromise(paymentOptions, options.onError)
   );
 };
@@ -1213,6 +1310,8 @@ PayPalCheckoutV6.prototype._createBillingTokenPromise = function (
  * @param {string} sessionType Type of session: 'paypal' or 'paypal-credit'.
  * @param {object} billingAgreementRequest Billing agreement request data.
  * @param {object} options Billing agreement session options.
+ * @param {object} [autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect.
+ * @param {object} [fullPageOverlay] Full-page overlay configuration.
  * @returns {Promise} Promise from PayPal session.start().
  */
 PayPalCheckoutV6.prototype._startBillingSession = function (
@@ -1221,7 +1320,9 @@ PayPalCheckoutV6.prototype._startBillingSession = function (
   presentationMode,
   sessionType,
   billingAgreementRequest,
-  options
+  options,
+  autoRedirect,
+  fullPageOverlay
 ) {
   var self = this;
   var sessionMethod =
@@ -1253,7 +1354,11 @@ PayPalCheckoutV6.prototype._startBillingSession = function (
     });
 
   return paypalSession.start(
-    { presentationMode: presentationMode },
+    this._buildSessionStartOptions(
+      presentationMode,
+      autoRedirect,
+      fullPageOverlay
+    ),
     billingTokenPromise
   );
 };
@@ -1341,6 +1446,8 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
      * Starts the PayPal payment flow.
      * @param {object} [presentationOptions] Options for how to present PayPal.
      * @param {string} [presentationOptions.presentationMode='auto'] Presentation mode.
+     * @param {object} [presentationOptions.autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect.
+     * @param {object} [presentationOptions.fullPageOverlay] Full-page overlay configuration.
      * @returns {Promise} Resolves when payment flow completes.
      */
     start: function (presentationOptions) {
@@ -1349,6 +1456,10 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
         presentationOptions.presentationMode ||
         options.presentationMode ||
         "auto";
+      var autoRedirect =
+        presentationOptions.autoRedirect || options.autoRedirect;
+      var fullPageOverlay =
+        presentationOptions.fullPageOverlay || options.fullPageOverlay;
       var paypalInstance = self._paypalInstance;
 
       var appSwitchError = self._validateAppSwitchUrls(
@@ -1368,7 +1479,9 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
           presentationMode,
           sessionType,
           options,
-          paymentOptions
+          paymentOptions,
+          autoRedirect,
+          fullPageOverlay
         );
       }
 
@@ -1384,7 +1497,9 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
                 presentationMode,
                 sessionType,
                 options,
-                paymentOptions
+                paymentOptions,
+                autoRedirect,
+                fullPageOverlay
               );
             });
           })
@@ -1445,6 +1560,8 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  * @param {boolean} [options.shippingAddressEditable=true] Controls whether the displayed shipping address is editable. Pass `false` to make it read-only.
  * @param {string} [options.riskCorrelationId] Risk correlation ID for advanced fraud protection. Stored and used during tokenization.
  * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
+ * @param {object} [options.autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect. Also accepted on `session.start()`.
+ * @param {object} [options.fullPageOverlay] Full-page overlay configuration. Also accepted on `session.start()`.
  * @example
  * // Standard PayPal payment
  * var session = paypalCheckoutV6Instance.createOneTimePaymentSession({
@@ -1715,6 +1832,8 @@ PayPalCheckoutV6.prototype.createOneTimePaymentSession = function (options) {
  * @param {boolean} [options.shippingAddressEditable=true] Controls whether the displayed shipping address is editable. Pass `false` to make it read-only.
  * @param {string} [options.riskCorrelationId] Risk correlation ID for advanced fraud protection. Stored and used during tokenization.
  * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
+ * @param {object} [options.autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect. Also accepted on `session.start()`.
+ * @param {object} [options.fullPageOverlay] Full-page overlay configuration. Also accepted on `session.start()`.
  * @example
  * // Standard Pay Later payment
  * var session = paypalCheckoutV6Instance.createPayLaterSession({
@@ -1890,6 +2009,8 @@ PayPalCheckoutV6.prototype.createPayLaterSession = function (options) {
  * @param {boolean} [options.shippingAddressEditable=true] Controls whether the displayed shipping address is editable. Pass `false` to make it read-only.
  * @param {string} [options.riskCorrelationId] Risk correlation ID for advanced fraud protection. Stored and used during tokenization.
  * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', 'modal', 'redirect', 'payment-handler', 'direct-app-switch'.
+ * @param {object} [options.autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect. Also accepted on `session.start()`.
+ * @param {object} [options.fullPageOverlay] Full-page overlay configuration. Also accepted on `session.start()`.
  * @example
  * // Create a checkout session with vault consent
  * braintree.client.create({
@@ -2047,6 +2168,215 @@ PayPalCheckoutV6.prototype.createCheckoutWithVaultSession = function (options) {
 };
 
 /**
+ * Creates an Edit Saved Payment (Edit FI) session for a returning buyer with a vaulted
+ * Billing Agreement. Renders a PayPal-hosted `<paypal-saved-payment-methods>` element that
+ * displays the buyer's current funding instrument. When the buyer clicks the element, call
+ * `session.start()` to open the PayPal checkout flow and allow them to change their saved
+ * payment method.
+ *
+ * Requires the client token to have been generated with a `preferredPaymentMethodToken`.
+ * The `<paypal-saved-payment-methods>` custom element must be present in the DOM before
+ * calling `loadPayPalSDK()`.
+ *
+ * @public
+ * @param {object} options Edit saved payment session options.
+ * @param {string} options.amount The payment amount (e.g., '10.00').
+ * @param {string} options.currency The currency code (e.g., 'USD').
+ * @param {function} options.onApprove Called when the buyer approves the payment. Receives `data` with `orderId`.
+ * @param {function} [options.onCancel] Called when the buyer cancels.
+ * @param {function} [options.onComplete] Called when the flow completes (approved or canceled).
+ * @param {function} [options.onError] Called when an error occurs.
+ * @param {string} [options.intent='authorize'] Payment intent: 'authorize', 'capture', or 'order'.
+ * @param {boolean} [options.commit=false] When `true`, shows a "Pay Now" call-to-action. Defaults to `false` (shows "Continue").
+ * @param {string} [options.presentationMode='auto'] How to present PayPal: 'auto', 'popup', or 'modal'.
+ * @param {object} [options.autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect. Also accepted on `session.start()`.
+ * @param {object} [options.fullPageOverlay] Full-page overlay configuration. Also accepted on `session.start()`.
+ * @example
+ * // 1. Place the web component in your HTML:
+ * //    <paypal-saved-payment-methods id="spm-button"></paypal-saved-payment-methods>
+ *
+ * braintree.paypalCheckoutV6.create({ client: clientInstance })
+ *   .then(function (paypalCheckoutV6Instance) {
+ *     return paypalCheckoutV6Instance.loadPayPalSDK();
+ *   })
+ *   .then(function (paypalCheckoutV6Instance) {
+ *     var session = paypalCheckoutV6Instance.createEditSavedPaymentSession({
+ *       amount: '10.00',
+ *       currency: 'USD',
+ *       onApprove: function (data) {
+ *         return paypalCheckoutV6Instance.tokenizePayment(data).then(function (payload) {
+ *           // Send payload.nonce to your server
+ *         });
+ *       }
+ *     });
+ *
+ *     document.getElementById('spm-button').addEventListener('click', function () {
+ *       session.start();
+ *     });
+ *   });
+ * @returns {object} Session object with a `start()` method.
+ */
+PayPalCheckoutV6.prototype.createEditSavedPaymentSession = function (options) {
+  var self = this;
+
+  if (!options || !options.amount || !options.currency || !options.onApprove) {
+    throw new BraintreeError(errors.PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS);
+  }
+
+  if (!this._configuration || !this._configuration.paymentMethodIdJwt) {
+    throw new BraintreeError(
+      errors.PAYPAL_CHECKOUT_V6_EDIT_SAVED_PAYMENT_NOT_SUPPORTED
+    );
+  }
+
+  analytics.sendEvent(
+    self._clientPromise,
+    constants.ANALYTICS_EVENTS.SESSION_EDIT_FI_CREATED
+  );
+
+  // Start the BAID JWT fetch now (not during _initialize) so the overhead
+  // only applies to pages that actually use Edit Saved Payment. Guard with
+  // || to avoid re-fetching if createEditSavedPaymentSession is called again.
+  self._billingAgreementJwtPromise =
+    self._billingAgreementJwtPromise ||
+    self._clientPromise.then(function (client) {
+      return self._createBillingAgreementJwt(client);
+    });
+
+  self._initializePayPalInstance("saved-payment-methods");
+
+  // Eagerly call createBraintreeEditSavedPaymentSession so the
+  // <paypal-saved-payment-methods> component can load its iframe and display
+  // the buyer's saved FI as soon as the BAID JWT is available — without
+  // waiting for the buyer to click.
+  function createEditSession(instance, client) {
+    return (self._billingAgreementJwtPromise || Promise.resolve()).then(
+      function () {
+        var editSession = instance.createBraintreeEditSavedPaymentSession({
+          // The BT SDK never has a real PayPal client token, only the BAID JWT.
+          billingAgreementIdToken: self._billingAgreementJwt,
+          commit: options.commit !== undefined ? options.commit : false,
+          onApprove: function (data) {
+            analytics.sendEvent(
+              client,
+              constants.ANALYTICS_EVENTS.EDIT_FI_APPROVED
+            );
+
+            return options.onApprove(data);
+          },
+          onCancel: function (data) {
+            analytics.sendEvent(
+              client,
+              constants.ANALYTICS_EVENTS.EDIT_FI_CANCELED
+            );
+            if (typeof options.onCancel === "function") {
+              return options.onCancel(data);
+            }
+
+            return undefined;
+          },
+          onComplete: options.onComplete,
+          onError: function (err) {
+            analytics.sendEvent(
+              client,
+              constants.ANALYTICS_EVENTS.EDIT_FI_FAILED
+            );
+            if (typeof options.onError === "function") {
+              return options.onError(err);
+            }
+
+            return undefined;
+          },
+        });
+
+        return { editSession: editSession, client: client };
+      }
+    );
+  }
+
+  var editSessionPromise;
+
+  if (self._paypalSpmInstance && self._client) {
+    editSessionPromise = createEditSession(
+      self._paypalSpmInstance,
+      self._client
+    );
+  } else if (self._spmInstancePromise) {
+    editSessionPromise = self._spmInstancePromise.then(function (instance) {
+      return self._clientPromise.then(function (client) {
+        return createEditSession(instance, client);
+      });
+    });
+  } else {
+    editSessionPromise = Promise.reject(
+      new BraintreeError(errors.PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY)
+    );
+  }
+
+  // The eager createEditSession() call above may reject (e.g. missing auth)
+  // before the buyer ever calls start(). Attach a no-op catch so that
+  // rejection isn't reported as an unhandled promise rejection; start()
+  // below still receives the same rejection via its own .then() on
+  // editSessionPromise.
+  editSessionPromise.catch(function () {});
+
+  return {
+    /**
+     * Starts the Edit Saved Payment flow.
+     * @param {object} [presentationOptions] Options for how to present PayPal.
+     * @param {string} [presentationOptions.presentationMode='auto'] Presentation mode.
+     * @param {object} [presentationOptions.autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect.
+     * @param {object} [presentationOptions.fullPageOverlay] Full-page overlay configuration.
+     * @returns {Promise} Resolves when the flow completes.
+     */
+    start: function (presentationOptions) {
+      presentationOptions = presentationOptions || {};
+      var presentationMode =
+        presentationOptions.presentationMode ||
+        options.presentationMode ||
+        "auto";
+      var autoRedirect =
+        presentationOptions.autoRedirect || options.autoRedirect;
+      var fullPageOverlay =
+        presentationOptions.fullPageOverlay || options.fullPageOverlay;
+
+      return editSessionPromise.then(function (result) {
+        analytics.sendEvent(
+          result.client,
+          constants.ANALYTICS_EVENTS.EDIT_FI_STARTED
+        );
+
+        var orderPromise = self
+          ._createPaymentResource({
+            amount: options.amount,
+            currency: options.currency,
+            intent: options.intent || "authorize",
+            editBillingAgreementJwt: self._configuration.paymentMethodIdJwt,
+          })
+          .then(function (orderData) {
+            return { orderId: orderData.orderId };
+          })
+          .catch(function (err) {
+            if (typeof options.onError === "function") {
+              options.onError(err);
+            }
+            throw err;
+          });
+
+        return result.editSession.start(
+          self._buildSessionStartOptions(
+            presentationMode,
+            autoRedirect,
+            fullPageOverlay
+          ),
+          orderPromise
+        );
+      });
+    },
+  };
+};
+
+/**
  * Creates a payment or billing agreement.
  * @public
  * @param {object} options Payment options.
@@ -2200,6 +2530,8 @@ PayPalCheckoutV6.prototype.createPayment = function (options) {
  * @param {function} [options.onCancel] Callback when customer cancels.
  * @param {function} [options.onError] Callback when an error occurs.
  * @param {string} [options.presentationMode] Presentation mode: auto, popup, modal, redirect, or payment-handler.
+ * @param {object} [options.autoRedirect] Auto-redirect configuration for payment flows doing a full page redirect. Also accepted on `session.start()`.
+ * @param {object} [options.fullPageOverlay] Full-page overlay configuration. Also accepted on `session.start()`.
  * @example
  * var session = paypalCheckoutV6Instance.createBillingAgreementSession({
  *   billingAgreementDescription: 'Monthly subscription for premium service',
@@ -2279,6 +2611,9 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
       presentationOptions.presentationMode ||
       options.presentationMode ||
       "auto";
+    var autoRedirect = presentationOptions.autoRedirect || options.autoRedirect;
+    var fullPageOverlay =
+      presentationOptions.fullPageOverlay || options.fullPageOverlay;
     var paypalInstance = self._paypalVaultInstance;
 
     var appSwitchError = self._validateAppSwitchUrls(options, presentationMode);
@@ -2296,7 +2631,9 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
         presentationMode,
         sessionType,
         billingAgreementRequest,
-        options
+        options,
+        autoRedirect,
+        fullPageOverlay
       );
     }
 
@@ -2327,7 +2664,9 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
               presentationMode,
               sessionType,
               billingAgreementRequest,
-              options
+              options,
+              autoRedirect,
+              fullPageOverlay
             );
           });
         })

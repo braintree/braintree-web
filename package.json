@@ -1,6 +1,6 @@
 {
   "name": "braintree-web",
-  "version": "3.145.0",
+  "version": "3.146.0",
   "license": "MIT",
   "main": "src/index.js",
   "private": true,
@@ -56,7 +56,7 @@
     "@paypal/fastlane-sdk-loader": "1.2.1",
     "card-validator": "10.0.3",
     "credit-card-type": "10.2.0",
-    "framebus": "6.1.0",
+    "framebus": "6.2.0",
     "inject-stylesheet": "7.0.0",
     "promise-polyfill": "8.2.3",
     "qrcode": "1.5.4",

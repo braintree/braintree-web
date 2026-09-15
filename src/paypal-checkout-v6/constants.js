@@ -1,5 +1,7 @@
 "use strict";
 
+var libConstants = require("../lib/constants");
+
 var VERSION = process.env.npm_package_version;
 
 var PAYPAL_V6_SDK_BASE_URL = "https://www.{ENV}paypal.com/web-sdk/v6/core";
@@ -98,12 +100,21 @@ var ANALYTICS_EVENTS = {
   CREATE_MESSAGES_STARTED: ANALYTICS_PREFIX + ".create-messages.started",
   CREATE_MESSAGES_SUCCEEDED: ANALYTICS_PREFIX + ".create-messages.succeeded",
   CREATE_MESSAGES_FAILED: ANALYTICS_PREFIX + ".create-messages.failed",
+
+  // Edit Saved Payment (Edit FI)
+  SESSION_EDIT_FI_CREATED: ANALYTICS_PREFIX + ".session.edit-fi.created",
+  EDIT_FI_STARTED: ANALYTICS_PREFIX + ".edit-fi.started",
+  EDIT_FI_APPROVED: ANALYTICS_PREFIX + ".edit-fi.approved",
+  EDIT_FI_CANCELED: ANALYTICS_PREFIX + ".edit-fi.canceled",
+  EDIT_FI_FAILED: ANALYTICS_PREFIX + ".edit-fi.failed",
 };
 
 module.exports = {
   VERSION: VERSION,
   PAYPAL_V6_SDK_BASE_URL: PAYPAL_V6_SDK_BASE_URL,
   PAYPAL_V6_ENVIRONMENT: PAYPAL_V6_ENVIRONMENT,
+  CREATE_BILLING_AGREEMENT_JWT_MUTATION:
+    libConstants.CREATE_BILLING_AGREEMENT_JWT_MUTATION,
   ANALYTICS_PREFIX: ANALYTICS_PREFIX,
   ANALYTICS_EVENTS: ANALYTICS_EVENTS,
 };

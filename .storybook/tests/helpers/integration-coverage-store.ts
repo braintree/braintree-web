@@ -894,6 +894,9 @@ export function writeIntegrationCoverageReports(): void {
   reports
     .create("text", { file: "coverage-summary.txt" })
     .execute(textAndLcovContext);
+  reports
+    .create("text-summary", { file: "coverage-totals.txt" })
+    .execute(textAndLcovContext);
   reports.create("lcovonly", { file: "lcov.info" }).execute(textAndLcovContext);
 
   /*

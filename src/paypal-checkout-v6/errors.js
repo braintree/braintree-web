@@ -233,6 +233,14 @@ module.exports = {
     message: "Could not create PayPal Messages instance.",
   },
 
+  // Edit Saved Payment Errors
+  PAYPAL_CHECKOUT_V6_EDIT_SAVED_PAYMENT_NOT_SUPPORTED: {
+    type: BraintreeError.types.MERCHANT,
+    code: "PAYPAL_CHECKOUT_V6_EDIT_SAVED_PAYMENT_NOT_SUPPORTED",
+    message:
+      "Edit saved payment is not supported. The client token must be generated with a preferredPaymentMethodToken.",
+  },
+
   // Vault Initiated Checkout Errors
   PAYPAL_CHECKOUT_V6_VIC_PARAM_REQUIRED: {
     type: BraintreeError.types.MERCHANT,

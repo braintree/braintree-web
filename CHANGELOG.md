@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 3.146.0 (2026-09-15)
+
+- PayPal Checkout v6
+  - Add support for View/Edit FI
+  - Pass `autoRedirect` and `fullPageOverlay` start options through to the PayPal SDK
+- Hosted Fields
+  - Add prototype pollution guard to `EventedModel` `get()` and `set()` methods
+
 ## 3.145.0 (2026-08-24)
 
 - Client/All Components

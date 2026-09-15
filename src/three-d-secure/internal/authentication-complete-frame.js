@@ -6,7 +6,10 @@ var events = require("../shared/events");
 
 module.exports = function (currentURL) {
   var params = querystring.parse(currentURL);
-  var bus = new Bus({ channel: params.channel });
+  var bus = new Bus({
+    channel: params.channel,
+    targetFrames: [window.parent],
+  });
 
   bus.emit(events.AUTHENTICATION_COMPLETE, params);
 };

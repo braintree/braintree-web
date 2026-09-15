@@ -14,6 +14,7 @@ var BUS_CONFIGURATION_REQUEST_EVENT =
 function create() {
   window.bus = new Bus({
     channel: getFrameName(),
+    targetFrames: [window.parent],
   });
 
   window.bus.emit(BUS_CONFIGURATION_REQUEST_EVENT, initialize);

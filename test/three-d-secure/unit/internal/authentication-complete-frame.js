@@ -12,6 +12,10 @@ describe("initializeAuthenticationCompleteFrame", () => {
 
     initializeAuthenticationCompleteFrame(url);
 
+    expect(Bus).toBeCalledWith({
+      channel: "abc123",
+      targetFrames: [window.parent],
+    });
     expect(Bus.prototype.emit).toHaveBeenCalledWith(
       events.AUTHENTICATION_COMPLETE,
       expect.objectContaining(params)

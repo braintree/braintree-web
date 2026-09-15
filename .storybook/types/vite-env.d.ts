@@ -12,6 +12,8 @@ interface ImportMetaEnv {
   readonly STORYBOOK_BRAINTREE_PUBLIC_KEY: string;
   readonly STORYBOOK_BRAINTREE_PRIVATE_KEY: string;
   readonly STORYBOOK_BRAINTREE_CUSTOMER_ID: string;
+  readonly STORYBOOK_BRAINTREE_PREFERRED_PAYMENT_METHOD_TOKEN: string;
+  readonly CI: boolean;
 }
 
 interface ImportMeta {

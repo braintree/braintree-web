@@ -31,7 +31,11 @@ if (process.env.BRAINTREE_JS_ENV === "development") {
 }
 // endRemoveIf(production)
 
+var CREATE_BILLING_AGREEMENT_JWT_MUTATION =
+  "mutation CreateBillingAgreementJwt($input: CreateBillingAgreementJwtInput!) { createBillingAgreementJwt(input: $input) { jwt } }";
+
 module.exports = {
+  CREATE_BILLING_AGREEMENT_JWT_MUTATION,
   ANALYTICS_PREFIX: PLATFORM + ".",
   ANALYTICS_REQUEST_TIMEOUT_MS: 2000,
   ANALYTICS_URL: "https://www.paypal.com/xoplatform/logger/api/logger",

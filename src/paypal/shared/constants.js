@@ -1,5 +1,7 @@
 "use strict";
 
+var libConstants = require("../../lib/constants");
+
 module.exports = {
   LANDING_FRAME_NAME: "braintreepaypallanding",
   FLOW_ENDPOINTS: {
@@ -14,5 +16,5 @@ module.exports = {
   },
   BT_INTEGRATION_SOURCE: "BRAINTREE_WEB_SDK",
   CREATE_BILLING_AGREEMENT_JWT_MUTATION:
-    "mutation CreateBillingAgreementJwt($input: CreateBillingAgreementJwtInput!) { createBillingAgreementJwt(input: $input) { jwt } }",
+    libConstants.CREATE_BILLING_AGREEMENT_JWT_MUTATION,
 };

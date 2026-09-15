@@ -9,7 +9,10 @@ var Client = require("../../client/client");
 function create() {
   var componentId = window.location.hash.slice(1, window.location.hash.length);
 
-  window.bus = new Bus({ channel: componentId });
+  window.bus = new Bus({
+    channel: componentId,
+    targetFrames: [window.parent],
+  });
 
   window.bus.on(
     constants.events.PAYMENT_REQUEST_INITIALIZED,

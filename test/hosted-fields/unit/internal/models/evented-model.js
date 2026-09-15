@@ -170,4 +170,23 @@ describe("EventedModel", () => {
       },
     });
   });
+
+  it("does not allow setting __proto__ keys", () => {
+    testContext.model.set("__proto__.polluted", "yes");
+    expect({}.polluted).not.toBeDefined();
+  });
+
+  it("does not allow setting constructor keys", () => {
+    testContext.model.set("constructor.prototype.polluted", "yes");
+    expect({}.polluted).not.toBeDefined();
+  });
+
+  it("does not allow setting prototype keys", () => {
+    testContext.model.set("prototype.polluted", "yes");
+    expect({}.polluted).not.toBeDefined();
+  });
+
+  it("returns undefined for get with __proto__ key", () => {
+    expect(testContext.model.get("__proto__")).not.toBeDefined();
+  });
 });
