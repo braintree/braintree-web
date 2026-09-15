@@ -8,3 +8,6 @@ on:
 jobs:
   dependency-review:
     uses: PayPal-Braintree/security-workflows/.github/workflows/dependency-review.yml@main
+
+  CodeScanning-Actions:
+    uses: PayPal-Braintree/security-workflows/.github/workflows/codeql-actions.yml@feature/enable-github-actions-scanning
