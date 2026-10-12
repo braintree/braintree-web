@@ -881,6 +881,175 @@ describe("PayPalCheckoutV6", () => {
       });
     });
 
+    it("forwards locale to window.paypal.createInstance, normalized to hyphenated format", () => {
+      testContext.instance._initializePayPalInstance("checkout", "fr_FR");
+
+      return testContext.instance._checkoutInstancePromise.then(() => {
+        expect(window.paypal.createInstance).toHaveBeenCalledWith(
+          expect.objectContaining({
+            locale: "fr-FR",
+          })
+        );
+      });
+    });
+
+    it("does not include locale in createInstance options when not provided", () => {
+      testContext.instance._initializePayPalInstance("checkout");
+
+      return testContext.instance._checkoutInstancePromise.then(() => {
+        const callArgs = window.paypal.createInstance.mock.calls[0][0];
+
+        expect(callArgs).not.toHaveProperty("locale");
+      });
+    });
+
+    it("applies locale via updateLocale when an instance already exists (e.g. created by findEligibleMethods)", () => {
+      const updateLocale = jest.fn();
+
+      testContext.instance._paypalInstance = { updateLocale };
+
+      testContext.instance._initializePayPalInstance("checkout", "fr_FR");
+
+      expect(updateLocale).toHaveBeenCalledWith("fr-FR");
+      expect(window.paypal.createInstance).not.toHaveBeenCalled();
+    });
+
+    it("does not throw when an existing instance has no updateLocale method", () => {
+      testContext.instance._paypalInstance = { existing: true };
+
+      expect(() => {
+        testContext.instance._initializePayPalInstance("checkout", "fr_FR");
+      }).not.toThrow();
+    });
+
+    it("applies locale via updateLocale once an in-flight instance creation resolves", () => {
+      const updateLocale = jest.fn();
+
+      testContext.instance._checkoutInstancePromise = Promise.resolve({
+        updateLocale,
+      });
+
+      testContext.instance._initializePayPalInstance("checkout", "de_DE");
+
+      return testContext.instance._checkoutInstancePromise.then(() => {
+        expect(updateLocale).toHaveBeenCalledWith("de-DE");
+        expect(window.paypal.createInstance).not.toHaveBeenCalled();
+      });
+    });
+
+    it("reuses the last applied locale for a new instance type that doesn't specify one", () => {
+      // window.paypal.createInstance sets a single, page-wide locale. If a second
+      // instance type (e.g. messages) is created without a locale, it must not
+      // silently reset the locale already established by another instance type
+      // (e.g. checkout) back to the browser default.
+      testContext.instance._initializePayPalInstance("checkout", "fr_FR");
+
+      return testContext.instance._checkoutInstancePromise.then(() => {
+        testContext.instance._initializePayPalInstance("messages");
+
+        return testContext.instance._messagesInstancePromise.then(() => {
+          expect(window.paypal.createInstance).toHaveBeenLastCalledWith(
+            expect.objectContaining({ locale: "fr-FR" })
+          );
+        });
+      });
+    });
+
+    it("shares the applied locale across separate PayPalCheckoutV6 instances", () => {
+      // The locale lives on window.paypal (the shared SDK), not on a single
+      // PayPalCheckoutV6 wrapper, since createInstance's locale is page-wide.
+      const otherInstance = new PayPalCheckoutV6({});
+
+      return otherInstance
+        ._initialize({ client: testContext.client })
+        .then(() => {
+          otherInstance._initializePayPalInstance("checkout", "fr_FR");
+
+          return otherInstance._checkoutInstancePromise.then(() => {
+            testContext.instance._initializePayPalInstance("messages");
+
+            return testContext.instance._messagesInstancePromise.then(() => {
+              expect(window.paypal.createInstance).toHaveBeenLastCalledWith(
+                expect.objectContaining({ locale: "fr-FR" })
+              );
+            });
+          });
+        });
+    });
+
+    it("still reuses a requested locale for a later instance type after a failed creation attempt", () => {
+      // Locale validation happens synchronously before any network call, so a
+      // createInstance() failure is essentially never caused by the locale itself.
+      // Reusing it for an unrelated, later instance type is a safe, simpler
+      // trade-off than tracking success/failure per locale request.
+      window.paypal.createInstance = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("createInstance failed"))
+        .mockResolvedValue({ mockInstance: true });
+
+      testContext.instance._initializePayPalInstance("checkout", "fr_FR");
+
+      return testContext.instance._checkoutInstancePromise.catch(() => {
+        testContext.instance._initializePayPalInstance("messages");
+
+        return testContext.instance._messagesInstancePromise.then(() => {
+          const callArgs = window.paypal.createInstance.mock.calls[1][0];
+
+          expect(callArgs).toHaveProperty("locale", "fr-FR");
+        });
+      });
+    });
+
+    it("propagates a pending locale to a concurrent creation of a different instance type", () => {
+      // Both calls are made before either createInstance() call resolves, so the
+      // second (locale-less) call must see the first's locale as already pending
+      // instead of racing it and resetting the SDK's locale to the browser default.
+      testContext.instance._initializePayPalInstance("checkout", "fr_FR");
+      testContext.instance._initializePayPalInstance("messages");
+
+      return Promise.all([
+        testContext.instance._checkoutInstancePromise,
+        testContext.instance._messagesInstancePromise,
+      ]).then(() => {
+        expect(window.paypal.createInstance).toHaveBeenCalledWith(
+          expect.objectContaining({
+            components: ["paypal-payments"],
+            locale: "fr-FR",
+          })
+        );
+        expect(window.paypal.createInstance).toHaveBeenCalledWith(
+          expect.objectContaining({
+            components: ["paypal-messages"],
+            locale: "fr-FR",
+          })
+        );
+      });
+    });
+
+    it("does not let a failed attempt clobber a newer locale set by a concurrent creation", () => {
+      window.paypal.createInstance = jest
+        .fn()
+        .mockRejectedValueOnce(new Error("checkout failed"))
+        .mockResolvedValueOnce({ mockInstance: true })
+        .mockResolvedValue({ mockInstance: true });
+
+      testContext.instance._initializePayPalInstance("checkout", "fr_FR");
+      testContext.instance._initializePayPalInstance("vault", "de_DE");
+
+      return Promise.allSettled([
+        testContext.instance._checkoutInstancePromise,
+        testContext.instance._vaultInstancePromise,
+      ]).then(() => {
+        testContext.instance._initializePayPalInstance("messages");
+
+        return testContext.instance._messagesInstancePromise.then(() => {
+          const callArgs = window.paypal.createInstance.mock.calls[2][0];
+
+          expect(callArgs).toHaveProperty("locale", "de-DE");
+        });
+      });
+    });
+
     it("does not pass clientToken to createInstance for saved-payment-methods type", () => {
       testContext.instance._billingAgreementJwt = "fake-baid-jwt";
       testContext.instance._billingAgreementJwtPromise = Promise.resolve();
@@ -1201,6 +1370,26 @@ describe("PayPalCheckoutV6", () => {
       });
 
       expect(typeof session.start).toBe("function");
+    });
+
+    it("forwards the locale option to window.paypal.createInstance, normalized to hyphenated format", () => {
+      testContext.instance._paypalInstance = null;
+      testContext.instance._checkoutInstancePromise = null;
+
+      testContext.instance.createOneTimePaymentSession({
+        amount: "10.00",
+        currency: "USD",
+        locale: "fr_FR",
+        onApprove: jest.fn(),
+      });
+
+      return testContext.instance._checkoutInstancePromise.then(() => {
+        expect(window.paypal.createInstance).toHaveBeenCalledWith(
+          expect.objectContaining({
+            locale: "fr-FR",
+          })
+        );
+      });
     });
 
     it("requires amount option", () => {
@@ -1925,6 +2114,216 @@ describe("PayPalCheckoutV6", () => {
             done();
           })
           .catch(done);
+      });
+    });
+
+    describe("hasReturned and resume", () => {
+      it("resolves hasReturned() with the underlying SDK session's result when the instance is already ready", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({ nonce: "abc" }),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session
+          .hasReturned("https://example.com/return")
+          .then((result) => {
+            expect(result).toBe(true);
+            expect(mockSession.hasReturned).toHaveBeenCalledWith(
+              "https://example.com/return"
+            );
+          });
+      });
+
+      it("resolves resume() with the underlying SDK session's result", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({ nonce: "abc" }),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session.resume("https://example.com/return").then((result) => {
+          expect(result).toEqual({ nonce: "abc" });
+          expect(mockSession.resume).toHaveBeenCalledWith(
+            "https://example.com/return"
+          );
+        });
+      });
+
+      it("sends analytics events for hasReturned() true/false", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({}),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session.hasReturned().then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.redirect.has-returned.true"
+          );
+
+          mockSession.hasReturned.mockReturnValue(false);
+
+          return session.hasReturned().then(() => {
+            expect(analytics.sendEvent).toHaveBeenCalledWith(
+              testContext.client,
+              "paypal-checkout-v6.redirect.has-returned.false"
+            );
+          });
+        });
+      });
+
+      it("sends analytics events for resume() started/succeeded/failed", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({ nonce: "abc" }),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session.resume().then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.redirect.resume.started"
+          );
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.redirect.resume.succeeded"
+          );
+
+          mockSession.resume.mockRejectedValueOnce(new Error("nope"));
+
+          return session.resume().catch(() => {
+            expect(analytics.sendEvent).toHaveBeenCalledWith(
+              testContext.client,
+              "paypal-checkout-v6.redirect.resume.failed"
+            );
+          });
+        });
+      });
+
+      it("reuses the same underlying SDK session across hasReturned() and resume() calls", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({}),
+        };
+        const createSessionSpy = jest.fn().mockReturnValue(mockSession);
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession =
+          createSessionSpy;
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session
+          .hasReturned()
+          .then(() => session.resume())
+          .then(() => {
+            expect(createSessionSpy).toHaveBeenCalledTimes(1);
+          });
+      });
+
+      it("resolves hasReturned() by waiting for the checkout instance when not yet ready", () => {
+        testContext.instance._paypalInstance = null;
+        testContext.instance._checkoutInstancePromise = Promise.resolve(
+          testContext.paypalInstance
+        );
+
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({}),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session.hasReturned().then((result) => {
+          expect(result).toBe(true);
+        });
+      });
+
+      it("rejects hasReturned() with INSTANCE_NOT_READY when the SDK is not loaded", async () => {
+        delete window.paypal;
+        testContext.instance._paypalInstance = null;
+        testContext.instance._checkoutInstancePromise = null;
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        await expect(session.hasReturned()).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY",
+        });
+      });
+
+      it("rejects resume() with INSTANCE_NOT_READY when the SDK is not loaded", async () => {
+        delete window.paypal;
+        testContext.instance._paypalInstance = null;
+        testContext.instance._checkoutInstancePromise = null;
+
+        const session = testContext.instance.createOneTimePaymentSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        await expect(session.resume()).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY",
+        });
       });
     });
   });
@@ -4272,6 +4671,145 @@ describe("PayPalCheckoutV6", () => {
           });
       });
     });
+
+    describe("hasReturned and resume", () => {
+      let mockPayPalInstance, mockPayPalSession;
+
+      beforeEach(() => {
+        mockPayPalSession = {
+          start: jest.fn().mockResolvedValue({ success: true }),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({ nonce: "abc" }),
+        };
+
+        mockPayPalInstance = {
+          createPayPalBillingAgreementWithoutPurchase: jest
+            .fn()
+            .mockReturnValue(mockPayPalSession),
+          createPayPalCreditBillingAgreementWithoutPurchase: jest
+            .fn()
+            .mockReturnValue(mockPayPalSession),
+        };
+
+        window.paypal = {
+          createInstance: jest.fn().mockResolvedValue(mockPayPalInstance),
+        };
+      });
+
+      afterEach(() => {
+        delete window.paypal;
+      });
+
+      it("resolves hasReturned() with the underlying SDK session's result", () => {
+        testContext.instance._paypalVaultInstance = mockPayPalInstance;
+
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          onApprove: () => {},
+        });
+
+        return session
+          .hasReturned("https://example.com/return")
+          .then((result) => {
+            expect(result).toBe(true);
+            expect(mockPayPalSession.hasReturned).toHaveBeenCalledWith(
+              "https://example.com/return"
+            );
+          });
+      });
+
+      it("resolves resume() with the underlying SDK session's result", () => {
+        testContext.instance._paypalVaultInstance = mockPayPalInstance;
+
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          onApprove: () => {},
+        });
+
+        return session.resume().then((result) => {
+          expect(result).toEqual({ nonce: "abc" });
+          expect(mockPayPalSession.resume).toHaveBeenCalledWith(undefined);
+        });
+      });
+
+      it("sends analytics events for hasReturned() true/false", () => {
+        testContext.instance._paypalVaultInstance = mockPayPalInstance;
+
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          onApprove: () => {},
+        });
+
+        return session.hasReturned().then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.redirect.has-returned.true"
+          );
+
+          mockPayPalSession.hasReturned.mockReturnValue(false);
+
+          return session.hasReturned().then(() => {
+            expect(analytics.sendEvent).toHaveBeenCalledWith(
+              testContext.client,
+              "paypal-checkout-v6.redirect.has-returned.false"
+            );
+          });
+        });
+      });
+
+      it("sends analytics events for resume() started/succeeded/failed", () => {
+        testContext.instance._paypalVaultInstance = mockPayPalInstance;
+
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          onApprove: () => {},
+        });
+
+        return session.resume().then(() => {
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.redirect.resume.started"
+          );
+          expect(analytics.sendEvent).toHaveBeenCalledWith(
+            testContext.client,
+            "paypal-checkout-v6.redirect.resume.succeeded"
+          );
+
+          mockPayPalSession.resume.mockRejectedValueOnce(new Error("nope"));
+
+          return session.resume().catch(() => {
+            expect(analytics.sendEvent).toHaveBeenCalledWith(
+              testContext.client,
+              "paypal-checkout-v6.redirect.resume.failed"
+            );
+          });
+        });
+      });
+
+      it("waits for the vault instance to be ready before resolving hasReturned()", () => {
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          onApprove: () => {},
+        });
+
+        return session.hasReturned().then((result) => {
+          expect(result).toBe(true);
+        });
+      });
+
+      it("rejects hasReturned() with INSTANCE_NOT_READY when the SDK is not loaded", async () => {
+        delete window.paypal;
+
+        const session = testContext.instance.createBillingAgreementSession({
+          billingAgreementDescription: "Monthly subscription",
+          onApprove: () => {},
+        });
+
+        await expect(session.hasReturned()).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY",
+        });
+      });
+    });
   });
 
   describe("createPayLaterSession", () => {
@@ -4600,6 +5138,76 @@ describe("PayPalCheckoutV6", () => {
             expect.any(Object)
           );
         });
+    });
+
+    describe("hasReturned and resume", () => {
+      it("resolves hasReturned() with the underlying SDK session's result", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({ nonce: "abc" }),
+        };
+
+        testContext.paypalInstance.createPayLaterOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createPayLaterSession({
+          amount: "100.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session
+          .hasReturned("https://example.com/return")
+          .then((result) => {
+            expect(result).toBe(true);
+            expect(mockSession.hasReturned).toHaveBeenCalledWith(
+              "https://example.com/return"
+            );
+          });
+      });
+
+      it("resolves resume() with the underlying SDK session's result", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({ nonce: "abc" }),
+        };
+
+        testContext.paypalInstance.createPayLaterOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createPayLaterSession({
+          amount: "100.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session.resume("https://example.com/return").then((result) => {
+          expect(result).toEqual({ nonce: "abc" });
+          expect(mockSession.resume).toHaveBeenCalledWith(
+            "https://example.com/return"
+          );
+        });
+      });
+
+      it("rejects hasReturned() with INSTANCE_NOT_READY when the SDK is not loaded", async () => {
+        delete window.paypal;
+        testContext.instance._paypalInstance = null;
+        testContext.instance._checkoutInstancePromise = null;
+
+        const session = testContext.instance.createPayLaterSession({
+          amount: "100.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        await expect(session.hasReturned()).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY",
+        });
+      });
     });
   });
 
@@ -5750,6 +6358,76 @@ describe("PayPalCheckoutV6", () => {
             done();
           })
           .catch(done);
+      });
+    });
+
+    describe("hasReturned and resume", () => {
+      it("resolves hasReturned() with the underlying SDK session's result", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({ nonce: "abc" }),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session
+          .hasReturned("https://example.com/return")
+          .then((result) => {
+            expect(result).toBe(true);
+            expect(mockSession.hasReturned).toHaveBeenCalledWith(
+              "https://example.com/return"
+            );
+          });
+      });
+
+      it("resolves resume() with the underlying SDK session's result", () => {
+        const mockSession = {
+          start: jest.fn().mockResolvedValue({}),
+          hasReturned: jest.fn().mockReturnValue(true),
+          resume: jest.fn().mockResolvedValue({ nonce: "abc" }),
+        };
+
+        testContext.paypalInstance.createPayPalOneTimePaymentSession = jest
+          .fn()
+          .mockReturnValue(mockSession);
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        return session.resume("https://example.com/return").then((result) => {
+          expect(result).toEqual({ nonce: "abc" });
+          expect(mockSession.resume).toHaveBeenCalledWith(
+            "https://example.com/return"
+          );
+        });
+      });
+
+      it("rejects hasReturned() with INSTANCE_NOT_READY when the SDK is not loaded", async () => {
+        delete window.paypal;
+        testContext.instance._paypalInstance = null;
+        testContext.instance._checkoutInstancePromise = null;
+
+        const session = testContext.instance.createCheckoutWithVaultSession({
+          amount: "10.00",
+          currency: "USD",
+          onApprove: jest.fn(),
+        });
+
+        await expect(session.hasReturned()).rejects.toMatchObject({
+          code: "PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY",
+        });
       });
     });
   });
@@ -7612,6 +8290,61 @@ describe("PayPalCheckoutV6", () => {
           expect(result.getDetails("paylater")).toEqual(paylaterDetails);
           expect(result.getDetails("credit")).toEqual(creditDetails);
         });
+    });
+
+    it("applies the locale from a later createOneTimePaymentSession call to the instance findEligibleMethods already created", () => {
+      mockPayPalInstance.updateLocale = jest.fn();
+      mockPayPalInstance.createPayPalOneTimePaymentSession = jest
+        .fn()
+        .mockReturnValue({
+          start: jest.fn().mockResolvedValue(),
+        });
+
+      return testContext.instance
+        .findEligibleMethods({
+          amount: "100.00",
+          currency: "USD",
+        })
+        .then(() => {
+          testContext.instance.createOneTimePaymentSession({
+            amount: "100.00",
+            currency: "USD",
+            locale: "fr_FR",
+            onApprove: jest.fn(),
+          });
+
+          expect(mockPayPalInstance.updateLocale).toHaveBeenCalledWith("fr-FR");
+        });
+    });
+
+    it("does not create a duplicate instance when createOneTimePaymentSession is called before findEligibleMethods resolves", () => {
+      mockPayPalInstance.createPayPalOneTimePaymentSession = jest
+        .fn()
+        .mockReturnValue({
+          start: jest.fn().mockResolvedValue(),
+        });
+
+      var findEligibleMethodsPromise = testContext.instance.findEligibleMethods(
+        {
+          amount: "100.00",
+          currency: "USD",
+        }
+      );
+
+      testContext.instance.createOneTimePaymentSession({
+        amount: "100.00",
+        currency: "USD",
+        locale: "fr_FR",
+        onApprove: jest.fn(),
+      });
+
+      return findEligibleMethodsPromise.then(() => {
+        expect(window.paypal.createInstance).toHaveBeenCalledTimes(1);
+        expect(window.paypal.createInstance).toHaveBeenCalledWith(
+          expect.objectContaining({ locale: "fr-FR" })
+        );
+        expect(testContext.instance._paypalInstance).toBe(mockPayPalInstance);
+      });
     });
   });
 });

@@ -30,6 +30,15 @@ function CreditCardForm(configuration) {
 
   this.configuration = configuration;
 
+  if (
+    constants.allowedBinVerificationLengths.indexOf(
+      this.configuration.binVerificationLength
+    ) === -1
+  ) {
+    this.configuration.binVerificationLength =
+      constants.defaultBinVerificationLength;
+  }
+
   this.setSupportedCardTypes(configuration.supportedCardTypes);
 
   EventedModel.apply(this, arguments);
@@ -197,7 +206,9 @@ CreditCardForm.prototype._onSplitDateChange = function () {
 };
 
 CreditCardForm.prototype._onNumberChange = function (number, metadata) {
-  var binLength = this.configuration.binVerificationLength || 6;
+  var binLength =
+    this.configuration.binVerificationLength ||
+    constants.defaultBinVerificationLength;
 
   var newPossibleCardTypes = this.getCardTypes(number);
   var oldPossibleCardTypes = this.get("possibleCardTypes");
@@ -491,7 +502,7 @@ function splitDate(date) {
 }
 
 function getBinFromNumber(number, binLength) {
-  binLength = binLength || 6;
+  binLength = binLength || constants.defaultBinVerificationLength;
   return (number || "").substr(0, binLength);
 }
 

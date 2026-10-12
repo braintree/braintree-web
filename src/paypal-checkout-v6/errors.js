@@ -25,7 +25,7 @@
  * @property {CUSTOMER} PAYPAL_CHECKOUT_V6_PAYMENT_CANCELED Occurs when a customer cancels the payment flow.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_INVALID_SESSION_OPTIONS Occurs when session options are invalid or missing required fields.
  * @property {MERCHANT} PAYPAL_CHECKOUT_V6_APP_SWITCH_URLS_REQUIRED Occurs when returnUrl or cancelUrl is missing for direct-app-switch mode.
- * @property {MERCHANT} PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY Occurs when start() is called before the PayPal SDK instance is ready.
+ * @property {MERCHANT} PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY Occurs when start(), hasReturned(), or resume() is called before the PayPal SDK instance is ready.
  */
 
 /**
@@ -152,7 +152,7 @@ module.exports = {
     type: BraintreeError.types.MERCHANT,
     code: "PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY",
     message:
-      "PayPal SDK instance is not ready. Ensure loadPayPalSDK() has completed before calling start().",
+      "PayPal SDK instance is not ready. Ensure loadPayPalSDK() has completed before calling start(), hasReturned(), or resume().",
   },
 
   // Order Creation Errors

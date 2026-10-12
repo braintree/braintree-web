@@ -27,6 +27,25 @@ var REQUIRED_PARAMS_FOR_VIC = [
   "vaultInitiatedCheckoutPaymentMethodToken",
 ];
 
+// Locale applied to the current window.paypal, shared across PayPalCheckoutV6 wrappers.
+// Guarded by the window.paypal reference it was recorded for, so a script reload (a new
+// window.paypal object) invalidates it instead of leaking a stale locale forward.
+var activePayPalSdkLocale;
+var activePayPalSdkLocaleOwner;
+
+function getActivePayPalSdkLocale() {
+  if (activePayPalSdkLocaleOwner !== window.paypal) {
+    return undefined;
+  }
+
+  return activePayPalSdkLocale;
+}
+
+function setActivePayPalSdkLocale(locale) {
+  activePayPalSdkLocaleOwner = window.paypal;
+  activePayPalSdkLocale = locale;
+}
+
 /**
  * @class
  * @param {object} options see {@link module:braintree-web/paypal-checkout-v6.create|paypal-checkout-v6.create}
@@ -549,9 +568,13 @@ PayPalCheckoutV6.prototype._createPayPalInstance = function (options) {
  * Does nothing if the instance already exists or the SDK is not available.
  * @private
  * @param {string} instanceType The type of instance: 'checkout', 'vault', or 'messages'.
+ * @param {string} [locale] Locale code (e.g., 'en_US', 'fr_FR'); reused from the last successfully applied locale if omitted, since createInstance's locale is a single page-wide setting.
  * @returns {void}
  */
-PayPalCheckoutV6.prototype._initializePayPalInstance = function (instanceType) {
+PayPalCheckoutV6.prototype._initializePayPalInstance = function (
+  instanceType,
+  locale
+) {
   var self = this;
   var instanceConfig = {
     checkout: {
@@ -580,16 +603,62 @@ PayPalCheckoutV6.prototype._initializePayPalInstance = function (instanceType) {
   var instanceKey = config.instanceKey;
   var promiseKey = config.promiseKey;
   var components = config.components;
+  // window.paypal only accepts hyphenated locales ("fr-FR"); this SDK documents underscores ("fr_FR").
+  var normalizedLocale = locale && locale.replace(/_/g, "-");
 
-  // If instance already exists, promise already exists, or SDK not available, nothing to do
-  if (self[instanceKey] || self[promiseKey] || !self._isPayPalSdkAvailable()) {
+  // Instance may already exist (e.g. via findEligibleMethods); apply the locale in place instead of discarding it.
+  if (self[instanceKey]) {
+    if (
+      normalizedLocale &&
+      typeof self[instanceKey].updateLocale === "function"
+    ) {
+      self[instanceKey].updateLocale(normalizedLocale);
+      setActivePayPalSdkLocale(normalizedLocale);
+    }
     return;
+  }
+
+  // Instance creation is already in-flight; apply the locale once it resolves.
+  if (self[promiseKey]) {
+    if (normalizedLocale) {
+      // Recorded eagerly so a concurrent creation for another instance type
+      // sees this pending locale instead of resetting the SDK.
+      setActivePayPalSdkLocale(normalizedLocale);
+
+      self[promiseKey] = self[promiseKey].then(function (instance) {
+        if (instance && typeof instance.updateLocale === "function") {
+          instance.updateLocale(normalizedLocale);
+        }
+
+        return instance;
+      });
+    }
+
+    return;
+  }
+
+  if (!self._isPayPalSdkAvailable()) {
+    return;
+  }
+
+  // createInstance's locale is a single page-wide setting on window.paypal itself (shared across
+  // every PayPalCheckoutV6 instance); reuse the last one successfully applied so a new instance
+  // type (e.g. messages) doesn't reset the locale set for another (e.g. checkout).
+  var localeForNewInstance = normalizedLocale || getActivePayPalSdkLocale();
+
+  var createInstanceOptions = { components: components };
+
+  if (localeForNewInstance) {
+    createInstanceOptions.locale = localeForNewInstance;
+    // Recorded eagerly so a concurrent creation for another instance type sees this
+    // pending locale instead of resetting the SDK.
+    setActivePayPalSdkLocale(localeForNewInstance);
   }
 
   // Create and cache the promise
   self[promiseKey] = self._clientPromise
     .then(function () {
-      return self._createPayPalInstance({ components: components });
+      return self._createPayPalInstance(createInstanceOptions);
     })
     .then(function (instance) {
       self[instanceKey] = instance;
@@ -1152,6 +1221,38 @@ PayPalCheckoutV6.prototype._buildSessionStartOptions = function (
 };
 
 /**
+ * Creates the underlying PayPal SDK checkout session (without starting it).
+ * @private
+ * @param {object} instance PayPal SDK instance.
+ * @param {object} client Braintree client instance.
+ * @param {string} sessionType Type of session: 'paypal', 'paypal-credit', or 'pay-later'.
+ * @param {object} options Payment session options.
+ * @param {boolean} isCheckoutWithVault Whether this is a checkout-with-vault flow.
+ * @returns {object} The PayPal SDK's checkout session, exposing `start()`, `hasReturned()`, and `resume()`.
+ */
+PayPalCheckoutV6.prototype._createCheckoutSdkSession = function (
+  instance,
+  client,
+  sessionType,
+  options,
+  isCheckoutWithVault
+) {
+  var sessionMethod;
+
+  if (sessionType === "paypal-credit") {
+    sessionMethod = "createPayPalCreditOneTimePaymentSession";
+  } else if (sessionType === "pay-later") {
+    sessionMethod = "createPayLaterOneTimePaymentSession";
+  } else {
+    sessionMethod = "createPayPalOneTimePaymentSession";
+  }
+
+  return instance[sessionMethod](
+    this._createCheckoutSessionOptions(client, options, isCheckoutWithVault)
+  );
+};
+
+/**
  * Starts a checkout payment session with the given instance and client.
  * @private
  * @param {object} instance PayPal SDK instance.
@@ -1174,16 +1275,6 @@ PayPalCheckoutV6.prototype._startCheckoutSession = function (
   autoRedirect,
   fullPageOverlay
 ) {
-  var sessionMethod;
-
-  if (sessionType === "paypal-credit") {
-    sessionMethod = "createPayPalCreditOneTimePaymentSession";
-  } else if (sessionType === "pay-later") {
-    sessionMethod = "createPayLaterOneTimePaymentSession";
-  } else {
-    sessionMethod = "createPayPalOneTimePaymentSession";
-  }
-
   var isCheckoutWithVault = Boolean(paymentOptions.requestBillingAgreement);
   var startEvent = isCheckoutWithVault
     ? constants.ANALYTICS_EVENTS.CHECKOUT_WITH_VAULT_STARTED
@@ -1191,8 +1282,12 @@ PayPalCheckoutV6.prototype._startCheckoutSession = function (
 
   analytics.sendEvent(client, startEvent);
 
-  var session = instance[sessionMethod](
-    this._createCheckoutSessionOptions(client, options, isCheckoutWithVault)
+  var session = this._createCheckoutSdkSession(
+    instance,
+    client,
+    sessionType,
+    options,
+    isCheckoutWithVault
   );
 
   return session.start(
@@ -1302,6 +1397,31 @@ PayPalCheckoutV6.prototype._createBillingTokenPromise = function (
 };
 
 /**
+ * Creates the underlying PayPal SDK billing agreement session (without starting it).
+ * @private
+ * @param {object} instance PayPal SDK instance.
+ * @param {object} client Braintree client instance.
+ * @param {string} sessionType Type of session: 'paypal' or 'paypal-credit'.
+ * @param {object} options Billing agreement session options.
+ * @returns {object} The PayPal SDK's billing agreement session, exposing `start()`, `hasReturned()`, and `resume()`.
+ */
+PayPalCheckoutV6.prototype._createBillingSdkSession = function (
+  instance,
+  client,
+  sessionType,
+  options
+) {
+  var sessionMethod =
+    sessionType === "paypal-credit"
+      ? "createPayPalCreditBillingAgreementWithoutPurchase"
+      : "createPayPalBillingAgreementWithoutPurchase";
+
+  return instance[sessionMethod](
+    this._createBillingSessionCallbacks(client, options)
+  );
+};
+
+/**
  * Starts a billing agreement session with the given instance and client.
  * @private
  * @param {object} instance PayPal SDK instance.
@@ -1325,18 +1445,17 @@ PayPalCheckoutV6.prototype._startBillingSession = function (
   fullPageOverlay
 ) {
   var self = this;
-  var sessionMethod =
-    sessionType === "paypal-credit"
-      ? "createPayPalCreditBillingAgreementWithoutPurchase"
-      : "createPayPalBillingAgreementWithoutPurchase";
 
   analytics.sendEvent(
     client,
     constants.ANALYTICS_EVENTS.CREATE_BA_SESSION_STARTED
   );
 
-  var paypalSession = instance[sessionMethod](
-    this._createBillingSessionCallbacks(client, options)
+  var paypalSession = this._createBillingSdkSession(
+    instance,
+    client,
+    sessionType,
+    options
   );
 
   analytics.sendEvent(
@@ -1383,10 +1502,58 @@ PayPalCheckoutV6.prototype._validatePaymentSessionOptions = function (options) {
 };
 
 /**
+ * Lazily creates and memoizes a PayPal SDK session so that `hasReturned()`
+ * and `resume()` can be called on page load (e.g. after an app switch
+ * redirect) without requiring `start()` to have been called first.
+ * @private
+ * @param {object} cache Memoization holder (kept alive via closure by the caller).
+ * @param {string} instanceKey Property name on `this` holding the ready PayPal SDK instance (e.g. `_paypalInstance`).
+ * @param {string} instancePromiseKey Property name on `this` holding the pending instance promise (e.g. `_checkoutInstancePromise`).
+ * @param {function} createSdkSession Callback invoked with `(instance, client)` to build the PayPal SDK session.
+ * @returns {Promise} Resolves with the PayPal SDK session.
+ */
+PayPalCheckoutV6.prototype._getOrCreateAppSwitchSession = function (
+  cache,
+  instanceKey,
+  instancePromiseKey,
+  createSdkSession
+) {
+  var self = this;
+
+  if (cache.promise) {
+    return cache.promise;
+  }
+
+  if (self[instanceKey] && self._client) {
+    cache.promise = Promise.resolve(
+      createSdkSession(self[instanceKey], self._client)
+    );
+
+    return cache.promise;
+  }
+
+  if (!self[instancePromiseKey]) {
+    cache.promise = Promise.reject(
+      new BraintreeError(errors.PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY)
+    );
+
+    return cache.promise;
+  }
+
+  cache.promise = self[instancePromiseKey].then(function (instance) {
+    return self._clientPromise.then(function (client) {
+      return createSdkSession(instance, client);
+    });
+  });
+
+  return cache.promise;
+};
+
+/**
  * @private
  * @param {object} options Payment session options.
  * @param {string} sessionType Type of session: 'paypal' or 'paypal-credit'.
- * @returns {object} Payment session object with `start()` method.
+ * @returns {object} Payment session object with `start()`, `hasReturned()`, and `resume()` methods.
  */
 PayPalCheckoutV6.prototype._createPaymentSession = function (
   options,
@@ -1439,6 +1606,26 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
 
   if (options.hasOwnProperty("shippingAddressEditable")) {
     paymentOptions.shippingAddressEditable = options.shippingAddressEditable;
+  }
+
+  var isCheckoutWithVault = Boolean(paymentOptions.requestBillingAgreement);
+  var appSwitchSessionCache = {};
+
+  function getAppSwitchSession() {
+    return self._getOrCreateAppSwitchSession(
+      appSwitchSessionCache,
+      "_paypalInstance",
+      "_checkoutInstancePromise",
+      function (instance, client) {
+        return self._createCheckoutSdkSession(
+          instance,
+          client,
+          sessionType,
+          options,
+          isCheckoutWithVault
+        );
+      }
+    );
   }
 
   return {
@@ -1516,6 +1703,66 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
         new BraintreeError(errors.PAYPAL_CHECKOUT_V6_INSTANCE_NOT_READY)
       );
     },
+
+    /**
+     * Checks whether the current page load is the result of returning from
+     * an app switch (or other full-page redirect) flow.
+     * @param {string} [url=window.location.href] URL to check for resume parameters.
+     * @returns {Promise<boolean>} Resolves with `true` if the page should resume a payment session.
+     */
+    hasReturned: function (url) {
+      return getAppSwitchSession().then(function (sdkSession) {
+        var hasReturned = sdkSession.hasReturned(url);
+
+        return self._clientPromise.then(function (client) {
+          analytics.sendEvent(
+            client,
+            hasReturned
+              ? constants.ANALYTICS_EVENTS.REDIRECT_HAS_RETURNED_TRUE
+              : constants.ANALYTICS_EVENTS.REDIRECT_HAS_RETURNED_FALSE
+          );
+
+          return hasReturned;
+        });
+      });
+    },
+
+    /**
+     * Resumes a payment session after returning from an app switch (or other
+     * full-page redirect) flow. Should only be called when `hasReturned()`
+     * resolves with `true`.
+     * @param {string|object} [urlOrQueryItems=window.location.href] URL, or an object of query
+     * parameters, containing the resume parameters.
+     * @returns {Promise} Resolves when the resumed payment flow completes.
+     */
+    resume: function (urlOrQueryItems) {
+      return getAppSwitchSession().then(function (sdkSession) {
+        return self._clientPromise.then(function (client) {
+          analytics.sendEvent(
+            client,
+            constants.ANALYTICS_EVENTS.REDIRECT_RESUME_STARTED
+          );
+
+          return sdkSession
+            .resume(urlOrQueryItems)
+            .then(function (result) {
+              analytics.sendEvent(
+                client,
+                constants.ANALYTICS_EVENTS.REDIRECT_RESUME_SUCCEEDED
+              );
+
+              return result;
+            })
+            .catch(function (err) {
+              analytics.sendEvent(
+                client,
+                constants.ANALYTICS_EVENTS.REDIRECT_RESUME_FAILED
+              );
+              throw err;
+            });
+        });
+      });
+    },
   };
 };
 
@@ -1553,7 +1800,7 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  * @param {string} [options.shippingAddressOverride.recipientEmail] Email address of the recipient.
  * @param {string} [options.contactPreference] Optional field to control contact information display. Can be 'NO_CONTACT_INFO' (default, no contact info shown), 'RETAIN_CONTACT_INFO' (contact info shown but not editable), or 'UPDATE_CONTACT_INFO' (contact info shown and editable). Required if using different recipient via shippingAddressOverride.
  * * Note: this feature is currently available for US-based merchants only; see https://developer.paypal.com/docs/checkout/standard/customize/contact-module/#availability for up-to-date regional availability.
- * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') to customize the PayPal experience language and format.
+ * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') for the PayPal experience language and format. This is a page-wide PayPal SDK setting: the most recently specified locale applies across every session/component created through this client, not just this call.
  * @param {string} [options.landingPageType] Landing page type: 'login' (shows PayPal login) or 'billing' (shows guest checkout). Defaults to PayPal's selection.
  * @param {string} [options.userAction] Changes the call-to-action in the PayPal flow: 'continue' or 'pay_now'.
  * @param {boolean} [options.enableShippingAddress=false] When `true`, prompts the customer for a shipping address.
@@ -1622,7 +1869,7 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  *
  *     // First, check if returning from app switch using the hasReturned() method
  *     // This should be done when your page loads, before showing any UI
- *     if (session.hasReturned()) {
+ *     if (await session.hasReturned()) {
  *       // Resume the payment session to complete the flow
  *       await session.resume();
  *     } else {
@@ -1762,7 +2009,7 @@ PayPalCheckoutV6.prototype._createPaymentSession = function (
  *   session.start();
  * });
  *
- * @returns {object} Payment session object with `start()` method.
+ * @returns {object} Payment session object with `start()`, `hasReturned()`, and `resume()` methods.
  */
 PayPalCheckoutV6.prototype.createOneTimePaymentSession = function (options) {
   var self = this;
@@ -1787,7 +2034,7 @@ PayPalCheckoutV6.prototype.createOneTimePaymentSession = function (options) {
   }
 
   // Eagerly create PayPal instance so start() can run synchronously (required for Safari)
-  self._initializePayPalInstance("checkout");
+  self._initializePayPalInstance("checkout", options.locale);
 
   return this._createPaymentSession(options, sessionType);
 };
@@ -1825,7 +2072,7 @@ PayPalCheckoutV6.prototype.createOneTimePaymentSession = function (options) {
  * @param {string} [options.shippingAddressOverride.recipientEmail] Email address of the recipient.
  * @param {string} [options.contactPreference] Optional field to control contact information display. Can be 'NO_CONTACT_INFO' (default, no contact info shown), 'RETAIN_CONTACT_INFO' (contact info shown but not editable), or 'UPDATE_CONTACT_INFO' (contact info shown and editable). Required if using different recipient via shippingAddressOverride.
  * * Note: this feature is currently available for US-based merchants only; see https://developer.paypal.com/docs/checkout/standard/customize/contact-module/#availability for up-to-date regional availability.
- * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') to customize the PayPal experience language and format.
+ * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') for the PayPal experience language and format. This is a page-wide PayPal SDK setting: the most recently specified locale applies across every session/component created through this client, not just this call.
  * @param {string} [options.landingPageType] Landing page type: 'login' (shows PayPal login) or 'billing' (shows guest checkout). Defaults to PayPal's selection.
  * @param {string} [options.userAction] Changes the call-to-action in the PayPal flow: 'continue' or 'pay_now'.
  * @param {boolean} [options.enableShippingAddress=false] When `true`, prompts the customer for a shipping address.
@@ -1947,7 +2194,7 @@ PayPalCheckoutV6.prototype.createOneTimePaymentSession = function (options) {
  *   session.start();
  * });
  *
- * @returns {object} Payment session object with `start()` method.
+ * @returns {object} Payment session object with `start()`, `hasReturned()`, and `resume()` methods.
  */
 PayPalCheckoutV6.prototype.createPayLaterSession = function (options) {
   var self = this;
@@ -1967,7 +2214,7 @@ PayPalCheckoutV6.prototype.createPayLaterSession = function (options) {
   );
 
   // Eagerly create PayPal instance so start() can run synchronously (required for Safari)
-  self._initializePayPalInstance("checkout");
+  self._initializePayPalInstance("checkout", options.locale);
 
   return this._createPaymentSession(options, "pay-later");
 };
@@ -2002,7 +2249,7 @@ PayPalCheckoutV6.prototype.createPayLaterSession = function (options) {
  * @param {string} [options.returnUrl] URL to return to after payment completion. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
  * @param {string} [options.cancelUrl] URL to return to after payment cancellation. This parameter is required when using direct-app-switch presentation mode; for other flows, it is optional and defaults to the PayPal error page if not provided.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.
- * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') to customize the PayPal experience language and format.
+ * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') for the PayPal experience language and format. This is a page-wide PayPal SDK setting: the most recently specified locale applies across every session/component created through this client, not just this call.
  * @param {string} [options.landingPageType] Landing page type: 'login' (shows PayPal login) or 'billing' (shows guest checkout). Defaults to PayPal's selection.
  * @param {string} [options.userAction] Changes the call-to-action in the PayPal flow: 'continue' or 'pay_now'.
  * @param {boolean} [options.enableShippingAddress=false] When `true`, prompts the customer for a shipping address.
@@ -2141,7 +2388,7 @@ PayPalCheckoutV6.prototype.createPayLaterSession = function (options) {
  *   session.start();
  * });
  *
- * @returns {object} Payment session object with `start()` method.
+ * @returns {object} Payment session object with `start()`, `hasReturned()`, and `resume()` methods.
  */
 PayPalCheckoutV6.prototype.createCheckoutWithVaultSession = function (options) {
   var self = this;
@@ -2162,7 +2409,7 @@ PayPalCheckoutV6.prototype.createCheckoutWithVaultSession = function (options) {
   });
 
   // Eagerly create PayPal instance so start() can run synchronously (required for Safari)
-  self._initializePayPalInstance("checkout");
+  self._initializePayPalInstance("checkout", checkoutWithVaultOptions.locale);
 
   return this._createPaymentSession(checkoutWithVaultOptions, "paypal");
 };
@@ -2519,7 +2766,7 @@ PayPalCheckoutV6.prototype.createPayment = function (options) {
  * @param {object} [options.shippingAddressOverride] Shipping address to override.
  * @param {string} [options.userAction] User action: CONTINUE, COMMIT, or SETUP_NOW.
  * @param {string} [options.displayName] The merchant name displayed inside of the PayPal lightbox; defaults to the company name on your Braintree account.
- * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') to customize the PayPal experience language and format.
+ * @param {string} [options.locale] Locale code (e.g., 'en_US', 'fr_FR') for the PayPal experience language and format. This is a page-wide PayPal SDK setting: the most recently specified locale applies across every session/component created through this client, not just this call.
  * @param {string} [options.landingPageType] Landing page type: 'login' (shows PayPal login) or 'billing' (shows billing agreement consent). Defaults to PayPal's selection.
  * @param {boolean} [options.enableShippingAddress] When `true`, prompts the customer for a shipping address. Defaults to suppressed when omitted.
  * @param {boolean} [options.shippingAddressEditable] Controls whether a displayed shipping address is editable. Pass `false` to make it read-only. Defaults to editable when omitted.
@@ -2568,7 +2815,7 @@ PayPalCheckoutV6.prototype.createPayment = function (options) {
  * document.getElementById('paypal-button').addEventListener('click', function () {
  *   session.start();
  * });
- * @returns {object} Session object with start() method.
+ * @returns {object} Session object with `start()`, `hasReturned()`, and `resume()` methods.
  */
 PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
   var self = this;
@@ -2601,9 +2848,86 @@ PayPalCheckoutV6.prototype.createBillingAgreementSession = function (options) {
   }
 
   // Eagerly create PayPal instance so start() can run synchronously (required for Safari).
-  self._initializePayPalInstance("vault");
+  self._initializePayPalInstance("vault", options.locale);
 
   var billingAgreementRequest = self._buildBillingAgreementRequest(options);
+  var appSwitchSessionCache = {};
+
+  function getAppSwitchSession() {
+    return self._getOrCreateAppSwitchSession(
+      appSwitchSessionCache,
+      "_paypalVaultInstance",
+      "_vaultInstancePromise",
+      function (instance, client) {
+        return self._createBillingSdkSession(
+          instance,
+          client,
+          sessionType,
+          options
+        );
+      }
+    );
+  }
+
+  /**
+   * Checks whether the current page load is the result of returning from
+   * an app switch (or other full-page redirect) flow.
+   * @param {string} [url=window.location.href] URL to check for resume parameters.
+   * @returns {Promise<boolean>} Resolves with `true` if the page should resume a billing agreement session.
+   */
+  session.hasReturned = function (url) {
+    return getAppSwitchSession().then(function (sdkSession) {
+      var hasReturned = sdkSession.hasReturned(url);
+
+      return self._clientPromise.then(function (client) {
+        analytics.sendEvent(
+          client,
+          hasReturned
+            ? constants.ANALYTICS_EVENTS.REDIRECT_HAS_RETURNED_TRUE
+            : constants.ANALYTICS_EVENTS.REDIRECT_HAS_RETURNED_FALSE
+        );
+
+        return hasReturned;
+      });
+    });
+  };
+
+  /**
+   * Resumes a billing agreement session after returning from an app switch
+   * (or other full-page redirect) flow. Should only be called when
+   * `hasReturned()` resolves with `true`.
+   * @param {string|object} [urlOrQueryItems=window.location.href] URL, or an object of query
+   * parameters, containing the resume parameters.
+   * @returns {Promise} Resolves when the resumed billing agreement flow completes.
+   */
+  session.resume = function (urlOrQueryItems) {
+    return getAppSwitchSession().then(function (sdkSession) {
+      return self._clientPromise.then(function (client) {
+        analytics.sendEvent(
+          client,
+          constants.ANALYTICS_EVENTS.REDIRECT_RESUME_STARTED
+        );
+
+        return sdkSession
+          .resume(urlOrQueryItems)
+          .then(function (result) {
+            analytics.sendEvent(
+              client,
+              constants.ANALYTICS_EVENTS.REDIRECT_RESUME_SUCCEEDED
+            );
+
+            return result;
+          })
+          .catch(function (err) {
+            analytics.sendEvent(
+              client,
+              constants.ANALYTICS_EVENTS.REDIRECT_RESUME_FAILED
+            );
+            throw err;
+          });
+      });
+    });
+  };
 
   session.start = function (presentationOptions) {
     presentationOptions = presentationOptions || {};
@@ -3382,10 +3706,12 @@ PayPalCheckoutV6.prototype.findEligibleMethods = function (options) {
       );
     }
 
-    // Get or create the PayPal instance
+    self._initializePayPalInstance("checkout");
+
     var instancePromise = self._paypalInstance
       ? Promise.resolve(self._paypalInstance)
-      : self
+      : self._checkoutInstancePromise ||
+        self
           ._createPayPalInstance({
             components: ["paypal-payments"],
           })

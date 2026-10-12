@@ -39,6 +39,14 @@ var ANALYTICS_EVENTS = {
   PAYMENT_APPROVED: ANALYTICS_PREFIX + ".payment.approved",
   PAYMENT_CANCELED: ANALYTICS_PREFIX + ".payment.canceled",
 
+  // Redirect Flow (App Switch)
+  REDIRECT_HAS_RETURNED_TRUE: ANALYTICS_PREFIX + ".redirect.has-returned.true",
+  REDIRECT_HAS_RETURNED_FALSE:
+    ANALYTICS_PREFIX + ".redirect.has-returned.false",
+  REDIRECT_RESUME_STARTED: ANALYTICS_PREFIX + ".redirect.resume.started",
+  REDIRECT_RESUME_SUCCEEDED: ANALYTICS_PREFIX + ".redirect.resume.succeeded",
+  REDIRECT_RESUME_FAILED: ANALYTICS_PREFIX + ".redirect.resume.failed",
+
   // Checkout with Vault Flow
   CHECKOUT_WITH_VAULT_STARTED:
     ANALYTICS_PREFIX + ".checkout-with-vault.started",

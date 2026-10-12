@@ -115,7 +115,22 @@ run_unit_tests() {
   fi
 }
 
+check_no_untracked_changes() {
+  local changes
+  changes="$(git status --porcelain)"
+
+  if [[ -n "$changes" ]]; then
+    echo -e "${RED}Error: Uncommitted changes detected in this repository.${RESET}"
+    echo -e "${RED}Please commit, stash, or remove them before running a source release.${RESET}"
+    echo -e "${YELLOW}Changes:${RESET}"
+    echo "$changes"
+    exit 1
+  fi
+}
+
 confirm_version() {
+  check_no_untracked_changes
+
   echo -en "Release ${MAGENTA}braintree.js $BLUE$(get_package_json_version)$RESET"
   echo -en " at $YELLOW$(get_version_for_prompt)$RESET (y/n)? "
   read message
@@ -182,6 +197,8 @@ join() {
 }
 
 release_source() {
+  check_no_untracked_changes
+
   set +e
 
   local CP_CMD="cp"

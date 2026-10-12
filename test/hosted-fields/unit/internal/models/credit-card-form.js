@@ -1144,6 +1144,39 @@ describe("credit card model", () => {
         "41111111"
       );
     });
+
+    describe("defense in depth: clamping an out-of-range value forwarded from the parent frame", () => {
+      it.each([16, 0, -1, "8", null, NaN])(
+        "clamps binVerificationLength to 6 when given %p",
+        (badValue) => {
+          const config = Object.assign({}, getModelConfig(["number"]), {
+            binVerificationLength: badValue,
+          });
+          const card = new CreditCardForm(config);
+
+          expect(card.configuration.binVerificationLength).toBe(6);
+
+          card.set("number.value", "4111111111111111");
+          expect(window.bus.emit).toHaveBeenCalledWith(
+            events.BIN_AVAILABLE,
+            "411111"
+          );
+          expect(window.bus.emit).not.toHaveBeenCalledWith(
+            events.BIN_AVAILABLE,
+            "4111111111111111"
+          );
+        }
+      );
+
+      it("does not clamp a valid value of 8", () => {
+        const config = Object.assign({}, getModelConfig(["number"]), {
+          binVerificationLength: 8,
+        });
+        const card = new CreditCardForm(config);
+
+        expect(card.configuration.binVerificationLength).toBe(8);
+      });
+    });
   });
 
   describe("bin available", () => {

@@ -384,7 +384,12 @@ function isVisibleEnough(node) {
  * @classdesc This class represents a Hosted Fields component produced by {@link module:braintree-web/hosted-fields.create|braintree-web/hosted-fields.create}. Instances of this class have methods for interacting with the input fields within Hosted Fields' iframes.
  */
 function HostedFields(options) {
-  var failureTimeout, clientConfig, assetsUrl, isDebug, hostedFieldsUrl;
+  var failureTimeout,
+    clientConfig,
+    assetsUrl,
+    isDebug,
+    hostedFieldsUrl,
+    binVerificationLength;
   var self = this;
   var fields = {};
   var frameReadyPromiseResolveFunctions = {};
@@ -437,11 +442,18 @@ function HostedFields(options) {
     });
   }
 
-  if (options.binVerificationLength !== undefined) {
+  // Validate the value already copied into _merchantConfigurationOptions
+  // (rather than re-reading options.binVerificationLength) so that only a
+  // single read of a potentially untrusted getter ever occurs, and the
+  // validated value and forwarded value can never diverge.
+  binVerificationLength =
+    this._merchantConfigurationOptions.binVerificationLength;
+
+  if (binVerificationLength !== undefined) {
     if (
-      typeof options.binVerificationLength !== "number" ||
-      (options.binVerificationLength !== 6 &&
-        options.binVerificationLength !== 8)
+      typeof binVerificationLength !== "number" ||
+      constants.allowedBinVerificationLengths.indexOf(binVerificationLength) ===
+        -1
     ) {
       throw new BraintreeError({
         type: sharedErrors.INSTANTIATION_OPTION_INVALID.type,
@@ -450,6 +462,17 @@ function HostedFields(options) {
       });
     }
   }
+
+  Object.defineProperty(
+    this._merchantConfigurationOptions,
+    "binVerificationLength",
+    {
+      value: binVerificationLength,
+      writable: false,
+      configurable: false,
+      enumerable: true,
+    }
+  );
 
   EventEmitter.call(this);
 

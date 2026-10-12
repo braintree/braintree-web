@@ -7,6 +7,8 @@ var VERSION = process.env.npm_package_version;
 var constants = {
   VERSION: VERSION,
   maxExpirationYearAge: 19,
+  defaultBinVerificationLength: 6,
+  allowedBinVerificationLengths: [6, 8],
   externalEvents: {
     FOCUS: "focus",
     BLUR: "blur",

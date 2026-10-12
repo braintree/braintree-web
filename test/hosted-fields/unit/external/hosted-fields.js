@@ -216,6 +216,82 @@ describe("HostedFields", () => {
       expect(testContext.instance).toBeDefined();
     });
 
+    it("only ever reads binVerificationLength once, so a getter that would return a different (invalid) value on a hypothetical later call can never let an invalid value slip past validation (regression test for a TOCTOU bypass reported via bug bounty)", () => {
+      let readCount = 0;
+      let error;
+
+      Object.defineProperty(
+        testContext.defaultConfiguration,
+        "binVerificationLength",
+        {
+          enumerable: true,
+          configurable: true,
+          // If this getter were read more than once, the first (invalid)
+          // value would be silently replaced by the second (valid) value
+          // and validation would incorrectly pass.
+          get: () => (readCount++ === 0 ? 16 : 8),
+        }
+      );
+
+      try {
+        testContext.instance = new HostedFields(
+          testContext.defaultConfiguration
+        );
+      } catch (e) {
+        error = e;
+      }
+
+      expect(readCount).toBe(1);
+      expect(error).toBeInstanceOf(BraintreeError);
+      expect(error.code).toBe("INSTANTIATION_OPTION_INVALID");
+    });
+
+    it("forwards the exact validated binVerificationLength value with no divergence for a well-behaved getter", () => {
+      let readCount = 0;
+
+      Object.defineProperty(
+        testContext.defaultConfiguration,
+        "binVerificationLength",
+        {
+          enumerable: true,
+          configurable: true,
+          get: () => {
+            readCount += 1;
+
+            return 8;
+          },
+        }
+      );
+
+      testContext.instance = new HostedFields(testContext.defaultConfiguration);
+
+      expect(readCount).toBe(1);
+      expect(
+        testContext.instance._merchantConfigurationOptions.binVerificationLength
+      ).toBe(8);
+    });
+
+    it("prevents binVerificationLength from being redefined on the merchant configuration options after construction, closing the window where code with a reference to the instance could otherwise redefine it as a getter before it is asynchronously forwarded to the iframe", () => {
+      testContext.defaultConfiguration.binVerificationLength = 6;
+
+      testContext.instance = new HostedFields(testContext.defaultConfiguration);
+
+      expect(() => {
+        Object.defineProperty(
+          testContext.instance._merchantConfigurationOptions,
+          "binVerificationLength",
+          {
+            configurable: true,
+            get: () => 16,
+          }
+        );
+      }).toThrow(TypeError);
+
+      expect(
+        testContext.instance._merchantConfigurationOptions.binVerificationLength
+      ).toBe(6);
+    });
+
     it("sends a timeout event if the fields take too long to set up", () => {
       jest.useFakeTimers();
 
